@@ -26,6 +26,7 @@ and runs your tests—with its existing model, repository access and permissions
 [Report a vulnerability](SECURITY.md)
 
 **Start here:** [Give this to your agent](#give-this-to-your-agent) ·
+[Recipes](#recipes-from-the-landing-page) ·
 [Agent installation](#choose-your-agent) · [Choose a mode](#choose-how-to-run-it) ·
 [Local quick start](#quick-start-local-dependency-analysis) ·
 [MCP setup](#connect-your-coding-agent) ·
@@ -61,6 +62,25 @@ read GitHub pages, use the raw skill URL or a reviewed local checkout.
 
 Already configured? Start with one of the [task prompts](#ask-for-the-outcome-you-want)
 below. Prefer manual setup? Use the [per-agent instructions](#choose-your-agent).
+
+## Recipes from the landing page
+
+Put the examples on [offense.sh](https://offense.sh) to work. Each recipe includes
+an agent prompt, prerequisites, commands, approval boundaries and the evidence
+to return. Start with a single reviewed run before adding recurring automation.
+
+| Build or run | Recipe |
+| --- | --- |
+| Your dependency bot / a pre-release audit | [Audit dependencies and verify reviewed upgrades](docs/recipes.md#dependency-audit-and-reviewed-upgrades) |
+| Your first reviewer | [Review a PR with source evidence](docs/recipes.md#review-a-pull-request) |
+| Your secrets guard | [Check staged or tracked contents without confusing the snapshots](docs/recipes.md#check-staged-or-tracked-secrets) |
+| A SQL-injection review | [Trace request input, parameterize and test](docs/recipes.md#review-a-sql-endpoint) |
+| Your CI reviewer | [Review Actions YAML without executing workflows](docs/recipes.md#review-github-actions) |
+| Your API tester | [Exercise a disposable local API with bounded requests](docs/recipes.md#test-a-disposable-local-api) |
+
+These are recipes for your agent, **not installed schedules, hooks or bots**.
+Local scanners need their pinned engines; hosted Gitleaks needs availability,
+upload approval and a spending ceiling. See the [shared setup and limits](docs/recipes.md#before-running-a-recipe).
 
 ## What you can do
 
@@ -496,6 +516,7 @@ a separate product you need to install.
 
 | Guide | What it covers |
 | --- | --- |
+| [Agent recipes](docs/recipes.md) | Landing-page examples with prompts, scoped commands, evidence and automation boundaries |
 | [Local engine](offense/README.md) | Dependency analysis, triage, rehearsal and optional local helpers |
 | [Agent installation](offense/docs/install.md) | Project-scoped MCP configuration, skills and client coexistence |
 | [offense.sh Agent Skill](.agents/skills/scanning-with-offense/SKILL.md) | Portable instructions for scoped audits, hosted-tool approval and verified remediation |
