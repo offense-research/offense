@@ -646,6 +646,7 @@ a separate product you need to install.
 | [Tool contributions](docs/contributing-tools.md) | Adapter ownership, licensing, limits, fixtures and verification expectations |
 | [Security reporting](SECURITY.md) | Private reports and information that must not go into public issues |
 | [Release scope](docs/release-preparation.md) | Source-only boundary, provenance, verification and deferred integrations |
+| [CLI releases](docs/cli-release.md) | Versioned client candidates, macOS/Linux Homebrew checks and publication approval |
 
 ## Updating and moving from an existing setup
 

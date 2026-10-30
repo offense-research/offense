@@ -1,0 +1,73 @@
+name: CLI release checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-and-homebrew:
+    name: CLI and Homebrew (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Build and test the actual release archive
+        run: |
+          node --test test/cli-release.test.js test/offense-cli.test.js
+          node scripts/build-offense-cli.mjs --release-dir dist/cli-release
+          node scripts/test-cli-release.mjs dist/cli-release
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+      - name: Test the minimum supported Node version
+        run: node scripts/test-cli-release.mjs dist/cli-release
+      - uses: Homebrew/actions/setup-homebrew@c262868c096d909fc278daa87ed9772967331ea3
+        with:
+          stable: true
+      - name: Stage candidate in a disposable tap
+        shell: bash
+        run: |
+          brew tap-new --no-git offense-research/release-check
+          export CANDIDATE_TAP="$(brew --repository offense-research/release-check)"
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+          import path from 'node:path';
+          const directory = path.resolve('dist/cli-release');
+          const archive = readdirSync(directory).find(file => file.endsWith('.tgz'));
+          const formula = readFileSync(path.join(directory, 'offense.rb'), 'utf8');
+          // Only the fetch location changes; Homebrew still verifies the release SHA-256.
+          writeFileSync(path.join(process.env.CANDIDATE_TAP, 'Formula/offense.rb'),
+            formula.replace(/^  url .*$/m, `  url "${pathToFileURL(path.join(directory, archive))}"`));
+          JS
+      - name: Install and test with Homebrew's Node dependency
+        run: |
+          brew install --build-from-source offense-research/release-check/offense
+          brew test offense-research/release-check/offense
+          brew style offense-research/release-check/offense
+          # Audit the release formula, not the temporary file:// fetch location.
+          cp dist/cli-release/offense.rb "$(brew --repository offense-research/release-check)/Formula/offense.rb"
+          brew audit --strict offense-research/release-check/offense
+          brew uninstall offense-research/release-check/offense
+      - name: Retain candidate for owner review, not publication
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cli-candidate-${{ matrix.os }}
+          path: dist/cli-release/
+          if-no-files-found: error
+          retention-days: 14

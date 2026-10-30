@@ -1,8 +1,25 @@
 # Offense
 
-Offense is the first product from Offense Security: one API key for hosted
-security tools, with prepaid per-tool prices. Basic dependency advisory audits
-remain free. Node.js 20 or newer is required.
+Offense is a product by [Offense Research, Inc.](https://offenseresearch.com):
+one API key for hosted security tools, with prepaid per-tool prices. Basic
+dependency advisory audits remain free. Node.js 20 or newer is required.
+
+This package is the CLI client, not the self-hosted server, local dependency
+engine or scanner binaries. Source and installation options are at
+https://github.com/offense-research/offense#install-the-cli.
+
+For a downloaded, verified versioned release archive, install locally:
+
+```sh
+npm install --global ./offense-cli-0.2.0.tgz
+offense --version
+offense --help
+```
+
+Check its SHA-256 against the release's `SHA256SUMS` before installation. The
+mutable hosted download below is a separate channel and may be an older version.
+No npm registry package is required; avoid assuming `npm install -g offense`
+selects this project.
 
 ```sh
 npm install --global https://offense.sh/downloads/offense-cli.tgz
@@ -122,5 +139,7 @@ Top-ups open a Whop checkout for the advertised credit amount. The user approves
 payment there; a browser return does not grant funds. `logout` removes the local
 credential; revoke the server key at https://offense.sh/account to remove access.
 
-This archive is a client distribution. The production and community repositories
-remain private; no npm registry publication is performed by the build.
+The source is public under Apache-2.0, with third-party notices preserved in
+this archive. The `private: true` package flag prevents accidental npm registry
+publication; it does not prevent installation from a local archive or release URL.
+Building a candidate does not publish a release or deploy the hosted service.
