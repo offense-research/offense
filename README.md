@@ -507,6 +507,10 @@ The initial profile runs the Node API and console with SQLite, a local operator
 API key and isolated Docker scanners. It supports **dependency advisory analysis,
 Opengrep 1.32.0 and Zizmor 1.31.1**. Other catalog tools remain disabled.
 
+**Self-hosting has no Offense billing.** The bootstrap disables both scanner
+credit and hosted model billing automatically—no subscription, prepaid balance
+or payment credentials required. You cover your own infrastructure costs.
+
 From the repository root on your own **Linux amd64** machine:
 
 ```sh
@@ -521,6 +525,20 @@ The bootstrap creates a **new private state directory outside the checkout**
 and refuses to overwrite an existing installation. It stores the API key,
 encryption key and database there without printing credentials. The server
 binds to loopback on port 3217; it is not an Internet-ready multi-tenant setup.
+
+Already configured? Keep these values in your private `server.env` and restart
+the API after changes; do not recreate the state directory:
+
+```dotenv
+OFFENSE_SELF_HOSTED=true
+SCAN_BILLING_ENABLED=false
+WHOP_BILLING_ENABLED=false
+```
+
+Point your client at your own `OFFENSE_API_URL`, not `https://offense.sh`.
+The [billing-off checklist](docs/self-hosting.md#billing-settings-and-verification)
+shows how to verify zero-priced quotes and resolve inherited environment conflicts.
+Use `--max-price 0` when submitting CLI calls to retain a zero-cost ceiling.
 
 Follow the [self-hosting guide](docs/self-hosting.md) to load the operator key,
 configure CLI/API/MCP access, back up state and run acceptance checks. Allow at

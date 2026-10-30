@@ -4,6 +4,11 @@ This profile runs the full Node API and console with SQLite, a local operator
 API key and isolated Docker source scanners. It requires no Offense account,
 Whop balance, Cloudflare account, Infisical project or model provider.
 
+**Billing is off by default.** The setup command below configures it for you:
+no payment credentials, subscription, credit purchase or code changes are needed.
+You pay for your own infrastructure, not Offense tool credits. For an existing
+source-profile installation, see [billing settings and verification](#billing-settings-and-verification).
+
 Supported execution: dependency advisory intelligence (public OSV/npm metadata),
 Opengrep 1.32.0 and Zizmor 1.31.1. **The other catalog tools are disabled in this
 profile.** Included adapters/recipes are unsupported reference source, not
@@ -45,9 +50,8 @@ node scripts/offense-cli.mjs status --json
 ```
 
 Use the same origin and bearer key with `/mcp`. The credential is bound to the
-configured origin; the CLI rejects sending it to another endpoint. Quotes are
-zero and calls still require idempotency and a maximum charge of zero. Hosted
-billing and an external agent URL are rejected in self-hosted mode.
+configured origin; the CLI rejects sending it to another endpoint. Calls retain
+authentication, idempotency and input limits even when billing is disabled.
 
 The web console is served by the same app. The local operator key is an API/MCP
 credential, **not a browser-login bypass**. Browser account features need an
@@ -56,6 +60,76 @@ OAuth acceptance is claimed by the source-profile test. Run behind a trusted
 HTTPS reverse proxy before exposing the API beyond loopback; keep `PUBLIC_URL`
 correct and preserve the app's origin/host protections. Internet multi-tenant
 operation is outside this initial single-operator profile.
+
+## Billing settings and verification
+
+### New installations: nothing extra to configure
+
+`node scripts/init-self-host.mjs "$HOME/offense-state"` writes these values into
+the private `server.env` automatically:
+
+```dotenv
+OFFENSE_SELF_HOSTED=true
+SCAN_BILLING_ENABLED=false
+WHOP_BILLING_ENABLED=false
+```
+
+| Setting | Effect |
+| --- | --- |
+| `OFFENSE_SELF_HOSTED=true` | Uses the local Docker source runtime and rejects hosted billing or an external `PURPLE_AGENT_URL` at startup |
+| `SCAN_BILLING_ENABLED=false` | Scanner quotes and charges are zero; no prepaid balance is required |
+| `WHOP_BILLING_ENABLED=false` | Disables hosted model/rehearsal payment flows, separate from scanner billing |
+
+Leave payment credentials and `SCAN_TOOL_PRICES_JSON` unset. Do not enable
+`WHOP_SANDBOX` as a substitute: test payments are not the billing-off setting.
+Disabling payment flows does not enable unsupported hosted model/rehearsal tools.
+Job reports, usage metadata, authentication, resource limits and tool availability
+checks remain in place; billing off does not mean unrestricted execution.
+
+### Existing source-profile installations
+
+Edit the existing private `server.env` to match the three settings above and
+leave `PURPLE_AGENT_URL` unset or empty. **Do not rerun the bootstrap or replace
+the encryption key, database or operator API key.** Restart your API process
+with that env file after changing configuration.
+
+Check your shell, service manager or container environment too: inherited
+variables override Node's `--env-file` values. If startup reports
+“Self-hosted source execution cannot use hosted billing or an external agent
+service,” remove the conflicting inherited settings. Do not turn off
+`OFFENSE_SELF_HOSTED` to bypass that safeguard. This procedure is for the local
+source profile, not a migration of an active paid hosted deployment.
+
+### Confirm your client is using the unbilled server
+
+Set `OFFENSE_API_URL` and load the private operator key as described above;
+an installed CLI can otherwise still point at `https://offense.sh`. Installing
+the CLI with Homebrew or npm does **not** change which service it calls.
+
+```sh
+node scripts/offense-cli.mjs status --json
+node scripts/offense-cli.mjs tools --json
+```
+
+Confirm the status identifies your own API origin and the catalog reports
+`billing.enabled: false`. To check a quote without executing a scan, save this
+non-sensitive example as `request.json`:
+
+```json
+{"files":[{"path":"example.js","content":"const answer = 42;\n"}]}
+```
+
+```sh
+node scripts/offense-cli.mjs quote opengrep --input request.json
+```
+
+Expect `billable: false` and `maximumMicros: 0`. The CLI sends dimensions, not
+file contents, for this quote. If you choose to execute the scan afterward,
+use `--max-price 0` with `call` and retain the idempotency key; direct HTTP/MCP
+calls use `maxChargeMicros: 0`. This keeps a zero-cost ceiling even if a client
+is accidentally pointed at a billable service. Completed scan receipts should
+report `metering.chargeMicros: 0`. Do not top up a balance to fix an unexpected
+payment requirement: check the API origin and server settings first.
 
 ## Data and isolation
 
