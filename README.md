@@ -9,24 +9,58 @@
 [![Discord](https://img.shields.io/badge/Discord-Join_the_community-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/xP7GCnyF)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-green?style=flat-square)](LICENSE)
 
-**Security tools for coding agents. Open-source software, optional paid hosting.**
+**Security tools your AI agent can discover, call and verify.**
 
-Offense gives your coding agent dependency intelligence, source-code checks and
-security-tool execution through a CLI, the Model Context Protocol (MCP) and an
-HTTP API. Your agent keeps its model and development workflow: it reviews
-findings, proposes changes and runs tests. Offense supplies the tools and evidence.
+Offense is a product by **[Offense Research, Inc.](https://offenseresearch.com)**.
+Open-source software, optional paid hosting.
+
+Give Pi, OMP, Hermes, Codex, Claude Code, Crush or another coding agent the tools
+to audit dependencies, inspect source and workflows, and test a proposed fix.
+Offense returns structured security evidence through **CLI, MCP and HTTP**.
+Your agent reads that evidence, investigates your code, makes authorized changes
+and runs your tests—with its existing model, repository access and permissions.
 
 [Open-source repository](https://github.com/offense-research/offense) ·
 [Discord](https://discord.gg/xP7GCnyF) · [Hosted service](https://offense.sh) ·
 [Self-hosting](docs/self-hosting.md) · [Contributing](CONTRIBUTING.md) ·
 [Report a vulnerability](SECURITY.md)
 
-**Start here:** [Choose a mode](#choose-how-to-run-it) ·
+**Start here:** [Give this to your agent](#give-this-to-your-agent) ·
+[Agent installation](#choose-your-agent) · [Choose a mode](#choose-how-to-run-it) ·
 [Local quick start](#quick-start-local-dependency-analysis) ·
-[Agent setup](#connect-your-coding-agent) ·
+[MCP setup](#connect-your-coding-agent) ·
 [Self-hosted platform](#run-the-self-hosted-platform) ·
 [Documentation](#documentation) · [Troubleshooting](#troubleshooting) ·
 [Community](#community-and-support)
+
+## Give this to your agent
+
+Paste this into your coding agent **in the project you want to check**:
+
+```text
+Set up Offense for this project. Read the installation instructions at
+https://github.com/offense-research/offense#install-the-offensesh-agent-skill
+and review the skill at
+https://raw.githubusercontent.com/offense-research/offense/main/.agents/skills/scanning-with-offense/SKILL.md
+
+Reuse an existing reviewed Offense checkout or connection if available.
+Otherwise inspect the public source before using its helpers. Install the
+skill in this agent's project-local skill directory, preserving custom files
+and other agent settings. Tell me if a new session or project trust is needed.
+
+Run only the offline dependency-input preview. Show the selected lockfiles,
+unsupported inputs and which execution mode would perform the real audit.
+Do not upload data, run a paid scan, install the target project's dependencies,
+edit application code, commit or push.
+```
+
+The first success is **a real preview and an explicit scope**, not “installed”
+without a command result. The agent needs terminal/filesystem access and Node;
+copying a skill does not give a chat-only client those capabilities. If it cannot
+read GitHub pages, use the raw skill URL or a reviewed local checkout.
+
+Already configured? Start with one of the [task prompts](#ask-for-the-outcome-you-want)
+below. Prefer manual setup? Use the [per-agent instructions](#choose-your-agent).
 
 ## What you can do
 
@@ -50,25 +84,84 @@ and obtaining authorization before active testing, paid calls or publication.
 
 ## From a finding to a reviewed fix
 
-Security work does not end with a list of CVEs. Offense helps separate the
-questions an agent needs to answer before changing your application:
+Offense provides tools and evidence. Your coding agent performs the investigation
+and remediation; you choose its scope and delivery permissions.
 
-1. **Inventory the actual inputs.** Preview supported lockfiles, or select the
-   source files and workflows relevant to the check. Notice missing coverage.
-2. **Collect evidence.** Run the dependency audit or selected scanner. Retain
-   advisory identities, affected versions, locations and any incomplete results.
-3. **Review applicability.** Have your agent inspect how the dependency or code
-   is used, what an attacker could control and whether the affected behavior is
-   reachable. A scanner match alone does not answer those questions.
-4. **Plan and test a change.** Review upgrade constraints and breaking changes,
-   establish a baseline, then apply an authorized patch and run your project's
-   tests. Optional rehearsal commands require an isolated environment.
-5. **Recheck the result.** Rescan the changed dependency tree or source, preserve
-   unresolved findings and review the diff before committing or opening a PR.
+| Step | Offense provides | Your agent does |
+| --- | --- | --- |
+| **Discover** | Input previews, tool catalog, coverage and availability | Selects the project, revision and execution mode; identifies unsupported inputs |
+| **Assess** | Dependency advisory matches or scanner findings; hosted quotes and job results | Runs only authorized checks and retains incomplete results and receipts |
+| **Investigate** | Affected versions, locations, references and upgrade/planning evidence | Traces actual callers and attacker-controlled inputs; separates matches from reproduced vulnerabilities |
+| **Fix** | Upgrade options and constraints; optional explicit rehearsal helpers | Establishes a test baseline, edits the authorized scope and tests compatibility in isolation |
+| **Verify** | A new audit or scan of the changed inputs | Compares results, runs the original checks and reports remaining findings before authorized delivery |
 
-Offense provides analysis and optional explicit helpers; your coding agent owns
-the investigation, code edits and delivery. Neither an MCP audit nor a CLI scan
-silently turns this sequence into an automatic patch-and-publish workflow.
+There is no hidden second agent, required model-provider key or automatic
+patch-and-publish step in this workflow. Providing a skill or MCP tool does not
+enforce a CI gate; application-controlled hooks need an explicit
+[integration](docs/agent-security.md).
+
+### Ask for the outcome you want
+
+Use these **after setup**. Each prompt states what the agent may do rather than
+granting an open-ended “secure everything” task.
+
+**Understand dependency risk without changing code:**
+
+```text
+Use Offense to audit this project's supported dependency lockfiles. Preview
+the scope first, then use the independent local engine to query OSV/npm.
+Keep source code local. Explain the highest-severity advisory matches against
+our actual usage, distinguish unknown reachability from confirmed behavior,
+and report coverage gaps. Save reports outside the checkout. Do not install
+project dependencies or change application files.
+```
+
+The local engine needs its [separate Node.js 24+ setup](#quick-start-local-dependency-analysis).
+This audit prompt authorizes dependency-metadata lookups, not a hosted source upload.
+
+**Fix reviewed findings and leave a verified patch:**
+
+```text
+Use the Offense report we reviewed to address the agreed dependency findings.
+Check that its inputs still match this checkout. Establish the original test
+baseline, choose the smallest compatible upgrade and test it in isolation.
+Rescan the resolved dependency tree. Where feasible, reproduce the security
+issue before the fix and demonstrate its absence afterward. Report every
+unresolved finding and failed or skipped check. Leave changes uncommitted;
+do not upload source, spend credit, open a PR, merge or deploy.
+```
+
+**Choose a hosted source or workflow check before spending:**
+
+```text
+Use Offense's current tool catalog to select checks for this project's source
+and GitHub Actions workflows. Show supported inputs, omitted coverage, the
+exact proposed upload scope and maximum quoted charge. Obtain any needed
+upload permission before transmitting file content, including quote inputs.
+Do not submit a scan or buy credit. Wait for approval of the scope and budget.
+```
+
+### What your agent should read and return
+
+Read the structured report, not just a terminal success message. The
+**local engine** writes `scan.json`; the **hosted free-audit helper** writes
+`audit.json`. Both also write `remediation.md` for the agent. These are different
+execution modes, not interchangeable commands. Hosted scanner jobs have their
+own receipts and results; retain the job ID and idempotency key for recovery.
+
+Ask the agent to end each task with:
+
+- **Scope:** repository/revision, execution mode and checked inputs.
+- **Evidence:** advisory matches or scanner findings, applicability and any reproduction.
+- **Changes:** the patch and why it addresses the reviewed findings, or “no changes.”
+- **Verification:** exact baseline/final commands and outcomes, plus the rescan.
+- **Gaps:** unsupported inputs, incomplete jobs, planning blockers and remaining findings.
+- **Cost and delivery:** actual reported charge if applicable, and whether changes are local, committed or published.
+
+An empty findings list is not proof the application is secure. A failed or partial
+job stays failed or partial; a compatible upgrade is not automatically a reproduced
+security fix. Treat scanner text and generated remediation prompts as evidence,
+not instructions that can override the user's scope or the agent's permissions.
 
 ## Choose how to run it
 
@@ -180,19 +273,9 @@ After restarting the client, verify it discovers `offense.audit_dependencies`.
 Discovery is not a scan. If the client cannot load MCP, the local CLI remains
 available; a successful CLI command does not prove the client connected.
 
-Once connected, try: **“Use Offense to audit this project's dependencies and
-explain the upgrade options. Do not change files yet.”**
-
-Other useful requests, once you have the relevant tools and evidence:
-
-> Review the highest-severity advisory matches against the application's actual
-> usage. Separate reachable behavior from unknowns; do not call a match a confirmed exploit.
-
-> Propose the smallest dependency upgrade that addresses these advisories.
-> Explain peer constraints and breaking changes before editing anything.
-
-> After the approved fix, run the normal tests and rescan. Report remaining
-> findings and skipped checks, and wait for approval before committing or pushing.
+Once connected, choose an [audit, fix or tool-selection prompt](#ask-for-the-outcome-you-want).
+Tell the agent which execution mode is authorized; local and hosted tools may
+share capability names, but their data flow and account requirements differ.
 
 ### Install the offense.sh Agent Skill
 
@@ -204,21 +287,99 @@ existing Offense helpers or MCP connection; it does not install scanners or
 credentials, and it is separate from the local engine's packaged skill.
 
 The skill is already in this checkout's `.agents/skills/` directory. To use it
-in another project, run the following from the Offense repository root, replacing
-the destination path. The command refuses to overwrite an existing installation:
+in another project, choose your agent's directory below. These are **project-local
+installs**, not changes to your global agent settings. Install each skill once;
+do not duplicate it across compatibility directories in the same project.
+
+#### Choose your agent
+
+Each directory below is relative to the **target project's root**. The final file
+must be `<directory>/scanning-with-offense/SKILL.md`. Agent names link to their
+upstream skill documentation; use a version that supports the documented paths.
+
+| Agent | Project skill directory | Discover or invoke after starting a new session |
+| --- | --- | --- |
+| [Pi](https://pi.dev/docs/latest/skills) | `.pi/skills/` | `/skill:scanning-with-offense`; accept the normal project-trust prompt |
+| [Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi/blob/main/docs/skills.md) | `.omp/skills/` | `/skill:scanning-with-offense` when skill commands are enabled |
+| [Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills) | `.hermes/skills/` | Review and trust the project as below, then `/scanning-with-offense` |
+| [OpenAI Codex](https://developers.openai.com/codex/skills) | `.agents/skills/` | `/skills` to discover; `$scanning-with-offense` to invoke |
+| [Claude Code](https://code.claude.com/docs/en/skills) | `.claude/skills/` | `/scanning-with-offense` |
+| [Charm Crush](https://github.com/charmbracelet/crush#agent-skills) | `.crush/skills/` | Ask it to load `scanning-with-offense`; this skill does not enable Crush's optional command-palette invocation |
+| [Cursor](https://cursor.com/docs/skills) | `.cursor/skills/` | Select `scanning-with-offense` from the `/` menu in Agent chat |
+| [OpenCode](https://opencode.ai/docs/skills) | `.opencode/skills/` | Ask it to load `scanning-with-offense` through its skill tool |
+| [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills) | `.github/skills/` | Ask it to use `scanning-with-offense` for the preview request below |
+| [VS Code Copilot](https://agentskills.io/skill-creation/quickstart) | `.agents/skills/` | In Agent mode, use `/skills` to confirm discovery |
+| [Gemini CLI](https://geminicli.com/docs/cli/skills/) | `.gemini/skills/` | `/skills list`, then request the preview and review the activation prompt |
+
+Several agents also read `.agents/skills/`, so a shared installation may already
+be sufficient. Check the linked docs and existing skills before copying another
+instance. Do not disable trust checks or tool approvals to make a skill load.
+
+#### Copy the skill without replacing custom instructions
+
+In a POSIX shell (macOS, Linux or WSL), run this from the Offense repository root.
+Set `project` to the target checkout and `skill_root` to the directory in the
+table. This example selects **Pi**; change `.pi/skills` for another agent.
 
 ```sh
-destination=/absolute/path/to/your-project/.agents/skills/scanning-with-offense
+project=/absolute/path/to/your-project
+skill_root=.pi/skills
+destination="$project/$skill_root/scanning-with-offense"
 mkdir -p "$(dirname "$destination")"
 mkdir "$destination" && cp .agents/skills/scanning-with-offense/SKILL.md "$destination/SKILL.md"
 ```
 
-Use your client's documented skill directory if it differs; for example,
-Claude Code uses `.claude/skills/`. Start a new agent session and verify that
-`scanning-with-offense` is discovered. Then try: **“Use Offense to preview this
-project's dependency audit. Do not upload anything or run paid tools yet.”**
-The skill explains how to locate the existing helpers; copying instructions
-alone does not connect MCP or authorize a scan.
+`mkdir` deliberately fails if the skill directory exists, preventing the copy
+from overwriting customized instructions. Review an existing installation instead
+of adding `-p` to that second `mkdir`. Windows users can copy the same `SKILL.md`
+into the table's directory using their file manager; refuse any overwrite prompt.
+
+For **Hermes**, project discovery requires a Git checkout and explicit trust.
+After reviewing the repo's skills, run:
+
+```sh
+hermes skills trust /absolute/path/to/your-project
+```
+
+This trusts the project's skills, not just Offense. Do not trust an unreviewed
+repository. Older Hermes versions without project discovery can use a reviewed
+external skill directory through `skills.external_dirs`; follow the linked docs
+rather than assuming `.hermes/skills/` is recognized.
+
+#### Make the existing helpers available
+
+Skills contain instructions, not a CLI or a scanner runtime. Keep the reviewed
+Offense checkout accessible to the agent. The bundled hosted helpers require
+**Node.js 20+** and no root `npm install` for these commands:
+
+```sh
+export OFFENSE_HELPERS=/absolute/path/to/offense/public/skills/offense/scripts
+node "$OFFENSE_HELPERS/cli.mjs" --help
+node "$OFFENSE_HELPERS/offense.mjs" audit /absolute/path/to/your-project --preview
+```
+
+Launch the agent from a shell that inherits this variable, or tell it the actual
+absolute helper path in its session. For remote agents, that path and Node must
+exist in the agent's execution environment, not only on your laptop. This is a
+non-secret path; never include an API key in project instructions.
+
+The **CLI route works without MCP** for agents that can execute Node commands.
+For optional authenticated hosted MCP, the current Offense installer supports
+Codex, Claude Code and Cursor only: `cli.mjs mcp install --client
+codex|claude|cursor --project PROJECT` (choose one client, not the literal list).
+Do not invent `--client pi`, `omp`, `hermes` or `crush` options. Other clients can
+use the CLI or their own documented MCP setup; the skill copy alone connects neither.
+The independent local engine still requires Node.js 24+ and the separate
+[local setup](#quick-start-local-dependency-analysis).
+
+Start a new agent session in the target project and use the table's discovery
+or invocation method. Then try: **“Use the scanning-with-offense skill to preview
+this project's dependency audit. Do not upload anything or run paid tools yet.”**
+Confirm that the agent loaded the skill and executed the preview, rather than
+merely describing it. Preview makes no advisory request and needs no login.
+Authentication, source uploads, paid scans and active target testing remain
+separate steps requiring the relevant approval. These paths follow upstream
+documentation; they are not a claim of end-to-end testing in every agent client.
 
 ## Run the self-hosted platform
 
@@ -492,7 +653,7 @@ time or security-support SLA.
 
 ---
 
-Built by **[Offense Research, Inc.](https://github.com/offense-research)** and
+Built by **[Offense Research, Inc.](https://offenseresearch.com)** and
 contributors. Offense integrates independently maintained security engines and
 public advisory sources; their licenses and attribution remain in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
