@@ -1,4 +1,13 @@
+<p align="center">
+  <img src="site/public/social/offense-preview.jpg" alt="Offense — security tools for coding agents" width="100%">
+</p>
+
 # Offense
+
+[![CI](https://github.com/offense-research/offense/actions/workflows/ci.yml/badge.svg)](https://github.com/offense-research/offense/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/Docs-Get_started-ff2e17?style=flat-square)](#documentation)
+[![Discord](https://img.shields.io/badge/Discord-Join_the_community-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/xP7GCnyF)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-green?style=flat-square)](LICENSE)
 
 **Security tools for coding agents. Open-source software, optional paid hosting.**
 
@@ -7,9 +16,17 @@ security-tool execution through a CLI, the Model Context Protocol (MCP) and an
 HTTP API. Your agent keeps its model and development workflow: it reviews
 findings, proposes changes and runs tests. Offense supplies the tools and evidence.
 
-[Hosted service](https://offense.sh) · [Self-hosting](docs/self-hosting.md) ·
-[Local engine](offense/README.md) · [Contributing](CONTRIBUTING.md) ·
+[Open-source repository](https://github.com/offense-research/offense) ·
+[Discord](https://discord.gg/xP7GCnyF) · [Hosted service](https://offense.sh) ·
+[Self-hosting](docs/self-hosting.md) · [Contributing](CONTRIBUTING.md) ·
 [Report a vulnerability](SECURITY.md)
+
+**Start here:** [Choose a mode](#choose-how-to-run-it) ·
+[Local quick start](#quick-start-local-dependency-analysis) ·
+[Agent setup](#connect-your-coding-agent) ·
+[Self-hosted platform](#run-the-self-hosted-platform) ·
+[Documentation](#documentation) · [Troubleshooting](#troubleshooting) ·
+[Community](#community-and-support)
 
 ## What you can do
 
@@ -30,6 +47,28 @@ Offense is not an autonomous permission grant. A finding is not a confirmed
 exploit, an advisory match is not proof of reachability, and a partial scan is
 not a clean bill of health. Your agent remains responsible for reviewing changes
 and obtaining authorization before active testing, paid calls or publication.
+
+## From a finding to a reviewed fix
+
+Security work does not end with a list of CVEs. Offense helps separate the
+questions an agent needs to answer before changing your application:
+
+1. **Inventory the actual inputs.** Preview supported lockfiles, or select the
+   source files and workflows relevant to the check. Notice missing coverage.
+2. **Collect evidence.** Run the dependency audit or selected scanner. Retain
+   advisory identities, affected versions, locations and any incomplete results.
+3. **Review applicability.** Have your agent inspect how the dependency or code
+   is used, what an attacker could control and whether the affected behavior is
+   reachable. A scanner match alone does not answer those questions.
+4. **Plan and test a change.** Review upgrade constraints and breaking changes,
+   establish a baseline, then apply an authorized patch and run your project's
+   tests. Optional rehearsal commands require an isolated environment.
+5. **Recheck the result.** Rescan the changed dependency tree or source, preserve
+   unresolved findings and review the diff before committing or opening a PR.
+
+Offense provides analysis and optional explicit helpers; your coding agent owns
+the investigation, code edits and delivery. Neither an MCP audit nor a CLI scan
+silently turns this sequence into an automatic patch-and-publish workflow.
 
 ## Choose how to run it
 
@@ -76,6 +115,26 @@ dependency installations. The commands above install only the local engine.
 See the [local-engine README](offense/README.md) for triage, upgrade rehearsal
 and optional scanner helpers, each with its own prerequisites.
 
+### Local CLI reference
+
+Run these from the repository root, replacing `PROJECT` with your target's path:
+
+| Command | Purpose | Important boundary |
+| --- | --- | --- |
+| `node offense/bin/offense.mjs doctor PROJECT` | Inspect runtime and optional executable availability | Offline; does not prove an engine version, Docker connection or active MCP registration |
+| `node offense/bin/offense.mjs metadata PROJECT` | Inspect sanitized dependency metadata | Offline; no report writes or application execution |
+| `node offense/bin/offense.mjs scan PROJECT --preview` | Preview the dependency inputs before an audit | No provider requests |
+| `node offense/bin/offense.mjs scan PROJECT --output REPORT_DIRECTORY` | Audit dependencies and prepare upgrade/remediation context | Queries OSV/npm; writes reports outside the target checkout |
+| `node offense/bin/offense.mjs triage --help` | Learn how to investigate an existing report | Read the required scan inputs and coverage limits before use |
+| `node offense/bin/offense.mjs rehearse --help` | Learn how to rehearse an upgrade | Actual rehearsal executes project commands and requires an isolated environment |
+| `node offense/bin/offense.mjs source-scan --help` | Inspect local source/workflow scanning options | Actual scans require separately installed engines |
+
+**Read both findings and coverage.** `scan.json` contains machine-readable
+analysis; `remediation.md` gives your agent the evidence and next checks. A
+proposed upgrade still needs compatibility tests. Zero returned findings apply
+only to the checked scope and available advisory data—not every dependency,
+code path or future vulnerability.
+
 ### Connect your coding agent
 
 The local engine exposes `offense.audit_dependencies` over stdio MCP:
@@ -90,8 +149,76 @@ entrypoint; it is an MCP server, not an interactive terminal session. The
 installation for Codex, Claude Code and other clients. Preserve existing client
 configuration and start a new agent session after installing.
 
+For a client using an `mcpServers` JSON configuration, merge this entry into its
+existing configuration rather than replacing other servers:
+
+```json
+{
+  "mcpServers": {
+    "offense-community": {
+      "command": "node",
+      "args": ["/absolute/path/to/offense/offense/bin/offense.mjs", "mcp"]
+    }
+  }
+}
+```
+
+For Codex, the equivalent project `.codex/config.toml` entry is:
+
+```toml
+[mcp_servers.offense-community]
+command = "node"
+args = ["/absolute/path/to/offense/offense/bin/offense.mjs", "mcp"]
+```
+
+The two `offense` path segments above are intentional: the repository contains
+a nested `offense/` package. Replace the example with your actual checkout path.
+Claude Code uses project `.mcp.json`; other clients may use a different location
+or schema. No API key belongs in this local-engine configuration.
+
+After restarting the client, verify it discovers `offense.audit_dependencies`.
+Discovery is not a scan. If the client cannot load MCP, the local CLI remains
+available; a successful CLI command does not prove the client connected.
+
 Once connected, try: **“Use Offense to audit this project's dependencies and
 explain the upgrade options. Do not change files yet.”**
+
+Other useful requests, once you have the relevant tools and evidence:
+
+> Review the highest-severity advisory matches against the application's actual
+> usage. Separate reachable behavior from unknowns; do not call a match a confirmed exploit.
+
+> Propose the smallest dependency upgrade that addresses these advisories.
+> Explain peer constraints and breaking changes before editing anything.
+
+> After the approved fix, run the normal tests and rescan. Report remaining
+> findings and skipped checks, and wait for approval before committing or pushing.
+
+### Install the offense.sh Agent Skill
+
+The portable [scanning-with-offense skill](.agents/skills/scanning-with-offense/SKILL.md)
+uses the [Agent Skills format](https://agentskills.io/skill-creation/quickstart).
+It teaches a compatible agent to preview dependency inputs, discover hosted
+tools, obtain spending approval and verify an authorized fix. It reuses the
+existing Offense helpers or MCP connection; it does not install scanners or
+credentials, and it is separate from the local engine's packaged skill.
+
+The skill is already in this checkout's `.agents/skills/` directory. To use it
+in another project, run the following from the Offense repository root, replacing
+the destination path. The command refuses to overwrite an existing installation:
+
+```sh
+destination=/absolute/path/to/your-project/.agents/skills/scanning-with-offense
+mkdir -p "$(dirname "$destination")"
+mkdir "$destination" && cp .agents/skills/scanning-with-offense/SKILL.md "$destination/SKILL.md"
+```
+
+Use your client's documented skill directory if it differs; for example,
+Claude Code uses `.claude/skills/`. Start a new agent session and verify that
+`scanning-with-offense` is discovered. Then try: **“Use Offense to preview this
+project's dependency audit. Do not upload anything or run paid tools yet.”**
+The skill explains how to locate the existing helpers; copying instructions
+alone does not connect MCP or authorize a scan.
 
 ## Run the self-hosted platform
 
@@ -145,6 +272,30 @@ You can use the local engine without logging into the hosted service. Its MCP
 configuration uses `offense-community`, while the optional hosted client uses
 `offense`, so the two can coexist.
 
+## CLI, MCP and HTTP at a glance
+
+Choose the interface that fits your workflow, not a different set of security
+claims. The **local engine** is separate from the **platform API**:
+
+| Task | Terminal | Coding agent | HTTP / application integration |
+| --- | --- | --- | --- |
+| Local dependency audit | `node offense/bin/offense.mjs scan PROJECT` | Local stdio `offense.audit_dependencies` | No local-engine HTTP server is required |
+| Inspect platform tools | `node scripts/offense-cli.mjs tools` | Platform `offense.security_tools` | `GET /v1/catalog`; availability is deployment-specific |
+| Quote a platform job | Use the checked-out CLI's `--help` for the selected input family | `offense.security_quote` | `POST /v1/quotes` |
+| Run a platform job | Select the tool and reviewed inputs with an explicit maximum charge | `offense.security_call` | `POST /v1/call/:tool` with an idempotency key and charge cap |
+| Retrieve a platform result | Use the CLI's result command for the job ID | `offense.security_result` | `GET /v1/scans/:id` |
+| Check account balance | `node scripts/offense-cli.mjs balance` | `offense.account` | `GET /v1/account` |
+
+Platform MCP uses the configured server's `/mcp` endpoint and appropriate
+authentication. Never paste tokens into a chat, commit them to MCP configuration
+or substitute another connector's credentials. Self-hosted billing is disabled;
+hosted quotes and account access depend on the selected account and deployment.
+
+For application-controlled checks, the [SDK guide](sdk/README.md) and
+[agent integration guide](docs/agent-security.md) describe explicit lifecycle
+hooks. Making a tool available through MCP does not force an agent to call it,
+and configuring a policy does not automatically install a deployment hook.
+
 ## Data and security boundaries
 
 | Operation | What leaves your machine? |
@@ -179,6 +330,50 @@ public issues containing source, credentials or raw scan reports.
 
 Some paths and schemas retain **Purple** names for compatibility. They are not
 a separate product you need to install.
+
+## Documentation
+
+| Guide | What it covers |
+| --- | --- |
+| [Local engine](offense/README.md) | Dependency analysis, triage, rehearsal and optional local helpers |
+| [Agent installation](offense/docs/install.md) | Project-scoped MCP configuration, skills and client coexistence |
+| [offense.sh Agent Skill](.agents/skills/scanning-with-offense/SKILL.md) | Portable instructions for scoped audits, hosted-tool approval and verified remediation |
+| [Self-hosting](docs/self-hosting.md) | Bootstrap, Docker isolation, operator credentials, backup and recovery |
+| [Hosted account and API](docs/offense-platform.md) | Sign-in, tool discovery, quotes, jobs, usage and billing contracts |
+| [SDK](sdk/README.md) | Programmatic dependency analysis and hosted-scan client interfaces |
+| [Agent-host integration](docs/agent-security.md) | Explicit lifecycle checks and the difference between tools and enforced gates |
+| [Public tool directory](https://offense.sh/tools) | Tool coverage, inputs and execution-mode descriptions; not a live availability guarantee |
+| [Tool contributions](docs/contributing-tools.md) | Adapter ownership, licensing, limits, fixtures and verification expectations |
+| [Security reporting](SECURITY.md) | Private reports and information that must not go into public issues |
+| [Release scope](docs/release-preparation.md) | Source-only boundary, provenance, verification and deferred integrations |
+
+## Updating and moving from an existing setup
+
+Updates are deliberate source updates, not an automatic background updater for
+the local engine. Inspect upstream changes and preserve your local modifications
+before updating a checkout:
+
+```sh
+git status --short
+git pull --ff-only
+npm --prefix offense ci --ignore-scripts
+```
+
+Run the engine's checks after updating, and restart the coding-agent session so
+it loads the current skill and MCP configuration. For the platform, follow the
+[self-hosted upgrade procedure](docs/self-hosting.md#acceptance-upgrades-and-recovery):
+stop the API, back up the database and encryption key together, rebuild and test,
+then restart. A source pull alone is not a completed platform upgrade.
+
+- **Already using the hosted Offense connection?** Keep it. Add the local engine
+  under `offense-community`; do not overwrite the hosted `offense` entry.
+- **Already using a Purple skill or CLI?** Legacy entrypoints and report schemas
+  remain for compatibility. Review customized instructions before adopting the
+  documented Offense entrypoints; do not delete unrelated client settings.
+- **Coming from another coding agent?** Keep that agent's model, tools and
+  project instructions. Add Offense as a skill/MCP capability using the client's
+  supported setup. There is no automatic import of conversations, memories,
+  credentials or model-provider settings.
 
 ## Develop and contribute
 
@@ -232,3 +427,72 @@ they do not make this source proprietary.
 Third-party code, fonts, rules and data retain their own licenses, and trademark
 rights remain separate. Read [LICENSE](LICENSE), [NOTICE](NOTICE) and
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the boundaries and attribution.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| Dependency analysis cannot start | Confirm `node --version` is 24+ and install the nested package with `npm --prefix offense ci --ignore-scripts`; root dependencies are a separate install |
+| Preview finds no supported dependency inputs | Point it at the application, not the report folder; the local engine supports npm lockfile v2/v3 and pnpm v6/v9, not every package manager or manifest-only project |
+| The agent cannot see the MCP tool | Check the absolute entrypoint, project configuration and client trust prompts; start a new session and verify tool discovery |
+| An optional scanner is missing | `doctor` checks executable availability, not installation; follow the helper's version requirements or build the supported self-hosted image |
+| Self-hosted bootstrap refuses the state directory | It intentionally refuses an existing directory or one inside the checkout; use a new external directory for a new installation, and preserve existing state for upgrades |
+| A self-hosted catalog tool is unavailable | Only dependency audits, Opengrep and Zizmor are enabled in this profile; a directory entry does not enable a runtime |
+| The web console asks you to sign in | The local operator key enables API/MCP access only; browser account features need an operator-owned GitHub OAuth app |
+| A result is partial or a provider request fails | Retain the coverage warning or error, check the stated limit/provider requirement and retry only the affected scope; do not reinterpret it as a clean scan |
+
+For upgrades, backups, key revocation and Docker isolation, use the
+[self-hosting guide](docs/self-hosting.md). For agent-specific setup, use the
+[local installation guide](offense/docs/install.md).
+
+## Frequently asked questions
+
+**Do I need an Offense account or an AI API key?**
+Not for local dependency analysis or the supported self-hosted profile. Your
+coding agent uses its own model and permissions. Authenticated hosted tools use
+an Offense account; paid execution also needs credit.
+
+**Is everything in the tool directory available when I self-host?**
+No. The catalog describes more tools than the initial self-hosted profile enables.
+Some adapters are reference source, and the deferred assessment runtimes are
+not included. Check availability on your deployment and the release scope above.
+
+**Can I use this commercially or operate my own hosted version?**
+Yes, under Apache-2.0 for the included project-owned code. Preserve required
+notices and comply with separately licensed components. The license does not
+grant access to Offense's infrastructure, accounts or trademarks.
+
+**Will it automatically fix and push changes?**
+No. The dependency audit produces evidence and recommendations. Your agent can
+make changes when authorized; rehearsal, testing, commits and publication are
+separate actions, not side effects of an audit.
+
+**Why are some files still named Purple?**
+They preserve existing integrations, command aliases and report schemas. Use
+the documented Offense entrypoints for new installations.
+
+## Community and support
+
+- **[Join the Discord](https://discord.gg/xP7GCnyF)** for setup questions,
+  workflow discussion and feedback on tools you would like to contribute.
+- **[Browse the open-source repository](https://github.com/offense-research/offense)**
+  to inspect the implementation, fork it or follow development.
+- **[Open a GitHub issue](https://github.com/offense-research/offense/issues)** for
+  reproducible bugs or concrete feature requests. Include the revision, runtime,
+  execution mode, expected/actual behavior and a minimal sanitized reproduction.
+- **[Contribute a tool](docs/contributing-tools.md)** with its coverage, license,
+  input/data boundaries and positive/safe test evidence. Discuss substantial
+  new integrations before investing in a large implementation.
+
+**Do not post vulnerabilities, credentials, customer source or raw security
+reports in Discord or public issues.** Use
+[private vulnerability reporting](https://github.com/offense-research/offense/security/advisories/new)
+and follow [SECURITY.md](SECURITY.md). Community support has no guaranteed response
+time or security-support SLA.
+
+---
+
+Built by **[Offense Research, Inc.](https://github.com/offense-research)** and
+contributors. Offense integrates independently maintained security engines and
+public advisory sources; their licenses and attribution remain in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

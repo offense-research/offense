@@ -7,6 +7,9 @@ dist/
 .agents/*
 !.agents/setup
 !.agents/resume
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/scanning-with-offense/
 .amp/portals/*
 .codex/
 .infisical.yaml
