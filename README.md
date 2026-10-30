@@ -27,6 +27,7 @@ and runs your tests—with its existing model, repository access and permissions
 
 **Start here:** [Give this to your agent](#give-this-to-your-agent) ·
 [Recipes](#recipes-from-the-landing-page) ·
+[Install the CLI](#install-the-cli) ·
 [Agent installation](#choose-your-agent) · [Choose a mode](#choose-how-to-run-it) ·
 [Local quick start](#quick-start-local-dependency-analysis) ·
 [MCP setup](#connect-your-coding-agent) ·
@@ -195,6 +196,105 @@ The local engine and self-hosted profile do not require an Offense subscription
 or model-provider key. Advisory lookup still needs network access; “local” does
 not mean an offline advisory database. You pay your own infrastructure costs
 when self-hosting.
+
+## Install the CLI
+
+Choose **one** installation method. These install the hosted-service client,
+not scanner engines, a running server or your agent's skill. For the independent
+local `scan` / `source-scan` commands, use the [local engine](#quick-start-local-dependency-analysis)
+instead. Both CLIs use the name `offense`; avoid installing them over each other.
+
+### Homebrew — macOS and Linux
+
+Use the public repository as a custom tap; the explicit Git URL is required:
+
+```sh
+brew tap offense-research/offense https://github.com/offense-research/offense.git
+brew install offense-research/offense/offense
+offense --version
+offense --help
+```
+
+The [formula](Formula/offense.rb) installs the bundled CLI from a **commit-pinned,
+SHA-256-checked public source archive** and brings its own Homebrew Node dependency.
+It does not run npm install scripts or download scanner images. This is a project
+tap, not a formula in Homebrew/core. Review the tap before installing it.
+
+### npx / npm exec — run without a global install
+
+With **Node.js 20+** and npm installed:
+
+```sh
+npx --yes --package=https://offense.sh/downloads/offense-cli.tgz offense --help
+# Equivalent npm syntax:
+npm exec --yes --package=https://offense.sh/downloads/offense-cli.tgz -- offense --help
+```
+
+Replace `--help` with the desired CLI arguments on subsequent runs. `npx` caches
+the downloaded package; “no global install” does not mean no files are downloaded.
+`--yes` accepts npm's installation prompt, not authorization to upload or spend.
+
+### npm — install the command globally
+
+```sh
+npm install --global https://offense.sh/downloads/offense-cli.tgz
+offense --version
+offense --help
+```
+
+Use a user-owned Node installation rather than adding `sudo`. On Windows, npm
+creates an `offense` command shim; use WSL for workflows requiring Linux tools.
+
+### pnpm or Bun — one-off execution
+
+With pnpm or Bun already installed, choose either command. Keep Node.js 20+
+available: the CLI's executable uses Node, including when launched by Bun.
+
+```sh
+pnpm --package=@offense-security/cli@https://offense.sh/downloads/offense-cli.tgz dlx offense --help
+bunx --package https://offense.sh/downloads/offense-cli.tgz offense --help
+```
+
+**Download channel versus source:** these npm/npx/pnpm/Bun commands use the existing
+hosted archive, not an npm registry release. At verification on 2026-10-30 the
+archive was **0.1.0**, while the source-pinned Homebrew formula installs **0.2.0**.
+The hosted URL can change independently of this repository; check `--version`
+and `--help` before relying on a command. Do not assume `npx offense` or
+`npm install -g offense` refers to this project. No npm registry package is
+published by these instructions.
+
+### From a reviewed checkout — no package manager install
+
+With Git and Node.js 20+:
+
+```sh
+git clone https://github.com/offense-research/offense.git
+cd offense
+node public/skills/offense/scripts/cli.mjs --version
+node public/skills/offense/scripts/cli.mjs --help
+```
+
+The bundle already includes its dependencies. No root `npm ci` is necessary for
+this client. Pin your checkout to a reviewed commit for reproducible automation;
+keep the checkout accessible and invoke the bundle by absolute path from agents.
+
+### After installation
+
+`--help` and `--version` need no account and do not submit scans. When you choose
+to connect to the hosted service, run `offense login` (or replace `offense` with
+your one-off runner), approve the browser login, and inspect `offense tools`.
+For a self-hosted service, set `OFFENSE_API_URL` before logging in. Authentication
+does not authorize paid calls: preview inputs, inspect a quote and approve a
+spending ceiling before submission. Install the [Agent Skill](#install-the-offensesh-agent-skill)
+separately to teach your agent this workflow.
+
+To update Homebrew, run `brew update` then `brew upgrade offense-research/offense/offense`.
+For a global npm install, rerun its URL-based install command; `npm update` is not
+a promise to refresh a mutable download URL. Remove with
+`brew uninstall offense-research/offense/offense` or
+`npm uninstall --global @offense-security/cli`, respectively. Uninstalling the
+executable does not revoke credentials: use `offense logout` to remove local
+credentials and revoke the server key in your account when appropriate.
 
 ## Quick start: local dependency analysis
 
