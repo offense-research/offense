@@ -1,0 +1,17 @@
+id: purple-dotenv
+info:
+  name: Purple public environment configuration check
+  author: purple
+  severity: high
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.env"
+    redirects: false
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        part: body
+        regex: ['(?m)^[A-Z][A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)\s*=']

@@ -1,0 +1,18 @@
+id: purple-git-config
+info:
+  name: Purple public Git configuration check
+  author: purple
+  severity: high
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.git/config"
+    redirects: false
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        part: body
+        words: ["[core]", "repositoryformatversion"]
+        condition: and

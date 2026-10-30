@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 268" fill="none">
+  <defs>
+    <linearGradient id="pcb" x1="40" y1="51" x2="217" y2="282" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b51a14" stop-opacity=".32"/>
+      <stop offset=".38" stop-color="#370b09" stop-opacity=".37"/>
+      <stop offset=".8" stop-color="#570c0a" stop-opacity=".31"/>
+      <stop offset="1" stop-color="#ef2016" stop-opacity=".38"/>
+    </linearGradient>
+    <linearGradient id="cover" x1="33" y1="35" x2="237" y2="302" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff3c2a" stop-opacity=".23"/>
+      <stop offset=".29" stop-color="#ff2b1e" stop-opacity=".085"/>
+      <stop offset=".67" stop-color="#ed1b14" stop-opacity=".11"/>
+      <stop offset="1" stop-color="#ff3727" stop-opacity=".28"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="18" y1="35" x2="251" y2="303" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffc4c1"/>
+      <stop offset=".12" stop-color="#ff4932"/>
+      <stop offset=".4" stop-color="#bd1b12"/>
+      <stop offset=".7" stop-color="#ff301b"/>
+      <stop offset="1" stop-color="#ff8b75"/>
+    </linearGradient>
+    <linearGradient id="inner-rim" x1="37" y1="53" x2="225" y2="283" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff7a60" stop-opacity=".66"/>
+      <stop offset=".46" stop-color="#b11c13" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#ff4128" stop-opacity=".7"/>
+    </linearGradient>
+    <linearGradient id="screen-rim" x1="60" y1="85" x2="201" y2="227" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#120908"/>
+      <stop offset=".46" stop-color="#8b281c" stop-opacity=".72"/>
+      <stop offset=".76" stop-color="#290a08" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#e34c35" stop-opacity=".8"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="81" y1="98" x2="185" y2="214" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#210c0a" stop-opacity=".75"/>
+      <stop offset=".5" stop-color="#0c0a0a" stop-opacity=".88"/>
+      <stop offset="1" stop-color="#310e0b" stop-opacity=".73"/>
+    </linearGradient>
+    <linearGradient id="reflection" x1="30" y1="44" x2="212" y2="227" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff0e8" stop-opacity=".24"/>
+      <stop offset=".37" stop-color="#ff9477" stop-opacity=".05"/>
+      <stop offset=".39" stop-color="#ff9477" stop-opacity="0"/>
+      <stop offset="1" stop-color="#fff0e8" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="bolt" cx="-1.5" cy="-2" r="7" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e48a72"/>
+      <stop offset=".24" stop-color="#6d3428"/>
+      <stop offset=".56" stop-color="#251411"/>
+      <stop offset=".78" stop-color="#512016"/>
+      <stop offset="1" stop-color="#a0442a"/>
+    </radialGradient>
+    <filter id="edge-glow" x="0" y="0" width="280" height="320" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <filter id="mark-glow" x="70" y="95" width="135" height="135" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3.5"/>
+    </filter>
+    <clipPath id="glass-clip"><rect x="28" y="44" width="211" height="249" rx="14"/></clipPath>
+    <clipPath id="display-clip"><rect x="66" y="92" width="132" height="131" rx="9"/></clipPath>
+    <g id="fastener">
+      <circle r="6.5" fill="#3d0907" stroke="#ec563b" stroke-opacity=".55" stroke-width=".7"/>
+      <circle r="4.8" fill="url(#bolt)" stroke="#ff856a" stroke-opacity=".4" stroke-width=".6"/>
+      <path d="m-2.4 2.4 4.8-4.8" stroke="#0b0808" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="m-2.5 1.7 4.2-4.2" stroke="#ffc4a1" stroke-opacity=".25" stroke-width=".55"/>
+    </g>
+    <g id="mark">
+      <path d="M5 5h21v8H13v14h14V14h8v21H5V5Z" fill="#ff2e17"/>
+      <path d="M30 2h8v8h-8z" fill="#ff2e17"/>
+    </g>
+  </defs>
+
+  <!-- Orthographic face; the host supplies the physical side and back planes. -->
+  <g transform="translate(-18 -34)">
+  <!-- Recessed board, pins and traces remain visible through the red cover. -->
+  <rect x="30" y="47" width="205" height="243" rx="13" fill="url(#pcb)" stroke="#c13224" stroke-opacity=".52" stroke-width="1.1"/>
+  <rect x="37" y="54" width="191" height="228" rx="9" stroke="#ef3b27" stroke-opacity=".3" stroke-width=".65"/>
+  <g stroke="#fc5639" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round" opacity=".43">
+    <path d="M45 75h23l12 12h21M43 84h19l12 12M44 95h10l9 9M44 176h12l9-9M45 186h11l11-11M45 196h15l10-10M48 235h15l14 14h20M49 244h11l14 14h27M50 255h9l12 12h38M91 65v10l14 14M106 61v14l12 12M154 61v15l-10 10M166 62v16l-9 9M210 81h-13l-9 9M220 106h-13l-8 8M218 117h-10l-8 8M218 187h-10l-9-9M218 197h-13l-9-9M212 242h-15l-12 12h-14M212 252h-11l-12 12h-18M126 226v14M140 226v17l8 8M157 225v10l10 10"/>
+    <path d="M109 271h12v-13M174 272h13l10-10M43 111v39M219 137v32"/>
+  </g>
+  <g fill="#ff7051" opacity=".48">
+    <circle cx="45" cy="75" r="1.5"/><circle cx="43" cy="84" r="1.5"/><circle cx="48" cy="235" r="1.5"/><circle cx="109" cy="271" r="1.5"/><circle cx="166" cy="62" r="1.5"/><circle cx="212" cy="252" r="1.5"/><circle cx="219" cy="137" r="1.5"/><circle cx="218" cy="197" r="1.5"/>
+  </g>
+  <g stroke="#b3402c" stroke-width="2" opacity=".75">
+    <path d="M42 122h6m-6 7h6m-6 7h6m-6 7h6m8-21h6m-6 7h6m-6 7h6m-6 7h6"/>
+    <path d="M103 63v5m7-5v5m7-5v5m7-5v5m-21 11v5m7-5v5m7-5v5m7-5v5"/>
+    <path d="M177 237v6m7-6v6m7-6v6m-14 13v6m7-6v6m7-6v6"/>
+  </g>
+  <rect x="47" y="116" width="10" height="32" rx="2" fill="#210e0c" fill-opacity=".78" stroke="#a63d2a" stroke-width=".8"/>
+  <rect x="98" y="67" width="31" height="13" rx="2" fill="#220e0c" fill-opacity=".72" stroke="#b83d29" stroke-width=".75"/>
+  <rect x="172" y="242" width="24" height="15" rx="2" fill="#240f0c" fill-opacity=".75" stroke="#a83727" stroke-width=".7"/>
+  <g fill="#bc402b" fill-opacity=".6" stroke="#ec7d60" stroke-opacity=".5" stroke-width=".5">
+    <rect x="184" y="65" width="16" height="7" rx="1"/><rect x="201" y="65" width="8" height="7" rx="1"/>
+    <rect x="204" y="147" width="7" height="14" rx="1"/><rect x="204" y="166" width="7" height="9" rx="1"/>
+    <rect x="77" y="243" width="8" height="15" rx="1"/><rect x="90" y="248" width="7" height="10" rx="1"/>
+  </g>
+
+  <!-- A deep smoked display contrasts with the translucent shell. -->
+  <rect x="59" y="85" width="146" height="145" rx="13" fill="#190907" fill-opacity=".64" stroke="url(#screen-rim)" stroke-width="5"/>
+  <rect x="65" y="91" width="134" height="133" rx="9" fill="url(#screen)" stroke="#e27a5f" stroke-opacity=".5" stroke-width=".8"/>
+  <path d="M75 94h113c5 0 8 3 8 8" stroke="#ffd0b9" stroke-opacity=".25" stroke-width=".8"/>
+  <g clip-path="url(#display-clip)">
+    <path d="M61 89h43l97 121v23h-25L61 105V89Z" fill="#e7bfa4" fill-opacity=".035"/>
+    <g opacity=".3" filter="url(#mark-glow)"><g transform="translate(91 115) scale(2.05)"><use href="#mark"/></g></g>
+    <g transform="translate(91 115) scale(2.05)"><use href="#mark"/></g>
+  </g>
+  <path d="M71 226h124" stroke="#ff9a7a" stroke-opacity=".32" stroke-width=".6"/>
+
+  <!-- Realistically restrained glass reflection and polished edge bevels. -->
+  <rect x="18" y="34" width="230" height="268" rx="20" stroke="#ff321e" stroke-opacity=".45" stroke-width="3" filter="url(#edge-glow)"/>
+  <rect x="18" y="34" width="230" height="268" rx="20" fill="url(#cover)" stroke="url(#rim)" stroke-width="1.6"/>
+  <rect x="23" y="39" width="220" height="258" rx="16" stroke="#ff8668" stroke-opacity=".45" stroke-width=".65"/>
+  <rect x="28" y="44" width="210" height="248" rx="13" stroke="url(#inner-rim)" stroke-width="1.1"/>
+  <g clip-path="url(#glass-clip)">
+    <path d="M28 44h116L239 165v41L28 73V44Z" fill="url(#reflection)"/>
+    <path d="m28 45 211 242" stroke="#ffc0a5" stroke-opacity=".075" stroke-width=".7"/>
+    <path d="M31 45h201" stroke="#ffdbc4" stroke-opacity=".39" stroke-width=".8"/>
+  </g>
+  <path d="M40 36h183c11 0 21 8 22 19M20 61v212c0 12 7 23 20 26" stroke="#ffb99b" stroke-opacity=".54" stroke-width=".85" stroke-linecap="round"/>
+  <path d="M45 299h178c9 0 17-6 21-14" stroke="#ff6845" stroke-opacity=".73" stroke-width="1.1" stroke-linecap="round"/>
+
+  <!-- Vent recesses catch a thin red lip rather than glowing as status lights. -->
+  <g fill="#1c0907" fill-opacity=".75" stroke="#ff7857" stroke-opacity=".45" stroke-width=".65">
+    <rect x="59" y="273" width="14" height="3.5" rx="1.75"/><rect x="81" y="273" width="14" height="3.5" rx="1.75"/>
+    <rect x="103" y="273" width="14" height="3.5" rx="1.75"/><rect x="125" y="273" width="14" height="3.5" rx="1.75"/>
+    <rect x="147" y="273" width="14" height="3.5" rx="1.75"/><rect x="169" y="273" width="14" height="3.5" rx="1.75"/>
+    <rect x="191" y="273" width="14" height="3.5" rx="1.75"/>
+  </g>
+  <use href="#fastener" transform="translate(35 51)"/>
+  <use href="#fastener" transform="translate(231 51)"/>
+  <use href="#fastener" transform="translate(35 285)"/>
+  <use href="#fastener" transform="translate(231 285)"/>
+  </g>
+</svg>

@@ -1,0 +1,18 @@
+id: purple-actuator-env
+info:
+  name: Purple public application environment endpoint check
+  author: purple
+  severity: high
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/actuator/env"
+    redirects: false
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        part: body
+        words: ['"propertySources"', '"activeProfiles"']
+        condition: and

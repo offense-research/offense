@@ -1,0 +1,4 @@
+interface:
+  display_name: "Offense"
+  short_description: "Dependency intelligence for your coding agent"
+  default_prompt: "Use $offense to audit this repository's dependencies and plan remediation."

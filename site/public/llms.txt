@@ -1,0 +1,81 @@
+# Offense — Offense Security
+
+Offense is the first product from Offense Security. Canonical home: https://offense.sh.
+One account and one API key give a coding agent access to enabled hosted security
+tools, with prepaid per-tool pricing. Basic npm/pnpm dependency advisory audits
+remain free and need no account or model key.
+
+## Set up your agent
+
+Read the maintained skill and client installation reference. Install only in the
+requested project scope, preserve customizations and inspect helpers before
+execution. Installation does not authorize scans, purchases or application edits.
+
+- Skill: https://offense.sh/skills/offense/SKILL.md
+- Installation: https://offense.sh/skills/offense/references/install.md
+- CLI/tool workflow: https://offense.sh/skills/offense/references/tools.md
+- Existing local tools and optional helpers: https://offense.sh/skills/offense/references/local-tools.md
+- Agent console and setup: https://offense.sh/app
+- Installation guide: https://offense.sh/skill
+- API key portal: https://offense.sh/account#keys
+- Prepaid balance and billing: https://offense.sh/account#billing
+
+The helper bundle includes scripts/cli.mjs. Device login opens a first-party
+browser page; the human checks the comparison code and approves the account.
+The key is received once and stored privately by the CLI, never in project MCP
+configuration. Alternatively, the user can create a key in the first-party API
+key portal and configure it privately through the documented CLI/environment
+workflow. Do not ask for a key in chat or put it in project files. No GitHub App
+installation, repository connection, Cloudflare connection or OpenRouter key is
+required for the core tool workflow. Optional cloud tools require their own
+explicitly selected account scope. Offense tools work alongside the agent's
+existing local tools; Offense does not replace the agent or its model.
+
+After installing a skill or MCP configuration, start a new coding-agent session.
+Use the CLI immediately while a new session is pending. Preserve native project
+trust and tool permissions; report provider safeguard blocks accurately.
+
+## Human CLI
+
+Node20+ is required. The npm-compatible client archive is available without an
+npm-registry publication:
+
+npm install --global https://offense.sh/downloads/offense-cli.tgz
+offense login
+offense tools
+offense balance
+offense topup
+offense mcp install --client codex --project .
+
+The standalone file is https://offense.sh/downloads/offense-cli.mjs and its SHA256
+manifest is https://offense.sh/downloads/offense-cli-manifest.json.
+
+## API and MCP
+
+- Public tool directory (no sign-in): https://offense.sh/tools
+- Tool coverage, upstream source and usage: https://offense.sh/tools/<tool-id>
+- Public catalog with availability and prices: https://offense.sh/v1/catalog
+- Authenticated catalog: GET https://offense.sh/v1/tools
+- Account: GET https://offense.sh/v1/account
+- Quote: POST https://offense.sh/v1/quotes
+- Tool call: POST https://offense.sh/v1/call/<tool-id>
+- Asynchronous job/result: /v1/scans and /v1/scans/<id>
+- Usage and balance: GET https://offense.sh/v1/usage
+- Whop top-up link: POST https://offense.sh/v1/billing/topups with an empty object
+- Hosted MCP: https://offense.sh/mcp
+
+Use one Bearer Offense API key for hosted tools. Inspect a quote and set an
+explicit maximum charge before a paid call. Idempotency keys prevent duplicate
+jobs/charges; preserve the same key and input when recovering uncertain outcomes.
+Whop handles payment approval. A browser return does not grant funds; verified
+payment readback and the durable ledger credit purchases once.
+
+The authenticated CLI MCP proxy exposes catalog, quote, call, result, account and
+top-up capabilities. Anonymous native HTTP MCP retains the free
+`offense.audit_dependencies` capability. The current agent keeps repository
+connections, applicability review, edits and tests. Findings are review signals,
+not confirmed exploitable vulnerabilities.
+
+Old app.purpleteam.sh endpoints, account identities, balances, keys and advanced
+/skills/purple resources remain compatibility aliases. New public branding is
+Offense and Offense Security. The community repository remains private.

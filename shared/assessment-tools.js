@@ -1,0 +1,17 @@
+// Each assessment is one bounded job. Prices live in config/scanner-prices.json.
+export const ASSESSMENT_TOOLS = Object.freeze([
+  { id: 'nuclei', name: 'Deployment exposure checks', inputType: 'verified-target', image: 'assessment-network', license: 'MIT', coverage: 'Four fixed checks for exposed Git configuration, dotenv, actuator environment and directory listings; no general CVE coverage' },
+  { id: 'prowler-cloudflare', name: 'Cloudflare account security', inputType: 'cloud-account', image: 'assessment-network', license: 'Apache-2.0', coverage: 'Read-only Prowler checks in one explicitly selected Cloudflare account' },
+  { id: 'schemathesis', name: 'API fuzz testing', inputType: 'verified-api', image: 'assessment-network', license: 'MIT', coverage: 'Bounded schema-generated requests; failures require application-specific review' },
+  { id: 'zap-api', name: 'Active API security', inputType: 'verified-api', image: 'assessment-network', license: 'Apache-2.0', coverage: 'SQL injection, path traversal and CRLF injection checks plus passive response checks on one verified staging API' },
+  { id: 'sslyze', name: 'TLS configuration', inputType: 'verified-target', image: 'assessment-network', license: 'AGPL-3.0', coverage: 'Certificate validation, Heartbleed and OpenSSL CCS injection on one verified HTTPS hostname; no full protocol or cipher enumeration' },
+  { id: 'katana', name: 'Web and API endpoint discovery', inputType: 'verified-target', image: 'assessment-network', license: 'MIT', coverage: 'GET-only discovery on one verified HTTPS origin, at most 50 pages and two link levels; no browser, forms, authenticated sessions or exploit confirmation', maxRequests: 50, maxConnections: 50 },
+  { id: 'httpx', name: 'Live service reconnaissance', inputType: 'verified-target', image: 'assessment-network', license: 'MIT', coverage: 'One HTTPS root response: service status, content type, size and detected technologies; no port scan, redirect following or vulnerability confirmation', maxRequests: 1, maxConnections: 1 },
+  { id: 'openssf-scorecard', name: 'Supply-chain trust assessment', inputType: 'public-repository', image: 'assessment-network', license: 'CDLA-Permissive-2.0', coverage: 'Published OpenSSF Scorecard snapshot for a public GitHub repository, with assessed commit, date and check scores; no fresh scan or private repository access', maxRequests: 1, maxConnections: 1 },
+  { id: 'checkov', name: 'Infrastructure graph review', inputType: 'source-files', image: 'assessment-offline', license: 'Apache-2.0', coverage: 'Offline infrastructure policy checks; no cloud account access' },
+  { id: 'trufflehog-verified', name: 'Live secret verification', inputType: 'source-files', image: 'assessment-network', license: 'AGPL-3.0', coverage: 'Uploaded files and a curated set of live credential verifiers; no Git history' },
+  { id: 'mobsf-static', name: 'Mobile release security', inputType: 'mobile-app', image: 'assessment-mobile', license: 'GPL-3.0', coverage: 'Static APK or IPA analysis; no emulator or dynamic execution' }
+].map(tool => Object.freeze({ ...tool, billingUnit: 'bounded_assessment', budgetSeconds: tool.id === 'mobsf-static' ? 480 : 120, maxRequests: tool.maxRequests ?? 200, maxConnections: tool.maxConnections ?? 200 })));
+
+export function assessmentTool(id) { return ASSESSMENT_TOOLS.find(tool => tool.id === id) || null; }
+export const TARGET_ASSESSMENTS = new Set(['nuclei', 'schemathesis', 'zap-api', 'sslyze', 'katana', 'httpx']);

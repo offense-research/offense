@@ -1,0 +1,18 @@
+id: purple-directory-listing
+info:
+  name: Purple public directory listing check
+  author: purple
+  severity: medium
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    redirects: false
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        part: body
+        words: ['<title>Index of /', 'Parent Directory']
+        condition: and

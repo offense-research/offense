@@ -1,0 +1,381 @@
+rules:
+  - id: purple.js.dynamic-eval
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Dynamic evaluation can execute attacker-controlled code.
+    metadata:
+      remediation: Remove dynamic code evaluation. Use a data parser or an explicit allowlist of operations.
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: new Function(...)
+      - pattern-not: eval("...")
+  - id: purple.js.shell-exec
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Shell command execution needs review for attacker-controlled input.
+    metadata:
+      remediation: Prefer execFile or spawn with a fixed executable and argument array; validate every untrusted argument.
+    pattern-either:
+      - pattern: require('child_process').exec(...)
+      - pattern: require('node:child_process').exec(...)
+      - pattern: |
+          import {exec as $EXEC} from 'child_process';
+          ...
+          $EXEC(...)
+      - pattern: |
+          import {exec as $EXEC} from 'node:child_process';
+          ...
+          $EXEC(...)
+  - id: purple.python.shell-execution
+    languages: [python]
+    severity: WARNING
+    message: Shell execution can expose command injection.
+    metadata:
+      remediation: Use an argument array with shell=False and validate attacker-controlled arguments.
+    pattern-either:
+      - pattern: os.system($X)
+      - pattern: subprocess.run(..., shell=True, ...)
+      - pattern: subprocess.Popen(..., shell=True, ...)
+  - id: purple.python.unsafe-deserialization
+    languages: [python]
+    severity: WARNING
+    message: Pickle deserialization can execute code when input is untrusted.
+    metadata:
+      remediation: Use a safe data format for untrusted input; do not deserialize attacker-supplied pickle data.
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+  - id: purple.js.tls-verification-disabled
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: TLS certificate verification is disabled.
+    metadata:
+      remediation: Enable certificate verification and configure the correct trusted CA certificate.
+    pattern: 'rejectUnauthorized: false'
+
+  # These rules model request-to-sink flow within the current file. They are
+  # candidates for source review and regression tests, never exploit proof.
+  # Do not add generic sanitizers: parsing a URL, normalizing a path, or naming
+  # a helper "sanitize" does not establish a security boundary.
+  - id: purple.js.request-sql-injection
+    languages: [javascript, typescript]
+    mode: taint
+    severity: ERROR
+    message: Request data reaches a SQL statement rather than a bound parameter.
+    metadata:
+      cwe: CWE-89
+      coverage: Express and Hono request data to common SQL query APIs; within-file analysis only.
+      remediation: Keep SQL statements constant and bind request values with the database driver's parameter API. Review dynamic identifiers against a fixed allowlist, then add an injection regression test and normal query tests.
+    pattern-sources: &js-http-sources
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.cookies
+              - pattern: $REQ.get(...)
+              - pattern: $REQ.header(...)
+              - pattern: $REQ.headers
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+        exact: true
+      - patterns:
+          - pattern-either:
+              - pattern: $CTX.req.query(...)
+              - pattern: $CTX.req.param(...)
+              - pattern: $CTX.req.json(...)
+              - pattern: $CTX.req.text(...)
+              - pattern: $CTX.req.header(...)
+          - metavariable-regex:
+              metavariable: $CTX
+              regex: ^(c|ctx|context)$
+        exact: true
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.nextUrl.searchParams.get(...)
+              - pattern: new URL($REQ.url).searchParams.get(...)
+              - pattern: $REQ.json(...)
+              - pattern: $REQ.text(...)
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+        exact: true
+    pattern-sanitizers:
+      - pattern: Number(...)
+        exact: true
+      - pattern: parseInt(...)
+        exact: true
+      - pattern: Number.parseInt(...)
+        exact: true
+      - pattern: parseFloat(...)
+        exact: true
+      - pattern: Number.parseFloat(...)
+        exact: true
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB.query($SQL, ...)
+              - pattern: $DB.execute($SQL, ...)
+          - pattern-not: '$DB.query({text: $TEXT, ...}, ...)'
+          - pattern-not: '$DB.query({sql: $TEXT, ...}, ...)'
+          - pattern-not: '$DB.execute({sql: $TEXT, ...}, ...)'
+          - metavariable-regex:
+              metavariable: $DB
+              regex: ^(db|database|client|pool|connection|conn|cursor|manager)$
+          - focus-metavariable: $SQL
+      - patterns:
+          - pattern-either:
+              - pattern: '$DB.query({text: $SQL, ...}, ...)'
+              - pattern: '$DB.query({sql: $SQL, ...}, ...)'
+              - pattern: '$DB.execute({sql: $SQL, ...}, ...)'
+          - metavariable-regex:
+              metavariable: $DB
+              regex: ^(db|database|client|pool|connection|conn|cursor|manager)$
+          - focus-metavariable: $SQL
+      - patterns:
+          - pattern-either:
+              - pattern: $PRISMA.$queryRawUnsafe($SQL, ...)
+              - pattern: $PRISMA.$executeRawUnsafe($SQL, ...)
+          - focus-metavariable: $SQL
+
+  - id: purple.js.request-command-injection
+    languages: [javascript, typescript]
+    mode: taint
+    severity: ERROR
+    message: Request data reaches a shell command.
+    metadata:
+      cwe: CWE-78
+      coverage: Express and Hono request data to Node child_process shell execution; within-file analysis only.
+      remediation: Replace shell command strings with execFile or spawn using a fixed executable, shell disabled, and an argument array. Validate arguments and add security and normal-behavior regression tests.
+    pattern-sources: *js-http-sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: require('child_process').exec($COMMAND, ...)
+              - pattern: require('node:child_process').exec($COMMAND, ...)
+              - pattern: require('child_process').execSync($COMMAND, ...)
+              - pattern: require('node:child_process').execSync($COMMAND, ...)
+          - focus-metavariable: $COMMAND
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  import {exec as $EXEC} from 'child_process';
+                  ...
+              - pattern-inside: |
+                  import {exec as $EXEC} from 'node:child_process';
+                  ...
+              - pattern-inside: |
+                  import {execSync as $EXEC} from 'child_process';
+                  ...
+              - pattern-inside: |
+                  import {execSync as $EXEC} from 'node:child_process';
+                  ...
+          - pattern: $EXEC($COMMAND, ...)
+          - focus-metavariable: $COMMAND
+      - patterns:
+          - pattern-either:
+              - pattern: $CP.exec($COMMAND, ...)
+              - pattern: $CP.execSync($COMMAND, ...)
+          - metavariable-regex:
+              metavariable: $CP
+              regex: ^(cp|childProcess|child_process)$
+          - focus-metavariable: $COMMAND
+
+  - id: purple.js.request-path-traversal
+    languages: [javascript, typescript]
+    mode: taint
+    severity: ERROR
+    message: Request data controls a filesystem read path.
+    metadata:
+      cwe: CWE-22
+      coverage: Express and Hono request data to Node filesystem reads and one-argument Express sendFile; within-file analysis only.
+      remediation: Resolve requested resources through a fixed allowlist or enforce canonical-path containment in the intended directory, including symlink behavior. Path normalization alone is insufficient. Add traversal and normal resource-read tests.
+    pattern-sources: *js-http-sources
+    pattern-sanitizers:
+      - pattern: Number(...)
+        exact: true
+      - pattern: parseInt(...)
+        exact: true
+      - pattern: Number.parseInt(...)
+        exact: true
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $FS.readFile($FILE, ...)
+              - pattern: $FS.readFileSync($FILE, ...)
+              - pattern: $FS.createReadStream($FILE, ...)
+              - pattern: $FS.promises.readFile($FILE, ...)
+          - metavariable-regex:
+              metavariable: $FS
+              regex: ^(fs|fsp|fsPromises)$
+          - focus-metavariable: $FILE
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  import {readFile as $READ} from 'fs';
+                  ...
+              - pattern-inside: |
+                  import {readFile as $READ} from 'node:fs';
+                  ...
+              - pattern-inside: |
+                  import {readFile as $READ} from 'fs/promises';
+                  ...
+              - pattern-inside: |
+                  import {readFile as $READ} from 'node:fs/promises';
+                  ...
+          - pattern: $READ($FILE, ...)
+          - focus-metavariable: $FILE
+      - patterns:
+          - pattern: $RES.sendFile($FILE)
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response)$
+          - focus-metavariable: $FILE
+
+  - id: purple.js.request-ssrf
+    languages: [javascript, typescript]
+    mode: taint
+    severity: ERROR
+    message: Request data controls an outbound HTTP destination.
+    metadata:
+      cwe: CWE-918
+      coverage: Express, Hono and selected Next.js request data to fetch and common Node HTTP clients; within-file analysis only.
+      remediation: Use a fixed destination or an explicit destination policy enforced on every connection and redirect. Reject internal and link-local addresses and account for DNS changes. Add an SSRF regression test and normal outbound-request tests.
+    pattern-sources: *js-http-sources
+    pattern-sinks:
+      - patterns:
+          - pattern: fetch($URL, ...)
+          - focus-metavariable: $URL
+      - patterns:
+          - pattern-either:
+              - pattern: $HTTP.get($URL, ...)
+              - pattern: $HTTP.post($URL, ...)
+              - pattern: $HTTP.put($URL, ...)
+              - pattern: $HTTP.request($URL, ...)
+          - metavariable-regex:
+              metavariable: $HTTP
+              regex: ^(axios|got|http|https)$
+          - focus-metavariable: $URL
+      - patterns:
+          - pattern-either:
+              - pattern: axios($URL, ...)
+              - pattern: got($URL, ...)
+          - focus-metavariable: $URL
+
+  - id: purple.python.request-sql-injection
+    languages: [python]
+    mode: taint
+    severity: ERROR
+    message: Request data reaches a SQL statement rather than a bound parameter.
+    metadata:
+      cwe: CWE-89
+      coverage: Flask and Django request data to DB-API SQL execution and Django raw queries; within-file analysis only.
+      remediation: Keep query text constant and pass values separately through bound parameters. Review dynamic identifiers against a fixed allowlist, then add an injection regression test and normal query tests.
+    pattern-sources: &python-http-sources
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.args
+              - pattern: $REQ.form
+              - pattern: $REQ.values
+              - pattern: $REQ.json
+              - pattern: $REQ.get_json(...)
+              - pattern: $REQ.GET
+              - pattern: $REQ.POST
+              - pattern: $REQ.body
+              - pattern: $REQ.query_params
+              - pattern: $REQ.cookies
+              - pattern: $REQ.headers
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+        exact: true
+    pattern-sanitizers:
+      - pattern: int(...)
+        exact: true
+      - pattern: float(...)
+        exact: true
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $CURSOR.execute($SQL, ...)
+              - pattern: $CURSOR.executemany($SQL, ...)
+          - focus-metavariable: $SQL
+      - patterns:
+          - pattern: $MODEL.objects.raw($SQL, ...)
+          - focus-metavariable: $SQL
+
+  - id: purple.python.request-command-injection
+    languages: [python]
+    mode: taint
+    severity: ERROR
+    message: Request data reaches a shell command.
+    metadata:
+      cwe: CWE-78
+      coverage: Flask and Django request data to os, subprocess and asyncio shell execution; within-file analysis only.
+      remediation: Use subprocess with a fixed executable, an argument list, and shell=False. Validate arguments and add security and normal-behavior regression tests.
+    pattern-sources: *python-http-sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: os.system($COMMAND)
+              - pattern: os.popen($COMMAND, ...)
+              - pattern: subprocess.run($COMMAND, ..., shell=True, ...)
+              - pattern: subprocess.Popen($COMMAND, ..., shell=True, ...)
+              - pattern: subprocess.call($COMMAND, ..., shell=True, ...)
+              - pattern: subprocess.check_call($COMMAND, ..., shell=True, ...)
+              - pattern: subprocess.check_output($COMMAND, ..., shell=True, ...)
+              - pattern: asyncio.create_subprocess_shell($COMMAND, ...)
+          - focus-metavariable: $COMMAND
+
+  - id: purple.python.request-path-traversal
+    languages: [python]
+    mode: taint
+    severity: ERROR
+    message: Request data controls a filesystem read path.
+    metadata:
+      cwe: CWE-22
+      coverage: Flask and Django request data to file reads and Flask send_file; within-file analysis only.
+      remediation: Prefer a fixed resource allowlist or a framework containment API such as send_from_directory. Enforce canonical-path containment and account for symlinks. Add traversal and normal resource-read regression tests.
+    pattern-sources: *python-http-sources
+    pattern-sanitizers:
+      - pattern: int(...)
+        exact: true
+      - pattern: werkzeug.utils.secure_filename(...)
+        exact: true
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: open($FILE, ...)
+              - pattern: pathlib.Path($FILE).read_text(...)
+              - pattern: pathlib.Path($FILE).read_bytes(...)
+              - pattern: Path($FILE).read_text(...)
+              - pattern: Path($FILE).read_bytes(...)
+              - pattern: flask.send_file($FILE, ...)
+              - pattern: send_file($FILE, ...)
+          - focus-metavariable: $FILE
+
+  - id: purple.python.request-ssrf
+    languages: [python]
+    mode: taint
+    severity: ERROR
+    message: Request data controls an outbound HTTP destination.
+    metadata:
+      cwe: CWE-918
+      coverage: Flask and Django request data to requests, httpx and urllib HTTP clients; within-file analysis only.
+      remediation: Use fixed destinations or enforce a destination allowlist on every connection and redirect. Reject internal and link-local addresses and account for DNS changes. Add an SSRF regression test and normal outbound-request tests.
+    pattern-sources: *python-http-sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: requests.get($URL, ...)
+              - pattern: requests.post($URL, ...)
+              - pattern: requests.put($URL, ...)
+              - pattern: requests.request($METHOD, $URL, ...)
+              - pattern: httpx.get($URL, ...)
+              - pattern: httpx.post($URL, ...)
+              - pattern: httpx.put($URL, ...)
+              - pattern: httpx.request($METHOD, $URL, ...)
+              - pattern: urllib.request.urlopen($URL, ...)
+          - focus-metavariable: $URL

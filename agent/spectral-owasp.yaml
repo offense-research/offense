@@ -1,0 +1,4 @@
+# Operator-controlled configuration; the upstream OWASP ruleset is MIT.
+# Uploaded projects cannot replace this file.
+extends:
+  - '@stoplight/spectral-owasp-ruleset'

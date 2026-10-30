@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "purple-assessment-egress",
+  "main": "workers/assessment-egress-service.js",
+  "compatibility_date": "2026-10-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "containers": [{
+    "class_name": "AssessmentEgressGateway",
+    "scheduling_policy": "durable_object",
+    "images": { "egress": { "dockerfile": "./agent/assessment-egress.Dockerfile", "build_context": "." } }
+  }],
+  "exports": { "AssessmentEgressGateway": { "type": "durable-object", "storage": "sqlite" } }
+}

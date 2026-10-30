@@ -1,0 +1,9 @@
+{
+  "name": "purple-spectral-scanner",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@stoplight/spectral-cli": "6.17.0",
+    "@stoplight/spectral-owasp-ruleset": "2.0.1"
+  }
+}

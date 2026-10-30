@@ -1,0 +1,55 @@
+{
+  "name": "offense-app",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"node --env-file-if-exists=.env --watch server/index.js\"",
+    "build": "node scripts/build-skill.mjs && node scripts/build-agent-sdk.mjs && vite build && npm run build:site",
+    "build:site": "npm --prefix site run build:cloudflare",
+    "build:skill": "node scripts/build-skill.mjs",
+    "build:agent-sdk": "node scripts/build-agent-sdk.mjs",
+    "pretest": "node scripts/build-worker-sources.mjs",
+    "test": "node --test test/*.test.js && npm run test:site",
+    "test:site": "npm --prefix site test",
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "postinstall": "node scripts/patch-bugpatrol-zod.mjs",
+    "build:cli": "node scripts/build-offense-cli.mjs"
+  },
+  "dependencies": {
+    "@cfworker/json-schema": "4.1.1",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "express": "^5.1.0",
+    "jsonc-parser": "^3.3.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "semver": "^7.8.5",
+    "smol-toml": "^1.9.1",
+    "yaml": "2.9.1",
+    "zod": "4.6.6"
+  },
+  "devDependencies": {
+    "@babel/parser": "7.29.9",
+    "@babel/traverse": "7.29.10",
+    "@vitejs/plugin-react": "^4.7.0",
+    "bugpatrol": "0.3.0",
+    "concurrently": "^9.2.0",
+    "esbuild": "^0.25.12",
+    "vite": "^6.4.5",
+    "wrangler": "^4.151.3"
+  },
+  "overrides": {
+    "bugpatrol": {
+      "playwright": "1.55.1",
+      "zod": "4.6.6"
+    },
+    "miniflare": {
+      "undici": "7.30.1"
+    }
+  },
+  "bin": {
+    "offense": "scripts/offense-cli.mjs"
+  }
+}

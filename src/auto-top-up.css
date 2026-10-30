@@ -1,0 +1,21 @@
+.scan-auto-topup { padding: 24px 0 0; margin: 25px 0 0; border-top: 1px solid #343d48; font-size: 13px; }
+.scan-auto-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 12px; }
+.scan-auto-heading h3 { display: flex; align-items: center; gap: 8px; margin: 0; color: #edf0f4; font-size: 15px; font-weight: 600; }
+.scan-auto-heading h3 svg { color: #aab5c3; }
+.scan-auto-state { padding: 3px 8px; border: 1px solid #424c59; border-radius: 20px; color: #b9c3ce; font-size: 11px; white-space: nowrap; }
+.scan-auto-state.is-enabled { border-color: #46614e; color: #c0dfc8; background: #1b2a20; }
+.scan-auto-summary { margin: 0 0 15px; color: #c2cbd7; font-size: 13px; line-height: 1.8; }
+.scan-auto-consent { display: flex; align-items: flex-start; gap: 11px; max-width: 720px; padding: 15px; margin: 0 0 15px; border: 1px solid #3b4654; border-radius: 5px; background: #12171d; color: #cbd3df; line-height: 1.8; cursor: pointer; }
+.scan-auto-consent input { flex: 0 0 auto; width: 16px; height: 16px; margin: 4px 0 0; accent-color: #e6ebf0; }
+.scan-auto-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.scan-auto-cancel { border: 0; padding: 8px 0; background: transparent; color: #b6c1ce; font: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.scan-auto-note, .scan-auto-message { margin: 12px 0 0; color: #aeb8c5; font-size: 12px; line-height: 1.8; }
+.scan-auto-message { margin: 0 0 14px; }
+.scan-wallet-welcome { display: flex; align-items: center; gap: 8px; margin: 17px 0; color: #cedad1; font-size: 13px; }
+.scan-wallet-welcome svg { flex-shrink: 0; color: #acc4b4; }
+@media (max-width: 560px) {
+  .scan-auto-topup { padding-top: 20px; margin-top: 20px; }
+  .scan-auto-consent { padding: 12px; font-size: 12px; }
+  .scan-auto-actions { gap: 12px; }
+  .scan-auto-actions > .secondary-button { width: 100%; }
+}

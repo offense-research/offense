@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "offense-landing",
+  "main": "workers/fallback.js",
+  "compatibility_date": "2026-10-26",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "preview_urls": false,
+  "services": [{ "binding": "OFFENSE_APP", "service": "purple-app" }]
+}

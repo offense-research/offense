@@ -1,0 +1,6 @@
+**
+!server/
+!server/assessment-egress-gateway.mjs
+!server/web-scan-target.js
+!shared/
+!shared/assessment-egress-auth.js

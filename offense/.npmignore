@@ -1,0 +1,17 @@
+.git/
+.github/
+node_modules/
+test/
+coverage/
+reports/
+.purple/
+.env
+.env.*
+*.pem
+*.key
+*.sqlite*
+credentials.*
+*.tgz
+
+.offense/
+.offense-credentials/

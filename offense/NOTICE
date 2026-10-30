@@ -1,0 +1,16 @@
+Offense
+Copyright 2026 Offense Research, Inc. and contributors.
+Maintained by Offense Security; the project was previously called Purple Community.
+
+Project-owned source is distributed under the Apache License, Version 2.0.
+Included third-party code retains its original copyright and license notices.
+The Apache license for this project does not replace those upstream licenses.
+
+This edition includes dependency metadata parsing, security advisory matching,
+upgrade planning, agent integration and optional local security-tool wrappers.
+Bundled parser modules retain upstream license banners. THIRD_PARTY_NOTICES.md
+describes included code and optional external tools.
+
+Offense Security and Offense names and logos identify the company and product.
+Legacy Purple names remain in compatibility resources.
+This license does not grant trademark rights beyond those in its terms.

@@ -1,0 +1,13 @@
+# Dedicated build context: source code only, no credentials or working state.
+**
+!agent/
+!agent/*.mjs
+!agent/hermes-task.py
+!public/
+!public/skills/
+!public/skills/purple/
+!public/skills/purple/scripts/
+!public/skills/purple/scripts/*.mjs
+!scripts/
+!scripts/e2e-hermes-runtime.mjs
+!scripts/e2e-dependency-fix.mjs

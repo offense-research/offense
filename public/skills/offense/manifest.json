@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "skill": "offense",
+  "version": "0.9.0",
+  "minimumNodeMajor": 20,
+  "files": [
+    {
+      "path": "SKILL.md",
+      "bytes": 19868,
+      "sha256": "cca06e21290b9b4986024c72a0427dc197b296ff42b7e57610eea7c7b536be6b"
+    },
+    {
+      "path": "references/install.md",
+      "bytes": 5145,
+      "sha256": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584"
+    },
+    {
+      "path": "references/verification.md",
+      "bytes": 9317,
+      "sha256": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634"
+    },
+    {
+      "path": "references/tools.md",
+      "bytes": 8668,
+      "sha256": "2026c2c3d7e3de725de754c2daa22ec9448df6488ad46dc5066be8b54ebff7b1"
+    },
+    {
+      "path": "references/local-tools.md",
+      "bytes": 5519,
+      "sha256": "2873708c29f285ffa77ea5372cd5d70ca83fd26d50d928606e3aa5e628f03b8e"
+    },
+    {
+      "path": "references/stack.md",
+      "bytes": 8600,
+      "sha256": "416fc0e4b02e008f28ff8ea2f8ff3e00ff2c9670f2f831ed1cee188c5a3cc44a"
+    },
+    {
+      "path": "scripts/offense.mjs",
+      "bytes": 290309,
+      "sha256": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b"
+    },
+    {
+      "path": "scripts/cli.mjs",
+      "bytes": 631481,
+      "sha256": "92d48975ea3fc394ef8b0e1965abaf866964ab3363dc93274cdd94e0b7687126"
+    },
+    {
+      "path": "scripts/update.mjs",
+      "bytes": 25283,
+      "sha256": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+    }
+  ],
+  "previousReleases": [
+    {
+      "version": "0.8.2",
+      "files": {
+        "SKILL.md": "5a01619329d7caa92072238e11ffc752f6ba0b088e4bdfa30c65731deac55d9b",
+        "references/install.md": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "references/tools.md": "2026c2c3d7e3de725de754c2daa22ec9448df6488ad46dc5066be8b54ebff7b1",
+        "references/local-tools.md": "625350201ad5fa5b901036c6f9f1fa8a751ecd344bf5f30430b155b84080d313",
+        "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+        "scripts/cli.mjs": "51c5d4b394753b9a4593d7a072750516d927c18e6604e6b9e4c96df2e6dad6ab",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.8.1",
+      "files": {
+        "SKILL.md": "e90b3e63c8f13e5f1f82f21b49657216d16263f61972f6c6160d934b29614bbb",
+        "references/install.md": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "references/tools.md": "1bfa980ff00aaa4b85971b07cfd738834f9df13d7b93c7e4ba22580ed3a91b8b",
+        "references/local-tools.md": "625350201ad5fa5b901036c6f9f1fa8a751ecd344bf5f30430b155b84080d313",
+        "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+        "scripts/cli.mjs": "10f23a05077a861b7232ea0c889502cf448aa91a7d921eb099f47e6e83097506",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.8.0",
+      "files": {
+        "SKILL.md": "3b7a52a82c4c0f9bce286720cbaa2f007c8231b65321d105bf3259ef7c4e8f98",
+        "references/install.md": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "references/tools.md": "1bfa980ff00aaa4b85971b07cfd738834f9df13d7b93c7e4ba22580ed3a91b8b",
+        "references/local-tools.md": "625350201ad5fa5b901036c6f9f1fa8a751ecd344bf5f30430b155b84080d313",
+        "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+        "scripts/cli.mjs": "798d4d5abc916214944cffa87e6103c3aadc028b004ddef850e836b5de6e0675",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.7.1",
+      "files": {
+        "SKILL.md": "fb8c203b7cab3236c66784c4bbb30f02dc65e711fb513be4a741fa6653b061f5",
+        "references/install.md": "418cb1788caad1d08432392baaffb33313629ca552757c644ec30b41ec0b933c",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "references/tools.md": "27bf33ccf1bccbb638a579bf9eb8734e69338c19691858dadb556f6001df5d9b",
+        "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+        "scripts/cli.mjs": "fd760f04d825f7f97654fc02a28c494b4861cae1f8d30b4247a94deff977faaf",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.7.0",
+      "files": {
+        "SKILL.md": "7f5449a58bf0aae597eaf814efa7a9da93184d18c84406e092e44176b410aa3d",
+        "references/install.md": "418cb1788caad1d08432392baaffb33313629ca552757c644ec30b41ec0b933c",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "references/tools.md": "27bf33ccf1bccbb638a579bf9eb8734e69338c19691858dadb556f6001df5d9b",
+        "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+        "scripts/cli.mjs": "c0d32370cca17c42469df9933cbdaf3fa6f14b4cd63a1365ede95e850c8a7671",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.6.0",
+      "files": {
+        "SKILL.md": "45fb21d960e29cc062b293ce338f44b8aa71425a3990876b65172597c28ebe7a",
+        "references/install.md": "a56c95544abcb7524ba4ea210b22b47618e3ce4fdffd531b003cec4e6936942e",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.5.1",
+      "files": {
+        "SKILL.md": "0bf315f60901688128175ed3bd965ec254ab3ab171b526cb0aac3ec0d0c49ab4",
+        "references/install.md": "a56c95544abcb7524ba4ea210b22b47618e3ce4fdffd531b003cec4e6936942e",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "scripts/offense.mjs": "3f0acda55e8a9cccdecef4cd144f54be88950c7eb0de7523f199597446095336",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.5.0",
+      "files": {
+        "SKILL.md": "9672de3abf95da1fbc4e148e1becacc6d1a6aa6159220f0bd14f19b170346d9c",
+        "references/install.md": "a56c95544abcb7524ba4ea210b22b47618e3ce4fdffd531b003cec4e6936942e",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "scripts/offense.mjs": "658faf0e3dcc5d3c7e5ccad6f07dd37be0033a29f238e75b7714ed2e41f6f9e5",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.4.0",
+      "files": {
+        "SKILL.md": "8ead3b8b025ee07ebfe43d85a2e556eef10c5faf806ed97b9e24279468a0d9f9",
+        "references/install.md": "0afa7b7184c13418fd6bc35b79c79c282518388448048ee206a67a47ef89ecbb",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "scripts/offense.mjs": "71449640b7c910a74f098846651cce900464664e3c650801a7dbf98209dcfb20",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
+    {
+      "version": "0.2.1",
+      "files": {
+        "SKILL.md": "b05ddb70dfa72ba3042105934e06bed6416fedc5238312c800c18c86af62b0fa",
+        "references/install.md": "a963298bb9d3abc515eae212b69e47fe80416857644d8113974300834529d8ba",
+        "scripts/offense.mjs": "259319461cdf48c8f6dbbe7642495369d11d62d5d64ca2d1cf570c6d2d9beaed"
+      }
+    },
+    {
+      "version": "0.1.0",
+      "files": {
+        "SKILL.md": "78a5283921857bd92ad9ef94c3cad3ab73a6fdba79d01d3cc6f67ea19d18c7c0",
+        "references/install.md": "2afdacc5659672f0dff6a9dc903a270791718d458d8a3a68ed96cb13a449c76d",
+        "scripts/offense.mjs": "259319461cdf48c8f6dbbe7642495369d11d62d5d64ca2d1cf570c6d2d9beaed"
+      }
+    }
+  ]
+}

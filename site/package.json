@@ -1,0 +1,17 @@
+{
+  "name": "offense-lander",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Offense landing page. Agent security, one way in.",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "npm run build && node scripts/serve.mjs --directory dist",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "npm run build && node scripts/e2e.mjs",
+    "build": "node scripts/build.mjs",
+    "build:cloudflare": "npm run build && node scripts/prepare-cloudflare.mjs",
+    "deploy": "npm run build && wrangler deploy",
+    "preview": "node scripts/serve.mjs --directory dist"
+  }
+}

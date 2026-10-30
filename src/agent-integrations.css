@@ -1,0 +1,17 @@
+.agent-integrations { margin: 20px 0 34px; padding: 25px 27px; border: 1px solid var(--skill-border, #343943); border-radius: 10px; background: var(--skill-panel, #20232b); color: var(--skill-muted, #b5bbc6); font-size: 13px; line-height: 1.7; min-width: 0; }
+.agent-integrations h2 { color: #f1f2f6; margin: 0 0 9px; font-size: 18px; font-weight: 600; }
+.agent-integrations h3 { color: #e5e8ef; margin: 0 0 8px; font-size: 14px; font-weight: 550; }
+.agent-integrations p { margin: 0 0 14px; }
+.agent-integration-downloads { display: flex; gap: 10px 22px; flex-wrap: wrap; margin: 18px 0; }
+.agent-integration-downloads a { display: inline-flex; align-items: center; gap: 8px; color: #e1d9fa; }
+.agent-integration-platform { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 20px 0 12px; color: #d8dce5; }
+.agent-integration-platform select { font: inherit; color: #e3e6ed; background: #181b21; border: 1px solid #424753; padding: 8px 10px; border-radius: 6px; max-width: 100%; }
+.agent-integration-code-label { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0; font-size: 12px; }
+.agent-integration-code-label button { display: inline-flex; align-items: center; gap: 7px; color: #e9e7f2; background: #33303e; border: 1px solid #514a64; border-radius: 6px; padding: 8px 11px; cursor: pointer; font: inherit; }
+.agent-integrations textarea { display: block; width: 100%; min-height: 245px; resize: vertical; background: #171a20; color: #cbd1dd; border: 1px solid #3b404b; border-radius: 6px; font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 12px; box-sizing: border-box; }
+.agent-integrations .agent-integration-copy-status { margin: 8px 0 16px; color: #bfdbcf; min-height: 1.5em; }
+.agent-integration-lifecycle { margin: 20px 0 15px; padding-top: 20px; border-top: 1px solid #353a44; }
+.agent-integrations pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #171a20; padding: 12px; border: 1px solid #3b404b; border-radius: 6px; font-size: 11px; }
+.agent-integrations .agent-integration-reference { margin-bottom: 0; font-size: 12px; }
+.agent-integration-reference a { color: #cdc3ec; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 600px) { .agent-integrations { padding: 20px 17px; } .agent-integrations h2 { font-size: 16px; } .agent-integration-downloads { flex-direction: column; gap: 12px; } .agent-integration-code-label button { width: 100%; justify-content: center; min-height: 42px; } }

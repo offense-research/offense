@@ -1,0 +1,149 @@
+.company-call-page { --calls-text: #edf2f7; --calls-muted: #a8b5c5; --calls-line: #303a47; --calls-accent: #f26b5e; min-height: 100vh; background: #101317; color: var(--calls-text); font: 14px var(--offense-sans, sans-serif); }
+.company-call-page *, .company-call-page { box-sizing: border-box; }
+.company-call-page :is(button, a, input, select, summary):focus-visible { outline: 2px solid var(--calls-accent); outline-offset: 4px; }
+.company-call-page button { font: inherit; cursor: pointer; }
+.company-call-container { width: 100%; max-width: 1200px; padding: 0 30px 38px; margin: 0 auto; }
+.company-call-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; min-height: 90px; border-bottom: 1px solid var(--calls-line); }
+.company-call-brand { display: flex; align-items: center; gap: 10px; color: var(--calls-text); font-size: 27px; font-weight: 750; letter-spacing: -.06em; }
+.company-call-brand > svg, .company-call-brand > span > span { color: var(--calls-accent); }
+.company-call-back { display: inline-flex; align-items: center; gap: 7px; color: var(--calls-muted); font-size: 12px; }
+.company-call-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin: 44px 0 28px; }
+.company-call-eyebrow { color: #9eacbd; font-size: 10px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; }
+.company-call-heading h1 { margin: 10px 0 10px; font-size: clamp(28px, 4vw, 38px); font-weight: 650; line-height: 1.2; letter-spacing: -.045em; }
+.company-call-heading p { margin: 0; color: var(--calls-muted); font-size: 13px; line-height: 1.7; }
+.company-call-live { display: flex; align-items: center; flex-shrink: 0; gap: 7px; margin-bottom: 4px; color: #99a9bc; font-size: 10px; }
+.company-call-live > span { width: 5px; height: 5px; border-radius: 50%; background: #a6bfae; }
+.company-call-controls { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 0 20px; }
+.company-call-scope { display: inline-flex; align-items: center; gap: 3px; padding: 4px; border: 1px solid var(--calls-line); border-radius: 6px; background: #141a21; }
+.company-call-scope button { min-height: 34px; padding: 7px 13px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #a5b3c5; font-size: 12px; white-space: nowrap; }
+.company-call-scope button[aria-pressed="true"] { color: #f1f4f8; border-color: #3f4b5d; background: #28323e; }
+.company-call-range { display: flex; align-items: center; gap: 9px; }
+.company-call-range > span { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 8px 10px; border: 1px solid var(--calls-line); border-radius: 5px; color: #aebdce; font-size: 11px; }
+.company-call-range label { position: relative; }
+.company-call-range select { width: 156px; min-height: 36px; padding: 7px 29px 7px 11px; border: 1px solid #3e4b5b; border-radius: 5px; color: #dae4ef; background: #151c24; font: 12px var(--offense-sans, sans-serif); }
+.company-call-summary { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, .85fr); align-items: center; gap: 32px; margin-bottom: 20px; padding: 28px 30px; border: 1px solid #35404f; border-radius: 8px; background: linear-gradient(125deg, #1b222b 0%, #151b22 70%); }
+.company-call-summary > div { min-width: 0; }
+.company-call-summary > div > span:first-child { color: #adbacb; font-size: 12px; line-height: 1.7; }
+.company-call-primary > strong { display: block; margin: 10px 0 7px; color: #f5f7fa; font-size: clamp(40px, 6vw, 68px); font-weight: 650; letter-spacing: -.055em; line-height: 1.15; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.company-call-primary > p { margin: 0; color: #95a6bb; font-size: 11px; line-height: 1.7; }
+.company-call-today, .company-call-yesterday { padding-left: 26px; border-left: 1px solid #35404e; }
+.company-call-summary :is(.company-call-today, .company-call-yesterday) > strong { display: block; margin: 11px 0 13px; color: #e8eef6; font-size: 34px; font-weight: 550; line-height: 1.2; letter-spacing: -.04em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.company-call-yesterday > small { display: block; min-height: 18px; color: #96a6bb; font-size: 10px; line-height: 1.7; }
+.company-call-change { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-height: 18px; color: #9daec2; font-size: 10px; line-height: 1.7; }
+.company-call-change > span { display: inline-flex; align-items: center; gap: 2px; color: #c6d4e4; }
+.company-call-chart { position: relative; min-width: 0; margin-bottom: 24px; padding: 22px 24px 10px; border: 1px solid var(--calls-line); border-radius: 8px; background: #151b22; }
+.company-call-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; min-width: 0; }
+.company-call-panel-heading > div { min-width: 0; }
+.company-call-panel-heading h2 { margin: 0; color: #e5edf6; font-size: 15px; font-weight: 550; letter-spacing: -.02em; line-height: 1.6; }
+.company-call-panel-heading p { margin: 4px 0 0; color: #94a5ba; font-size: 11px; line-height: 1.7; }
+.company-call-panel-heading > div:last-child:not(:first-child) { display: flex; align-items: flex-end; flex-direction: column; gap: 3px; }
+.company-call-panel-heading > div > strong { color: #e2ebf5; font-size: 21px; font-weight: 550; line-height: 1.4; letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.company-call-panel-heading > div > span, .company-call-panel-heading > span { color: #96a8bf; font-size: 10px; line-height: 1.7; }
+.company-call-panel-heading > span { margin-top: 4px; white-space: nowrap; }
+.company-call-trend { position: relative; margin-top: 22px; min-width: 0; }
+.company-call-reading { display: flex; align-items: baseline; gap: 9px; min-height: 23px; color: #96a9c0; font-size: 11px; line-height: 1.7; }
+.company-call-reading strong { color: #e1ebf6; font-size: 14px; font-weight: 550; font-variant-numeric: tabular-nums; }
+.company-call-trend svg { display: block; width: 100%; height: auto; margin-top: 7px; touch-action: pan-y; }
+.company-call-trend svg text { fill: #98abc3; font: 10px var(--offense-sans, sans-serif); }
+.company-call-grid { stroke: #303c4c; stroke-width: 1; stroke-dasharray: 3 5; }
+.company-call-line { fill: none; stroke: #df9a8d; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.company-call-fill { fill: #df9a8d09; }
+.company-call-cursor { stroke: #889bb4; stroke-width: 1; stroke-dasharray: 3 5; opacity: .55; }
+.company-call-point { fill: #e3a497; stroke: #151b22; stroke-width: 2; }
+.company-call-slider { position: relative; display: block; padding: 0 8px 5px 37px; }
+.company-call-slider input { display: block; width: 100%; max-width: 100%; height: 14px; margin: 0; accent-color: #ba938b; opacity: .7; cursor: pointer; }
+.company-call-slider input:focus-visible, .company-call-slider input:hover { opacity: 1; }
+.company-call-empty { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; min-height: 255px; padding: 35px 20px; color: #9cafc7; text-align: center; }
+.company-call-empty h3 { margin: 3px 0 0; color: #dbe6f2; font-size: 15px; font-weight: 550; line-height: 1.6; }
+.company-call-empty p { max-width: 420px; margin: 0; color: #9daec2; font-size: 12px; line-height: 1.8; }
+.company-call-breakdown { min-width: 0; }
+.company-call-breakdown > .company-call-panel-heading { margin-bottom: 14px; }
+.company-call-table-scroll { position: relative; width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid var(--calls-line); border-radius: 7px; background: #151b22; scrollbar-color: #46566b #151b22; scrollbar-width: thin; }
+.company-call-table-scroll table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 0; min-width: 520px; }
+.company-call-table-scroll :is(th, td) { padding: 14px 18px; border-bottom: 1px solid #2b3747; text-align: left; font-size: 12px; line-height: 1.7; }
+.company-call-table-scroll thead th { background: #1c2530; color: #9db0c8; font-size: 11px; font-weight: 450; }
+.company-call-table-scroll tbody th { font-weight: 450; }
+.company-call-table-scroll tbody th > code { display: block; color: #d4e0ef; font: 11px/1.8 var(--offense-mono, monospace); overflow-wrap: anywhere; }
+.company-call-table-scroll tbody th > span { display: block; margin-top: 3px; color: #8da2bd; font-size: 10px; }
+.company-call-table-scroll tr > :last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.company-call-table-scroll tbody td:last-child { color: #e0eaf7; font-size: 14px; font-weight: 500; }
+.company-call-table-scroll tbody tr:last-child > :is(th, td) { border-bottom: 0; }
+.company-call-channel { display: inline-flex; align-items: center; padding: 2px 7px; border: 1px solid #3e5068; border-radius: 4px; color: #a9bfdc; font-size: 10px; line-height: 1.6; }
+.company-call-table-scroll .company-call-table-empty { padding: 35px 20px; color: #96abc5; text-align: center; font-size: 12px; font-weight: 400; }
+.company-call-footer { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 9px 18px; margin-top: 18px; color: #8fa4bf; font-size: 10px; line-height: 1.8; }
+.company-call-footer > details { flex: 0 0 100%; }
+.company-call-footer summary { width: fit-content; color: #a1b5ce; cursor: pointer; }
+.company-call-footer details p { max-width: 840px; margin: 9px 0 0; color: #9eb0c6; font-size: 11px; line-height: 1.8; }
+.company-call-error { padding: 12px 15px; margin: 0 0 20px; border: 1px solid #744f49; border-radius: 6px; background: #2d211f; color: #edbeb4; font-size: 12px; line-height: 1.8; }
+.company-call-history-note { padding: 12px 15px; margin: 0 0 20px; border: 1px solid #60563e; border-radius: 6px; background: #27241c; color: #d4c6a8; font-size: 12px; line-height: 1.8; }
+.company-call-loading { display: flex; align-items: center; gap: 9px; min-height: 310px; color: #a0b3cc; font-size: 13px; }
+.company-call-loading > span { width: 7px; height: 7px; border-radius: 50%; background: #9fb2cb; }
+.company-call-access { margin-top: 42px; padding: 32px; border: 1px solid var(--calls-line); border-radius: 8px; background: #171e27; }
+.company-call-access > svg { color: #bfcedf; }
+.company-call-access h2 { margin: 17px 0 10px; font-size: 22px; font-weight: 550; line-height: 1.4; letter-spacing: -.03em; }
+.company-call-access p { margin: 0; color: #a4b6cd; font-size: 13px; line-height: 1.8; }
+.company-call-access a { display: inline-flex; align-items: center; justify-content: center; gap: 9px; margin-top: 22px; padding: 11px 16px; border: 1px solid #e0e8f3; border-radius: 5px; background: #e0e8f3; color: #162131; font-size: 12px; font-weight: 650; }
+.company-call-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; border: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+@media (max-width: 760px) {
+  .company-call-container { padding-right: 22px; padding-left: 22px; }
+  .company-call-heading { align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-top: 33px; }
+  .company-call-controls { flex-wrap: wrap; gap: 14px; }
+  .company-call-summary { gap: 23px; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); padding: 25px; }
+  .company-call-primary { grid-column: 1 / -1; }
+  .company-call-today { border-left: 0; padding-left: 0; }
+  .company-call-yesterday { padding-left: 25px; }
+  .company-call-primary > strong { font-size: 56px; }
+  .company-call-summary :is(.company-call-today, .company-call-yesterday) > strong { font-size: 29px; }
+}
+@media (max-width: 440px) {
+  .company-call-container { padding: 0 17px 30px; }
+  .company-call-header { min-height: 72px; gap: 16px; }
+  .company-call-brand { gap: 7px; font-size: 25px; }
+  .company-call-brand > svg { width: 22px; height: 22px; }
+  .company-call-back { gap: 5px; font-size: 10px; }
+  .company-call-heading { margin: 29px 0 23px; }
+  .company-call-heading h1 { font-size: 29px; }
+  .company-call-heading p { font-size: 12px; }
+  .company-call-live { font-size: 9px; }
+  .company-call-controls { margin-bottom: 15px; }
+  .company-call-scope { width: 100%; padding: 3px; }
+  .company-call-scope button { flex: 1; min-height: 36px; padding: 8px 7px; font-size: 11px; }
+  .company-call-range { width: 100%; justify-content: space-between; }
+  .company-call-range select { width: 164px; font-size: 11px; }
+  .company-call-summary { padding: 23px 21px; gap: 21px 17px; margin-bottom: 16px; }
+  .company-call-summary > div > span:first-child { font-size: 11px; }
+  .company-call-primary > strong { font-size: 52px; margin-top: 9px; }
+  .company-call-primary > p { font-size: 10px; }
+  .company-call-yesterday { padding-left: 20px; }
+  .company-call-change, .company-call-yesterday > small { font-size: 9px; }
+  .company-call-chart { padding: 18px 14px 8px; margin-bottom: 22px; }
+  .company-call-panel-heading { gap: 12px; }
+  .company-call-panel-heading h2 { font-size: 13px; }
+  .company-call-panel-heading p, .company-call-panel-heading > div > span, .company-call-panel-heading > span { font-size: 9px; }
+  .company-call-panel-heading > div > strong { font-size: 20px; }
+  .company-call-reading { gap: 7px; font-size: 10px; }
+  .company-call-reading strong { font-size: 13px; }
+  .company-call-trend { margin-top: 20px; }
+  .company-call-trend svg text { font-size: 9px; }
+  .company-call-empty { min-height: 240px; padding: 28px 11px; }
+  .company-call-empty h3 { font-size: 14px; }
+  .company-call-empty p { font-size: 11px; }
+  .company-call-table-scroll table { min-width: 0; table-layout: fixed; }
+  .company-call-table-scroll :is(th, td) { padding: 12px 10px; }
+  .company-call-table-scroll tr > :first-child { width: 58%; }
+  .company-call-table-scroll tr > :nth-child(2) { width: 20%; }
+  .company-call-table-scroll tr > :last-child { width: 22%; overflow-wrap: anywhere; }
+  .company-call-table-scroll thead th { font-size: 9px; }
+  .company-call-table-scroll tbody th > code { font-size: 10px; }
+  .company-call-table-scroll tbody th > span { font-size: 9px; }
+  .company-call-table-scroll tbody td:last-child { font-size: 12px; }
+  .company-call-channel { padding: 2px 5px; font-size: 9px; }
+  .company-call-footer { font-size: 9px; gap: 7px; }
+  .company-call-footer > span { flex: 0 0 100%; }
+  .company-call-footer details p { font-size: 10px; }
+  .company-call-access { margin-top: 28px; padding: 25px 20px; }
+  .company-call-access h2 { font-size: 20px; }
+  .company-call-access p { font-size: 12px; }
+  .company-call-access a { width: 100%; }
+}
+.company-call-header-actions { display: flex; align-items: center; gap: 16px; min-width: 0; }

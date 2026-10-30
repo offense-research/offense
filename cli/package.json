@@ -1,0 +1,18 @@
+{
+  "name": "@offense-security/cli",
+  "version": "0.2.0",
+  "private": true,
+  "description": "One Offense account and API key for prepaid security tools.",
+  "type": "module",
+  "bin": {
+    "offense": "dist/offense.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "THIRD_PARTY_LICENSES.txt"
+  ]
+}

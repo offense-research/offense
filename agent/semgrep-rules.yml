@@ -1,0 +1,35 @@
+rules:
+  - id: offense.js.jwt-signature-disabled
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: JWT verification explicitly permits unsigned tokens.
+    pattern-either:
+      - pattern: '$JWT.verify(..., { ..., algorithms: ["none"], ... }, ...)'
+      - pattern: '$JWT.verify(..., { ..., algorithms: ["none", ...], ... }, ...)'
+  - id: offense.js.cookie-httponly-disabled
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: A response cookie explicitly disables HttpOnly.
+    pattern: '$RES.cookie(..., { ..., httpOnly: false, ... })'
+  - id: offense.python.flask-debug-enabled
+    languages: [python]
+    severity: WARNING
+    message: Application startup enables the interactive debugger.
+    pattern: '$APP.run(..., debug=True, ...)'
+  - id: offense.python.jinja-autoescape-disabled
+    languages: [python]
+    severity: WARNING
+    message: Template environment explicitly disables HTML escaping.
+    pattern: jinja2.Environment(..., autoescape=False, ...)
+  - id: offense.python.requests-tls-verification-disabled
+    languages: [python]
+    severity: ERROR
+    message: An HTTP request disables TLS certificate verification.
+    pattern-either:
+      - pattern: requests.$METHOD(..., verify=False, ...)
+      - pattern: '$SESSION.request(..., verify=False, ...)'
+  - id: offense.python.xml-external-entities-enabled
+    languages: [python]
+    severity: WARNING
+    message: An XML parser enables entity resolution.
+    pattern: lxml.etree.XMLParser(..., resolve_entities=True, ...)

@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "packages": {
+    "offense": [
+      {
+        "version": "0.8.2",
+        "files": {
+          "SKILL.md": "5a01619329d7caa92072238e11ffc752f6ba0b088e4bdfa30c65731deac55d9b",
+          "references/install.md": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "references/tools.md": "2026c2c3d7e3de725de754c2daa22ec9448df6488ad46dc5066be8b54ebff7b1",
+          "references/local-tools.md": "625350201ad5fa5b901036c6f9f1fa8a751ecd344bf5f30430b155b84080d313",
+          "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+          "scripts/cli.mjs": "51c5d4b394753b9a4593d7a072750516d927c18e6604e6b9e4c96df2e6dad6ab",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.8.1",
+        "files": {
+          "SKILL.md": "e90b3e63c8f13e5f1f82f21b49657216d16263f61972f6c6160d934b29614bbb",
+          "references/install.md": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "references/tools.md": "1bfa980ff00aaa4b85971b07cfd738834f9df13d7b93c7e4ba22580ed3a91b8b",
+          "references/local-tools.md": "625350201ad5fa5b901036c6f9f1fa8a751ecd344bf5f30430b155b84080d313",
+          "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+          "scripts/cli.mjs": "10f23a05077a861b7232ea0c889502cf448aa91a7d921eb099f47e6e83097506",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.8.0",
+        "files": {
+          "SKILL.md": "3b7a52a82c4c0f9bce286720cbaa2f007c8231b65321d105bf3259ef7c4e8f98",
+          "references/install.md": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "references/tools.md": "1bfa980ff00aaa4b85971b07cfd738834f9df13d7b93c7e4ba22580ed3a91b8b",
+          "references/local-tools.md": "625350201ad5fa5b901036c6f9f1fa8a751ecd344bf5f30430b155b84080d313",
+          "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+          "scripts/cli.mjs": "798d4d5abc916214944cffa87e6103c3aadc028b004ddef850e836b5de6e0675",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.7.1",
+        "files": {
+          "SKILL.md": "fb8c203b7cab3236c66784c4bbb30f02dc65e711fb513be4a741fa6653b061f5",
+          "references/install.md": "418cb1788caad1d08432392baaffb33313629ca552757c644ec30b41ec0b933c",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "references/tools.md": "27bf33ccf1bccbb638a579bf9eb8734e69338c19691858dadb556f6001df5d9b",
+          "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+          "scripts/cli.mjs": "fd760f04d825f7f97654fc02a28c494b4861cae1f8d30b4247a94deff977faaf",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.7.0",
+        "files": {
+          "SKILL.md": "7f5449a58bf0aae597eaf814efa7a9da93184d18c84406e092e44176b410aa3d",
+          "references/install.md": "418cb1788caad1d08432392baaffb33313629ca552757c644ec30b41ec0b933c",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "references/tools.md": "27bf33ccf1bccbb638a579bf9eb8734e69338c19691858dadb556f6001df5d9b",
+          "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+          "scripts/cli.mjs": "c0d32370cca17c42469df9933cbdaf3fa6f14b4cd63a1365ede95e850c8a7671",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.6.0",
+        "files": {
+          "SKILL.md": "45fb21d960e29cc062b293ce338f44b8aa71425a3990876b65172597c28ebe7a",
+          "references/install.md": "a56c95544abcb7524ba4ea210b22b47618e3ce4fdffd531b003cec4e6936942e",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "scripts/offense.mjs": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.5.1",
+        "files": {
+          "SKILL.md": "0bf315f60901688128175ed3bd965ec254ab3ab171b526cb0aac3ec0d0c49ab4",
+          "references/install.md": "a56c95544abcb7524ba4ea210b22b47618e3ce4fdffd531b003cec4e6936942e",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "scripts/offense.mjs": "3f0acda55e8a9cccdecef4cd144f54be88950c7eb0de7523f199597446095336",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.5.0",
+        "files": {
+          "SKILL.md": "9672de3abf95da1fbc4e148e1becacc6d1a6aa6159220f0bd14f19b170346d9c",
+          "references/install.md": "a56c95544abcb7524ba4ea210b22b47618e3ce4fdffd531b003cec4e6936942e",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "scripts/offense.mjs": "658faf0e3dcc5d3c7e5ccad6f07dd37be0033a29f238e75b7714ed2e41f6f9e5",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.4.0",
+        "files": {
+          "SKILL.md": "8ead3b8b025ee07ebfe43d85a2e556eef10c5faf806ed97b9e24279468a0d9f9",
+          "references/install.md": "0afa7b7184c13418fd6bc35b79c79c282518388448048ee206a67a47ef89ecbb",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "scripts/offense.mjs": "71449640b7c910a74f098846651cce900464664e3c650801a7dbf98209dcfb20",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
+        "version": "0.2.1",
+        "files": {
+          "SKILL.md": "b05ddb70dfa72ba3042105934e06bed6416fedc5238312c800c18c86af62b0fa",
+          "references/install.md": "a963298bb9d3abc515eae212b69e47fe80416857644d8113974300834529d8ba",
+          "scripts/offense.mjs": "259319461cdf48c8f6dbbe7642495369d11d62d5d64ca2d1cf570c6d2d9beaed"
+        }
+      },
+      {
+        "version": "0.1.0",
+        "files": {
+          "SKILL.md": "78a5283921857bd92ad9ef94c3cad3ab73a6fdba79d01d3cc6f67ea19d18c7c0",
+          "references/install.md": "2afdacc5659672f0dff6a9dc903a270791718d458d8a3a68ed96cb13a449c76d",
+          "scripts/offense.mjs": "259319461cdf48c8f6dbbe7642495369d11d62d5d64ca2d1cf570c6d2d9beaed"
+        }
+      }
+    ],
+    "purple": [
+      {
+        "version": "1.14.0",
+        "files": {
+          "SKILL.md": "6d63866306a074d8d818f8a0f7d8bc50992fd51bb04136d42e9e422a653ae843",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "references/api-testing.md": "d09dfddcb3141ec1d877ff1720ac67ddf89cebf317eca5d8bcd3147b5e795ec8",
+          "references/hardened-containers.md": "6c160c1c73cd61f8118cd8b223b24fb9e0a5e3e52e616049691ed6d9b8dd7002",
+          "references/hosted-assessments.md": "463b7983baa931d1424c384cc612628e1f153e0f80a2c6cadfc0ef9b1faeca18",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8",
+          "scripts/hosted-scan.mjs": "312ae63b438b8ac8a07a285e190067d673943c51612e9a6fa4cb21d4676905a4",
+          "scripts/source-scan.mjs": "0bae73d42aeece75f2a0a9f154a78283e5f0b2a2e1c30b8dae90919a8105eeb6",
+          "scripts/api-test.mjs": "b6e1b22fa8319d0f475d0b41f053a15f60ee9e8fbf765bf779a9dddf1ca0d94f",
+          "scripts/api-test-image.mjs": "38a7e17818eece09496e9cd1f1421901bc6b724d00fe07ed3f6811811b07b899",
+          "scripts/hardened-image.mjs": "b17a2eeed2cdc96015b2a4073338ea50215dbf443b5c9eff05912edb379e9228",
+          "scripts/hosted-artifact-scan.mjs": "e4c75b8271172ad65dddc5420c6b01bb16b09d7599b4d4aff010f7f6fe618c28",
+          "scripts/hosted-assessment.mjs": "52e662e7a3337949eea7beccfca1a8980b2e3774a6c360f8938c4e230dbefd32",
+          "scripts/git-history-bundle.mjs": "dcd9413d5e62c81048f5d47c3d854f388b5159554df98ae3f8dddc27bde72048",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+        }
+      },
+      {
+        "version": "1.13.0",
+        "files": {
+          "SKILL.md": "09f6321a6443300a7a8b402a0cfd19940cd99f9a181a872b90b7d761b5d4b9ba",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "references/api-testing.md": "d09dfddcb3141ec1d877ff1720ac67ddf89cebf317eca5d8bcd3147b5e795ec8",
+          "references/hardened-containers.md": "6c160c1c73cd61f8118cd8b223b24fb9e0a5e3e52e616049691ed6d9b8dd7002",
+          "references/hosted-assessments.md": "463b7983baa931d1424c384cc612628e1f153e0f80a2c6cadfc0ef9b1faeca18",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8",
+          "scripts/hosted-scan.mjs": "177e7d65cc1db72c24681cb68e500c7eb6ee1f5160747325717a469767606df0",
+          "scripts/source-scan.mjs": "0bae73d42aeece75f2a0a9f154a78283e5f0b2a2e1c30b8dae90919a8105eeb6",
+          "scripts/api-test.mjs": "b6e1b22fa8319d0f475d0b41f053a15f60ee9e8fbf765bf779a9dddf1ca0d94f",
+          "scripts/api-test-image.mjs": "38a7e17818eece09496e9cd1f1421901bc6b724d00fe07ed3f6811811b07b899",
+          "scripts/hardened-image.mjs": "b17a2eeed2cdc96015b2a4073338ea50215dbf443b5c9eff05912edb379e9228",
+          "scripts/hosted-artifact-scan.mjs": "07cd1e80bcd7576d97c73a1af89c81faa7b67bf2d132ad5af3650ef6675956ea",
+          "scripts/hosted-assessment.mjs": "0016e78ca8f69834fe051f3f2c45077dbe6f0eb257f22abcdcf6ca26ffb2934c",
+          "scripts/git-history-bundle.mjs": "3add8f5a89ae84cb9d464eca6e05e9733a09d255434a61615fffd2e0599faed3",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+        }
+      },
+      {
+        "version": "1.12.0",
+        "files": {
+          "SKILL.md": "77f779b3773758a0c92ff1181b438e1e6112d463b88340d17eb49b44bb4dea28",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "references/api-testing.md": "d09dfddcb3141ec1d877ff1720ac67ddf89cebf317eca5d8bcd3147b5e795ec8",
+          "references/hardened-containers.md": "6c160c1c73cd61f8118cd8b223b24fb9e0a5e3e52e616049691ed6d9b8dd7002",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8",
+          "scripts/hosted-scan.mjs": "177e7d65cc1db72c24681cb68e500c7eb6ee1f5160747325717a469767606df0",
+          "scripts/source-scan.mjs": "0bae73d42aeece75f2a0a9f154a78283e5f0b2a2e1c30b8dae90919a8105eeb6",
+          "scripts/api-test.mjs": "b6e1b22fa8319d0f475d0b41f053a15f60ee9e8fbf765bf779a9dddf1ca0d94f",
+          "scripts/api-test-image.mjs": "38a7e17818eece09496e9cd1f1421901bc6b724d00fe07ed3f6811811b07b899",
+          "scripts/hardened-image.mjs": "b17a2eeed2cdc96015b2a4073338ea50215dbf443b5c9eff05912edb379e9228",
+          "scripts/hosted-artifact-scan.mjs": "07cd1e80bcd7576d97c73a1af89c81faa7b67bf2d132ad5af3650ef6675956ea",
+          "scripts/git-history-bundle.mjs": "3add8f5a89ae84cb9d464eca6e05e9733a09d255434a61615fffd2e0599faed3",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+        }
+      },
+      {
+        "version": "1.11.0",
+        "files": {
+          "SKILL.md": "57daf4dcf8ede4576353aa8c72fb5bc99823e6c0ada86aa5ee42110b5280fa27",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "references/api-testing.md": "d09dfddcb3141ec1d877ff1720ac67ddf89cebf317eca5d8bcd3147b5e795ec8",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8",
+          "scripts/hosted-scan.mjs": "177e7d65cc1db72c24681cb68e500c7eb6ee1f5160747325717a469767606df0",
+          "scripts/source-scan.mjs": "0bae73d42aeece75f2a0a9f154a78283e5f0b2a2e1c30b8dae90919a8105eeb6",
+          "scripts/api-test.mjs": "b6e1b22fa8319d0f475d0b41f053a15f60ee9e8fbf765bf779a9dddf1ca0d94f",
+          "scripts/api-test-image.mjs": "38a7e17818eece09496e9cd1f1421901bc6b724d00fe07ed3f6811811b07b899",
+          "scripts/hosted-artifact-scan.mjs": "07cd1e80bcd7576d97c73a1af89c81faa7b67bf2d132ad5af3650ef6675956ea",
+          "scripts/git-history-bundle.mjs": "3add8f5a89ae84cb9d464eca6e05e9733a09d255434a61615fffd2e0599faed3",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+        }
+      },
+      {
+        "version": "1.10.0",
+        "files": {
+          "SKILL.md": "179bc501a82dabab44b7a587d8c06248e4d3bb935afa294a8d4d4cbe74d8828b",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8",
+          "scripts/hosted-scan.mjs": "498ebec867e2a6fcfa9474e3dc825bae7b1dcba41f098e20ac3fd4586ce3f803",
+          "scripts/hosted-artifact-scan.mjs": "07cd1e80bcd7576d97c73a1af89c81faa7b67bf2d132ad5af3650ef6675956ea",
+          "scripts/git-history-bundle.mjs": "3add8f5a89ae84cb9d464eca6e05e9733a09d255434a61615fffd2e0599faed3",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+        }
+      },
+      {
+        "version": "1.9.0",
+        "files": {
+          "SKILL.md": "5edb1a7276a8a5cb30dc6892fd7ba16c0ea0f0edb5c9a7e9db2ab1ce0c8aa336",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8",
+          "scripts/hosted-scan.mjs": "3c55f5291718ab027975bb687db7dba0dcb85e8fbada7eaeb59b1525d4e3a3f3",
+          "scripts/hosted-artifact-scan.mjs": "2729413005f1e34bb7b4361a3df3feb16fd17b506880d9e30f2d159fbb650baa",
+          "scripts/git-history-bundle.mjs": "3add8f5a89ae84cb9d464eca6e05e9733a09d255434a61615fffd2e0599faed3",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+        }
+      },
+      {
+        "version": "1.8.0",
+        "files": {
+          "SKILL.md": "4191935469d0d47573307d926e03d35b6596182f6e0d3a92817b2c5f4b82b81b",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8",
+          "scripts/hosted-scan.mjs": "e089381ccc0319f49addfcb30d3bcd1ff5866e3d91a73d2c295b589371011a30",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+        }
+      },
+      {
+        "version": "1.6.1",
+        "files": {
+          "SKILL.md": "06312dfe63f7d3d7b0404f5051f9feacb65711513f5c98307c6f658fbca5ba8d",
+          "references/delivery.md": "5604c739e65df954841be15e53136913a4f5706bd11dd60c0de515299e896b8d",
+          "scripts/hosted-scan.mjs": "afb7ef0e5819df482a9e93381ad7155ff38e8296a8d502fe697b739c336b3133",
+          "scripts/purple.mjs": "ae568eaf149a3d9421a110f2899fea34f3bdb4c47b1cedfde31a2a445b94ea83",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+        }
+      },
+      {
+        "version": "1.5.0",
+        "files": {
+          "SKILL.md": "c48ce453c789d578aa33affc2daf34df98cbd30eab3bbe210bb79ea7633e2013",
+          "scripts/hosted-scan.mjs": "afb7ef0e5819df482a9e93381ad7155ff38e8296a8d502fe697b739c336b3133",
+          "scripts/purple.mjs": "ae568eaf149a3d9421a110f2899fea34f3bdb4c47b1cedfde31a2a445b94ea83",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "d596b7dc72bf7a7bc20969eb6302dda5173f19917ca2867169a43c80ed92e27d"
+        }
+      }
+    ]
+  }
+}

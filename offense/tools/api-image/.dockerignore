@@ -1,0 +1,6 @@
+**
+!api-test.Dockerfile
+!api-test.Dockerfile.dockerignore
+!Dockerfile
+!.dockerignore
+!schemathesis-sandbox.py

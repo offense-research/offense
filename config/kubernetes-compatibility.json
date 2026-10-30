@@ -1,0 +1,49 @@
+{
+  "version": "2026-10-29.1",
+  "reviewedAt": "2026-10-29T00:00:00Z",
+  "reviewAfter": "2026-11-28T00:00:00Z",
+  "note": "Historical, version-specific constraints, not a recommendation to install these releases or a claim of current security support. Missing catalog entries are unknown.",
+  "sources": {
+    "kubernetes-skew": {
+      "url": "https://raw.githubusercontent.com/kubernetes/website/release-1.33/content/en/releases/version-skew-policy.md",
+      "sha256": "7d33809eeb313cbd589018a8dde893974065c50f5ee8cde27d99e879d0dde81f",
+      "section": "Supported version skew; Supported component upgrade order"
+    },
+    "nvidia-platform": {
+      "url": "https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/25.3.2/platform-support.html",
+      "sha256": "98b62f9cd08842ecc1d7c13a0a4425a9315e9cb6a896a9a1579c0f5d8c5fbbd0",
+      "section": "GPU Operator Life Cycle; Component Matrix; Supported Operating Systems; Supported Precompiled Drivers"
+    },
+    "cuda-driver": {
+      "url": "https://docs.nvidia.com/cuda/archive/12.4.1/cuda-toolkit-release-notes/index.html",
+      "sha256": "f59209700823b6299aaf8eb9b1e15c9757992904af130f4c2f09b2dceb5b1cc6",
+      "section": "CUDA Driver: minimum required driver and toolkit driver versions"
+    },
+    "driver-disruption": {
+      "url": "https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/25.3.2/gpu-driver-upgrades.html",
+      "sha256": "573837ff35275862469a176956d7a4c9e8da08636cbd75b80420f146cc110b80",
+      "section": "Configuration Options; Upgrade State Machine"
+    }
+  },
+  "kubernetes": { "minimumMinor": 29, "maximumMinor": 33, "apiServerSkew": 1, "kubeletSkew": 3, "maximumUpgradeHop": 1 },
+  "operator": {
+    "version": "25.3.2",
+    "transitionFamilies": ["24.9", "25.3"],
+    "kubernetesMinMinor": 29,
+    "kubernetesMaxMinor": 33,
+    "architecture": "amd64",
+    "ubuntu": {
+      "22.04": { "kernels": ["5.15", "6.5", "6.8"], "precompiledKernels": ["5.15"] },
+      "24.04": { "kernels": ["6.8"], "precompiledKernels": ["6.8"] }
+    },
+    "listedDrivers": ["535.247.01", "535.261.03", "550.163.01", "570.148.08", "570.158.01", "570.172.08", "575.57.08", "580.65.06"],
+    "defaultDriver": "570.172.08",
+    "recommendedDriver": "580.65.06",
+    "precompiledDriverBranches": { "22.04": [535, 550, 570], "24.04": [550, 570] },
+    "gpuProducts": ["NVIDIA-A100", "Tesla-T4"]
+  },
+  "cuda": {
+    "12.4.0": { "nativeMinimumDriver": "550.54.14", "minorMinimumDriver": "525.60.13" },
+    "12.4.1": { "nativeMinimumDriver": "550.54.15", "minorMinimumDriver": "525.60.13" }
+  }
+}

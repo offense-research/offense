@@ -1,0 +1,23 @@
+Offense
+Copyright 2026 Offense Research, Inc. and contributors.
+Previously known as Purple; legacy identifiers remain for compatibility.
+
+Except for the separately identified materials in THIRD_PARTY_NOTICES.md,
+Offense-owned source code and documentation are licensed under Apache-2.0.
+See LICENSE. Commercial use and competing hosted services are permitted.
+
+Original artwork identified in THIRD_PARTY_NOTICES.md is copyright 2026
+Imran Muthuvappa and is licensed under Apache-2.0. See LICENSE.
+
+Third-party code, source excerpts, fonts, artwork, rules and data retain their
+own copyrights and licenses. Where present, the MobSF offline modification
+is GPL-3.0 and the SSLyze Python adapter is AGPL-3.0, not Apache-2.0.
+The minimal source release excludes those integrations; their private hosted
+and artifact-distribution obligations remain separate.
+The root license does not relicense those files or grant rights to artwork
+whose provenance has not been cleared. See the documented source-release boundary.
+
+Scanner engines and datasets fetched by build recipes are separately licensed.
+Publishing recipes is not clearance to redistribute their images or datasets.
+No trademark rights in Offense, Offense Security or Purple are granted beyond
+those provided by applicable law and the relevant license.

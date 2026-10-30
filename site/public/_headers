@@ -1,0 +1,16 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/skills/*
+  Cache-Control: no-store
+
+/skills/*.md
+  Content-Type: text/markdown; charset=utf-8
+
+/downloads/*
+  Cache-Control: no-store
+
+/share/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Expose-Headers: Accept-Ranges, Content-Length, Content-Range

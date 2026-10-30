@@ -1,0 +1,57 @@
+{
+  "name": "offense",
+  "version": "0.2.0",
+  "description": "Offense by Offense Security: independent dependency intelligence and optional hosted security-tool client.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "offense": "bin/offense.mjs",
+    "purple": "bin/purple.mjs",
+    "offense-hosted": "bin/offense-hosted.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node scripts/check-package.mjs"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "server/",
+    "shared/",
+    "src/",
+    "public/",
+    "tools/",
+    "skills/",
+    "scripts/",
+    "docs/",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses/"
+  ],
+  "dependencies": {
+    "@babel/parser": "7.29.9",
+    "@babel/traverse": "7.29.10",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "semver": "7.8.5",
+    "yaml": "2.9.1",
+    "zod": "4.6.6",
+    "jsonc-parser": "3.3.1",
+    "smol-toml": "1.9.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imranye/purple-community.git"
+  },
+  "homepage": "https://github.com/imranye/purple-community#readme",
+  "bugs": {
+    "url": "https://github.com/imranye/purple-community/issues"
+  },
+  "private": true
+}

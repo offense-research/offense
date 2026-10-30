@@ -1,0 +1,13 @@
+{
+  "name": "@purpleteam/offense",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "description": "Embed Offense dependency security checks in agent hosts and deployment lifecycles.",
+  "engines": { "node": ">=20" },
+  "exports": {
+    ".": { "types": "./index.d.ts", "import": "./dist/index.mjs" },
+    "./node": { "types": "./node.d.ts", "import": "./dist/node.mjs" }
+  },
+  "files": ["dist", "index.d.ts", "node.d.ts", "README.md", "examples"]
+}
