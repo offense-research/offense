@@ -6,11 +6,9 @@ Copy the template into `.github/workflows/offense.yml` in a new branch of your
 repository, then open a pull request. See [manual installation and updates](#manual-installation-and-updates)
 for existing workflows and future upgrades.
 
-## Web installer (pending deployment)
+## Web installer
 
-The browser-based installer is prepared in `site/public/install.html` but has
-**not been deployed**. Its intended URL is `https://offense.sh/install`; use the
-manual instructions above until deployment is approved. Once live:
+[**Open the repository installer →**](https://offense.sh/install)
 
 Enter your GitHub repository and existing base branch. The installer prepares
 a link to GitHub's new-file editor with `.github/workflows/offense.yml` filled

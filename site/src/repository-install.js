@@ -1,3 +1,4 @@
+// Repository PR installer; separate from the homepage's CLI installer module.
 export function installationUrl(repository, branch, workflow) {
   let value = repository.trim().replace(/\/$/, '');
   if (value.startsWith('https://github.com/')) value = value.slice('https://github.com/'.length);

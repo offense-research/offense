@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { parse } from 'yaml';
-import { installationUrl } from '../src/install.js';
+import { installationUrl } from '../src/repository-install.js';
 
 const template = await readFile(new URL('../public/templates/offense.yml', import.meta.url), 'utf8');
 const workflow = parse(template);

@@ -13,7 +13,7 @@ test('site build publishes canonical coverage and byte-identical root client art
   for (const removed of ['figma', 'src/reference-diagrams.js']) {
     await assert.rejects(stat(path.join(root, 'site/dist', removed)), { code: 'ENOENT' });
   }
-  for (const file of ['install.html', 'templates/offense.yml', 'src/install.js', 'src/install.css']) {
+  for (const file of ['install.html', 'templates/offense.yml', 'src/repository-install.js', 'src/repository-install.css']) {
     const source = file.startsWith('src/') ? file : `public/${file}`;
     assert.deepEqual(await readFile(path.join(root, 'site/dist', file)), await readFile(path.join(root, 'site', source)), file);
   }

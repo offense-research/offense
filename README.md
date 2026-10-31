@@ -9,7 +9,7 @@
 [![Discord](https://img.shields.io/badge/Discord-Join_the_community-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/xP7GCnyF)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-green?style=flat-square)](LICENSE)
 
-[![Add Offense to your repo](https://img.shields.io/badge/Add_Offense_to_your_repo-Open_an_installation_PR-ff2e17?style=for-the-badge&logo=github&logoColor=white)](docs/add-to-repository.md)
+[![Add Offense to your repo](https://img.shields.io/badge/Add_Offense_to_your_repo-Open_an_installation_PR-ff2e17?style=for-the-badge&logo=github&logoColor=white)](https://offense.sh/install)
 
 **Security tools your AI agent can discover, call and verify.**
 
@@ -40,12 +40,12 @@ and runs your tests—with its existing model, repository access and permissions
 
 ## Add Offense to your repository with a PR
 
-[**Add Offense to your repo →**](docs/add-to-repository.md)
+[**Add Offense to your repo →**](https://offense.sh/install)
 
-Copy the workflow template into a new branch and open a pull request using the
-instructions above. No Offense account or API key is required. The browser-based
-installer is prepared in this repository but **not deployed yet**; the button
-links to the working manual instructions until it is live.
+Enter your GitHub repository and base branch. The installer opens GitHub's
+prefilled workflow editor; review the file, choose **Create a new branch**, then
+open a pull request. No Offense account, API key or GitHub token is required.
+Offense prepares the link; you create and approve the PR on GitHub.
 
 The starter adds **free npm/pnpm dependency audits on pull requests** using
 pinned, read-only GitHub Actions. It never installs or runs your app, edits code
