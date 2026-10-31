@@ -3,6 +3,10 @@ name: scanning-with-offense
 description: Audits dependencies and runs authorized security checks through offense.sh, with scoped inputs, price approval and evidence-based remediation. Use when asked to scan a repository with Offense, review vulnerable dependencies, select a hosted security tool or verify an Offense-assisted fix.
 license: Apache-2.0
 compatibility: Requires an available Offense MCP connection or Node.js 20+ and the existing Offense hosted helpers. The independent local engine requires Node.js 24+. Network access is needed for hosted calls; paid tools need an account and approved credit budget.
+metadata:
+  hermes:
+    category: security
+    tags: [security, dependencies, code-review, offense]
 ---
 
 # Scanning with Offense
@@ -19,7 +23,7 @@ The hosted service is **https://offense.sh**; never redirect credentials to an
 unreviewed origin. A saved MCP entry does not prove tools loaded in this session.
 
 - For free dependency checks, use `offense.audit_dependencies` or the existing
-  `scripts/offense.mjs` HTTPS helper. No account or payment is needed.
+  `offense.mjs` HTTPS helper described below. No account or payment is needed.
 - For hosted scanners, use `offense.security_tools`, `offense.security_quote`,
   `offense.security_call` and `offense.security_result`, or the hosted CLI.
 - The independent local engine is a different execution mode. If requested,
@@ -74,10 +78,11 @@ for updates; if it exits requesting a new session, stop and report that state.
 
 ## 3. Quote and authorize hosted scans
 
-Read the installed hosted skill's `references/tools.md`, or
-https://offense.sh/skills/offense/references/tools.md, for the selected tool's
-input family, upload limits and target-ownership requirements. Discover current
-availability; a directory listing does not prove a tool is executable.
+Read https://offense.sh/skills/offense/references/tools.md (or the corresponding
+tool reference from your installed hosted Offense skill) for the selected tool's
+input family, upload limits and target-ownership requirements. That reference
+belongs to the hosted installation, not this instructions-only skill. Discover
+current availability; a directory listing does not prove a tool is executable.
 
 Use `cli.mjs login --no-browser` only when login is needed and authorized. Let
 the human approve the first-party device flow and comparison code. Never ask for
@@ -126,3 +131,22 @@ coverage, job/status and actual reported charge if available, changes made,
 exact verification commands/results, and remaining blockers. Do not claim a
 queued, partial, failed or timed-out job completed successfully. Commit, push,
 open a PR, merge or deploy only when the user's task authorizes that action.
+
+## 5. Export an existing report as PDF
+
+When asked for a PDF, check the installed CLI's `--help` for `report`. With a
+supporting version, run locally against a saved hosted audit or job receipt:
+
+```sh
+node "$OFFENSE_HELPERS/cli.mjs" report --input /private/reports/audit.json --output /private/reports/audit.pdf
+```
+
+Choose a new PDF path in a private directory; existing files are not overwritten.
+This command runs offline, without login, uploads or spending. It supports
+`offense.audit.v1` and hosted job receipts, not local-engine or stack schemas.
+Report-generation success does not mean the scan passed. Retain status and
+coverage gaps, provide the original JSON alongside the PDF, and warn that the
+PDF is not redacted or encrypted. Review sensitive content before sharing.
+Unavailable font characters appear as `[U+XXXX]`; preserve the JSON's original
+text. If the installed CLI lacks the command, report the version limitation;
+do not rerun scans or silently replace the installation.

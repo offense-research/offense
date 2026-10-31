@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { constants } from 'node:fs';
-import { lstat, mkdir, mkdtemp, open, readFile, realpath, rename, rm } from 'node:fs/promises';
+import { link, lstat, mkdir, mkdtemp, open, readFile, realpath, rename, rm } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +15,7 @@ import { prepareGitHistoryBundle } from '../public/skills/purple/scripts/git-his
 import { collectStackEvidence, buildStackImage } from './stack-collection.mjs';
 import { analyzeStackEvidence } from './stack-analysis.mjs';
 import { collectKubernetesInventory, kubernetesCollectionScope } from './kubernetes-collection.mjs';
+import { renderPdfReport } from './pdf-report.mjs';
 
 export const OFFENSE_CLI_VERSION = '0.2.0';
 export const OFFENSE_ENDPOINT = 'https://offense.sh';
@@ -101,7 +102,9 @@ async function atomicWrite(filename, content, { privateDirectory = true, expecte
     handle = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW || 0), 0o600);
     await handle.writeFile(content, 'utf8'); await handle.sync(); await handle.close(); handle = null;
     await noSymlinks(filename);
-    await rename(temporary, filename);
+    // A create-only output must remain create-only if another writer wins.
+    if (expected === null) await link(temporary, filename);
+    else await rename(temporary, filename);
   } finally { await handle?.close(); await rm(temporary, { force: true }); }
 }
 
@@ -358,7 +361,7 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
     }
     return { value, status: response.status, ok: response.ok };
   }
-  async function inputFile(filename) {
+  async function inputFile(filename, { report = false } = {}) {
     if (!filename) throw new CliError('Provide --input with an explicit JSON file, or - for stdin.');
     let content;
     if (filename === '-') {
@@ -370,7 +373,8 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
       content = await readFile(filename, 'utf8');
     }
     let input; try { input = JSON.parse(content); } catch { throw new CliError('Input is not valid JSON.'); }
-    if (!object(input) || own(input, 'maxChargeMicros')) throw new CliError('Input must be a JSON object without maxChargeMicros; authorize spending with --max-price.');
+    if (!object(input)) throw new CliError('Input must be a JSON object.');
+    if (!report && own(input, 'maxChargeMicros')) throw new CliError('Input must be a JSON object without maxChargeMicros; authorize spending with --max-price.');
     if ([...knownSecrets].some(secret => content.includes(secret))) throw new CliError('Input contains the Offense credential; it was not uploaded.');
     return input;
   }
@@ -524,6 +528,7 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
           'stack check --project DIR [--image IMAGE] --container NAME [--declaration FILE] [--build-receipt FILE] [--sbom FILE] [--scan-report FILE] [--output DIR]',
           'stack build --project DIR --image LOCAL_TAG [--dockerfile RELATIVE_PATH] [--preview | --run] [--output DIR]',
           'k8s collect --context NAME [--kubeconfig FILE] [--preview | --run] [--with-nova] [--with-popeye] [--output DIR]',
+          'report --input audit.json|job.json --output report.pdf',
           'target challenge --target HTTPS_ORIGIN [--output DIR] [--preview]', 'target verify --input CHALLENGE_FILE [--preview]',
           'job <id>', 'mcp', 'mcp install --client codex|claude|cursor --project .'],
           options: ['--endpoint HTTPS_OR_LOOPBACK_ORIGIN', '--json'], credentials: 'OFFENSE_API_KEY or a private credential saved by offense login.' });
@@ -532,6 +537,21 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
       const action = positionals[0] || 'status';
       if (action === 'stack') return await runStack(positionals, flags);
       if (action === 'k8s') return await runKubernetes(positionals, flags);
+      if (action === 'report') {
+        if (positionals.length !== 1 || !flags.input || !flags.output || !/\.pdf$/i.test(flags.output) ||
+            Object.keys(flags).some(key => !['input', 'output', 'json'].includes(key))) {
+          throw new CliError('Use offense report --input audit.json|job.json --output report.pdf. This command is offline.');
+        }
+        const input = await inputFile(flags.input, { report: true });
+        let rendered;
+        try { rendered = await renderPdfReport(input); }
+        catch (error) { throw new CliError(error.message, { code: 'invalid_report' }); }
+        const destination = path.resolve(flags.output);
+        await atomicWrite(destination, rendered.bytes, { expected: null });
+        print({ operation: 'pdf_report', pdf: destination, pages: rendered.pages, reportStatus: rendered.status,
+          note: 'PDF generated locally; no scan or upload performed. Review sensitive evidence before sharing. Original JSON unchanged.' });
+        return 0;
+      }
       const cfg = await configuration(), endpoint = serviceEndpoint(flags.endpoint || env.OFFENSE_API_URL || cfg.endpoint || OFFENSE_ENDPOINT);
       if (['artifact', 'assess', 'target'].includes(action)) return await runAdvanced(action, positionals, flags, endpoint, cfg);
       if (action === 'audit') {

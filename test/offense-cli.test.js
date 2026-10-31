@@ -6,6 +6,7 @@ import os from 'node:os';
 import { createHash } from 'node:crypto';
 import { parse as parseToml } from 'smol-toml';
 import { parse as parseJsonc } from 'jsonc-parser';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { createOffenseCli, dollarsToMicros, installProjectMcp, serviceEndpoint } from '../scripts/offense-cli.mjs';
 
 const TOKEN = 'offense_sk_' + 'a'.repeat(64), OLD_TOKEN = 'purple_scan_' + 'b'.repeat(64);
@@ -465,6 +466,121 @@ const auditResponse = (body, extra = {}) => ({ schemaVersion: 'offense.audit.v1'
   coverage: { status: 'complete', checkedPackages: 1, planningOnly: false }, findings: [],
   summary: { advisoryMatches: 0, confirmedVulnerabilities: 0 },
   remediation: { plans: [], blockers: [], agentPrompt: 'Review the submitted dependency evidence.', planning: { scope: 'full_audit', hasMore: false } }, ...extra });
+
+test('offline PDF export preserves paginated findings, partial coverage and source JSON without credentials', async t => {
+  const f = await fixture(t, { env: { OFFENSE_API_URL: 'invalid-unused-endpoint' } });
+  const source = path.join(f.directory, 'audit.json'), destination = path.join(f.directory, 'audit.pdf');
+  const findings = Array.from({ length: 30 }, (_, index) => ({ advisoryId: `ADVISORY-${index}`, severity: index ? 'low' : 'high',
+    summary: 'Review this advisory; not a confirmed exploit. '.repeat(8), package: { name: '@example/demo', installedVersion: '1.2.3' } }));
+  findings.at(-1).summary = 'FINAL-EVIDENCE 日本語 🔒 <script>alert(1)</script> ' + 'x'.repeat(200);
+  const report = auditResponse({ files: [] }, { status: 'partial', findings,
+    summary: { advisoryMatches: findings.length, confirmedVulnerabilities: 0 },
+    clientCoverage: { warnings: ['Unsupported lockfile: poetry.lock'] },
+    remediation: { plans: [], blockers: ['No compatible upgrade'], planning: { hasMore: true } } });
+  const original = JSON.stringify(report); await writeFile(source, original);
+  assert.equal(await f.cli.run(['report', '--input', source, '--output', destination]), 0, f.stderr.join(''));
+  assert.equal(f.out().reportStatus, 'partial'); assert.equal(f.calls.length, 0);
+  assert.equal(await readFile(source, 'utf8'), original);
+  assert.equal((await lstat(destination)).mode & 0o777, 0o600);
+  const task = getDocument({ data: new Uint8Array(await readFile(destination)), useSystemFonts: true });
+  const pdf = await task.promise;
+  t.after(() => task.destroy());
+  assert.ok(pdf.numPages > 2); assert.equal(pdf.numPages, f.out().pages);
+  const pages = [];
+  for (let i = 1; i <= pdf.numPages; i++) pages.push((await (await pdf.getPage(i)).getTextContent()).items.map(item => item.str).join(' ').replace(/\s+/g, ' '));
+  const text = pages.join('\n');
+  for (const expected of ['PARTIAL', 'INCOMPLETE EVIDENCE', 'poetry.lock', 'No compatible upgrade', 'FINAL-EVIDENCE', '[U+65E5]', '[U+1F512]', '<script>alert(1)</script>']) assert.ok(text.includes(expected), expected);
+  for (let i = 0; i < findings.length; i++) assert.ok(text.includes(`ADVISORY-${i}`));
+  assert.ok(pages.at(-1).includes(`Page ${pdf.numPages} of ${pdf.numPages}`));
+  const previous = await readFile(destination);
+  assert.equal(await f.cli.run(['report', '--input', source, '--output', destination]), 1);
+  assert.deepEqual(await readFile(destination), previous, 'Existing reports must not be overwritten');
+  const concurrent = path.join(f.directory, 'concurrent.pdf');
+  const results = await Promise.all([0, 1].map(() => f.cli.run(['report', '--input', source, '--output', concurrent])));
+  assert.deepEqual(results.sort(), [0, 1], 'Only one concurrent export may create the destination');
+});
+
+test('PDF export retains failed and running receipts and rejects unsupported data and symlink outputs', async t => {
+  const f = await fixture(t), source = path.join(f.directory, 'job.json');
+  for (const status of ['failed', 'running', 'completed']) {
+    await writeFile(source, JSON.stringify({ id: JOB, status, maxChargeMicros: 1000, findings: [], error: status === 'failed' ? 'Scanner timed out' : null }));
+    const destination = path.join(f.directory, `${status}.pdf`);
+    assert.equal(await f.cli.run(['report', '--input', source, '--output', destination]), 0, f.stderr.join(''));
+    assert.equal(f.out().reportStatus, status);
+    const task = getDocument({ data: new Uint8Array(await readFile(destination)), useSystemFonts: true });
+    const pdf = await task.promise;
+    const text = (await (await pdf.getPage(1)).getTextContent()).items.map(item => item.str).join(' ');
+    assert.ok(text.includes(status.toUpperCase()));
+    assert.equal(text.includes('INCOMPLETE EVIDENCE'), status !== 'completed');
+    await task.destroy();
+  }
+  const link = path.join(f.directory, 'linked.pdf'); await symlink(source, link);
+  const before = await readFile(source);
+  assert.equal(await f.cli.run(['report', '--input', source, '--output', link]), 1);
+  assert.deepEqual(await readFile(source), before);
+  for (const invalid of [{ findings: [] }, { id: JOB, status: 'complete' }, { id: JOB, status: 'failed', findings: [null] }]) {
+    await writeFile(source, JSON.stringify(invalid));
+    assert.equal(await f.cli.run(['report', '--input', source, '--output', path.join(f.directory, 'invalid.pdf')]), 1);
+    assert.equal(f.err().error.code, 'invalid_report');
+    await assert.rejects(lstat(path.join(f.directory, 'invalid.pdf')), { code: 'ENOENT' });
+  }
+  assert.equal(f.calls.length, 0);
+});
+
+test('PDF executive explanations separate contextual risk, reported reproduction and unsupported claims', async t => {
+  const f = await fixture(t), source = path.join(f.directory, 'reviewed.json'), destination = path.join(f.directory, 'reviewed.pdf');
+  const review = { reviewer: 'Synthetic reviewer', reviewedAt: '2026-10-31T12:00:00Z', scope: 'Synthetic staging revision abc123; not production',
+    exploitability: 'reproduced', severity: 'high', severityReason: 'A test account read a different customer record in staging.',
+    attackerOutcome: 'The test account read another customer record.', attackerAccess: 'An authenticated customer account and access to the staging endpoint.',
+    businessImpact: 'Cross-customer data exposure could breach customer confidentiality.', recommendedFix: 'Bind account ownership to the database query and add cross-account rejection tests.',
+    evidence: ['Test evidence: cross-account-request.txt, expected 403, observed 200 with synthetic data.'], unknowns: ['Production deployment equivalence has not been checked.'] };
+  const base = { summary: 'SQL injection in query builder', severity: 'high', package: { name: 'synthetic-db', installedVersion: '1.0.0' },
+    advisoryListedFixedVersions: ['1.0.1'], verification: { confirmed: false, status: 'advisory_match' } };
+  const findings = [
+    { ...base, advisoryId: 'UNKNOWN-EXPOSURE', package: { ...base.package, kind: 'dev' }, impact: { whatCouldHappen: 'FORGED-TAKEOVER-CLAIM' } },
+    { ...base, advisoryId: 'REPRODUCED', riskReview: review },
+    { ...base, advisoryId: 'LIMITED-CONTEXT', riskReview: { ...review, severity: 'low', exploitability: 'not_tested', severityReason: 'Only a local disposable test database is in scope; no service or customer data.', attackerAccess: 'Local developer access only.', businessImpact: 'Temporary test data could be changed; production use is unknown.' } },
+    { ...base, advisoryId: 'UNSUPPORTED-CONFIRMATION', verification: { confirmed: true }, riskReview: { ...review, severity: 'low', evidence: [] } },
+    { tool: 'opengrep', ruleId: 'purple.js.request-ssrf', title: 'Request data selects the outbound URL', severity: 'HIGH', remediation: 'Restrict destinations and validate redirects.' },
+    { tool: 'semgrep', ruleId: 'offense.python.requests-tls-verification-disabled', title: 'HTTP client disables TLS verification', severity: 'HIGH', remediation: 'Enable certificate verification with the intended trusted CA.' },
+    { ...base, advisoryId: 'UNKNOWN-TYPE', summary: 'Unclassified advisory' },
+    { ...base, advisoryId: 'OUTSIDE-SCOPE', riskReview: { ...review, exploitability: 'not_applicable', severity: 'unknown',
+      severityReason: 'The affected feature is disabled in this reviewed deployment.', evidence: ['Synthetic configuration review: feature disabled at revision abc123.'] } }
+  ];
+  await writeFile(source, JSON.stringify(auditResponse({ files: [] }, { findings })));
+  assert.equal(await f.cli.run(['report', '--input', source, '--output', destination]), 0, f.stderr.join(''));
+  const task = getDocument({ data: new Uint8Array(await readFile(destination)), useSystemFonts: true }), pdf = await task.promise;
+  t.after(() => task.destroy());
+  const pages = [];
+  for (let i = 1; i <= pdf.numPages; i++) pages.push((await (await pdf.getPage(i)).getTextContent()).items.map(item => item.str).join(' ').replace(/\s+/g, ' '));
+  const executive = pages.join('\n').split('Technical evidence appendix')[0];
+  assert.doesNotMatch(executive, /FORGED-TAKEOVER-CLAIM/);
+  const section = n => executive.split(`Finding ${n}:`)[1].split(`Finding ${n + 1}:`)[0];
+  for (let i = 1; i <= findings.length; i++) for (const label of ['What an attacker could do', 'Access and conditions needed', 'Why it matters to the business', 'Recommended fix', 'What is still unknown']) assert.ok(section(i).includes(label), `${i}: ${label}`);
+  assert.match(section(1), /Application severity: not determined/);
+  assert.match(section(1), /development dependency.*does not prove it is absent from production/);
+  assert.match(section(1), /Customer or business records could be exposed, changed or deleted/);
+  assert.match(section(1), /login or a particular role is required is unknown/);
+  assert.match(section(1), /1.0.1.*not automatically safe upgrade/);
+  assert.match(section(2), /Reviewer reports a reproduced exploit/);
+  assert.match(section(2), /not proof of production compromise/);
+  assert.match(section(2), /Urgent review and containment planning/);
+  assert.match(section(2), /Production deployment equivalence has not been checked/);
+  assert.match(section(3), /Plan a routine fix/);
+  assert.match(section(3), /Reviewer-assessed application severity: LOW/);
+  assert.match(section(3), /scanner\/advisory severity remains HIGH/);
+  assert.match(section(4), /confirmation flag alone is not exploit evidence/);
+  assert.match(section(4), /risk review is incomplete or invalid/);
+  assert.doesNotMatch(section(4), /Reviewer-assessed application severity: LOW/);
+  assert.match(section(5), /server could be used to request a destination/);
+  assert.match(section(5), /does not establish code execution or access to cloud credentials/);
+  assert.match(section(6), /intercept or redirect this connection/);
+  assert.match(section(7), /original advisory needs review before describing a specific business impact/);
+  assert.match(section(8), /Monitor the reviewed scope/);
+  assert.match(section(8), /not a general safety claim or proof of a fix/);
+  assert.equal(f.calls.length, 0);
+});
+
 async function auditProject(directory) {
   const project = path.join(directory, 'source'); await mkdir(project);
   await writeFile(path.join(project, 'package.json'), JSON.stringify({ name: 'PRIVATE_PROJECT_NAME', scripts: { postinstall: 'DO_NOT_EXECUTE_SECRET' } }));

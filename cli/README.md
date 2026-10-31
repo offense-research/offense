@@ -55,6 +55,79 @@ Keep the same idempotency key and input when recovering an uncertain submission.
 Failed or partial hosted scans release their reservation. Advisory matches and
 scanner findings are review signals, not confirmed exploitable vulnerabilities.
 
+Generate a PDF from an existing hosted audit or job receipt, entirely offline:
+
+```sh
+offense report --input /private/reports/audit.json --output /private/reports/audit.pdf
+offense report --input /private/reports/job.json --output /private/reports/job.pdf
+```
+
+Use a private output directory. The command refuses existing files and symbolic
+links, does not read login configuration, and does not run or purchase scans.
+Exit 0 means the PDF was generated; `reportStatus` in its JSON output preserves
+the scan's status, including partial, running or failed. Findings, coverage and
+planning blockers remain in the PDF. Retain the original JSON and review both
+before sharing: PDFs are not redacted, encrypted or signed. Standard-font
+limitations are represented as `[U+XXXX]`, not dropped text. Maximum input is
+6 MB; exports exceeding 500 pages fail. Only `offense.audit.v1` and hosted job
+receipts are supported, not local-engine or stack report schemas.
+
+### Plain-English risk explanations
+
+The PDF leads with a decision summary and an explanation for every finding:
+what an attacker could do, required access and conditions, business impact,
+recommended fix, priority, evidence and unknowns. Raw findings follow in a
+technical appendix. Explanations are generated locally from advisory metadata
+and known scanner rules; they do not invoke a model or invent deployment facts.
+
+Scanner/advisory severity is **not application severity**. Without reviewed
+context, application severity is undetermined and priority means investigation,
+not a claim of confirmed exposure. A development dependency is not automatically
+safe; a critical advisory is not proof of production compromise. Unknown attack
+types remain unknown instead of being assigned a dramatic consequence.
+
+To include an actual scoped assessment, preserve the original JSON and add a
+`riskReview` object to the relevant finding in a **separate reviewed copy**.
+All fields below are required; evidence must be a nonempty list of descriptions
+or references, and `unknowns` must explicitly list remaining gaps (or be empty).
+Do not invent a review, test result, reviewer or scope to populate these fields.
+Example for a synthetic SQL-injection finding:
+
+```json
+{
+  "riskReview": {
+    "reviewer": "Example security reviewer",
+    "reviewedAt": "2026-10-31T12:00:00Z",
+    "scope": "Synthetic staging service, commit abc123; production not assessed",
+    "exploitability": "reproduced",
+    "severity": "high",
+    "severityReason": "A crafted query returned another tenant's test records.",
+    "attackerOutcome": "The test account read records outside its tenant.",
+    "attackerAccess": "A signed-in account able to submit the affected search request.",
+    "businessImpact": "If the same path is deployed, customer confidentiality could be breached.",
+    "recommendedFix": "Bind query values using parameters; test cross-tenant and normal requests.",
+    "evidence": ["Staging regression log: expected no other-tenant rows; observed synthetic other-tenant rows."],
+    "unknowns": ["Production deployment equivalence has not been checked."]
+  }
+}
+```
+
+`exploitability` accepts `reproduced`, `not_tested`, or `not_applicable`.
+`severity` accepts `critical`, `high`, `medium`, `low`, or `unknown`;
+`not_applicable` requires `unknown` severity and a scoped justification, not a
+claim that the underlying issue was fixed. High/critical reviewed risks get
+urgent review and containment planning; medium risks get a maintenance-cycle
+fix; low risks get a routine fix; unknown severity requires prioritization.
+Agree an owner and deadline using service exposure and business requirements.
+
+Reviews are **attributed, not authenticated**: the PDF says “Reviewer reports a
+reproduced exploit,” not “Offense verified production compromise.” The exporter
+does not open evidence references, execute tests or validate whether the review
+still matches the deployment. Incomplete reviews cannot lower priority or
+establish exploitability. A standalone `confirmed: true` flag is not proof.
+Provider-listed fixed versions remain candidates requiring compatibility and
+security verification, even when a review recommends them.
+
 Inspect a repository → container → deployed-state chain locally, without login:
 
 ```sh

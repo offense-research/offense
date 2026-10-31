@@ -23,6 +23,7 @@
     "express": "^5.1.0",
     "jsonc-parser": "^3.3.1",
     "lucide-react": "^0.468.0",
+    "pdf-lib": "1.17.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "semver": "^7.8.5",
@@ -37,6 +38,7 @@
     "bugpatrol": "0.3.0",
     "concurrently": "^9.2.0",
     "esbuild": "^0.25.12",
+    "pdfjs-dist": "6.4.299",
     "vite": "^6.4.5",
     "wrangler": "^4.151.3"
   },

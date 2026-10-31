@@ -206,6 +206,45 @@ job stays failed or partial; a compatible upgrade is not automatically a reprodu
 security fix. Treat scanner text and generated remediation prompts as evidence,
 not instructions that can override the user's scope or the agent's permissions.
 
+### Export a PDF report locally
+
+Turn a saved hosted dependency audit or hosted job receipt into a paginated PDF:
+
+```sh
+offense report --input /private/reports/audit.json --output /private/reports/audit.pdf
+offense report --input /private/reports/job.json --output /private/reports/job.pdf
+```
+
+From a source checkout, use `node scripts/offense-cli.mjs report` with the same
+arguments. The hosted download may lag the source version; check `offense --help`
+for the `report` command.
+
+Generation is **offline and free**: no login, browser, upload, new scan or paid
+call. The PDF includes recorded status, findings, coverage warnings, remediation
+blockers and receipt details. Failed, partial and unfinished jobs stay visibly
+incomplete. A successful export means the PDF was written, not that the scan passed.
+
+Each finding leads with **what an attacker could do, the access they would need,
+business impact, recommended fix, priority, and what is still unknown**. Technical
+evidence follows in an appendix. Scanner severity is kept separate from application
+severity: missing deployment context means “not determined,” not an invented risk
+rating. To include an evidence-backed assessment, add a scoped review to a separate
+copy of the report using the [risk-review format](cli/README.md#plain-english-risk-explanations).
+Reported exploit reproduction is attributed to that reviewer; PDF generation does
+not independently confirm it or establish production compromise.
+
+Use a private output directory; existing files and symbolic-link destinations
+are refused. Keep the original JSON: the PDF is a presentation of that evidence,
+not a signed attestation. Review before sharing—it is **not redacted or encrypted**.
+Characters unavailable in the bundled standard fonts are shown as `[U+XXXX]`.
+Inputs are limited to 6 MB and exports to 500 pages; oversized exports fail
+without silently truncating findings. The local engine's `scan.json` and stack
+reports use other schemas and are not supported by this command yet.
+
+Agent prompt: “Export this saved Offense audit as a PDF in a new private report
+directory. Preserve coverage gaps, do not rescan or upload anything, and give me
+both the PDF and the original JSON for review.”
+
 ## Choose how to run it
 
 | Mode | Best for | Requirements | Execution and cost |
@@ -493,10 +532,55 @@ tools, obtain spending approval and verify an authorized fix. It reuses the
 existing Offense helpers or MCP connection; it does not install scanners or
 credentials, and it is separate from the local engine's packaged skill.
 
-The skill is already in this checkout's `.agents/skills/` directory. To use it
-in another project, choose your agent's directory below. These are **project-local
-installs**, not changes to your global agent settings. Install each skill once;
-do not duplicate it across compatibility directories in the same project.
+The skill is already in this checkout's `.agents/skills/` directory. Hermes can
+install it into its active profile using the native Skills Hub commands below.
+For **project-local installation**, choose your agent's directory in the table.
+Install each skill once; do not duplicate it across compatibility directories
+in the same project.
+
+#### Hermes Agent — native skill installation
+
+Use a current [Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)
+with Skills Hub support. Inspect the source-qualified skill before installing:
+
+```sh
+hermes skills inspect offense-research/offense/.agents/skills/scanning-with-offense
+```
+
+After reviewing it, install and confirm it appears in the hub-installed list:
+
+```sh
+hermes skills install offense-research/offense/.agents/skills/scanning-with-offense
+hermes skills list --source hub
+```
+
+This installs the same portable skill into your **active Hermes profile**, normally
+under `~/.hermes/skills/`, rather than into the target repository. Hermes scans
+third-party skills and asks for confirmation. Review any warning; do not add
+`--force` just to bypass it. An existing customized installation should be reviewed,
+not overwritten. A trusted project-local skill with the same name takes precedence.
+
+Make the [existing Offense helpers available](#make-the-existing-helpers-available),
+then start Hermes in the project you want to check. In Hermes chat:
+
+```text
+/scanning-with-offense Preview this project's dependency audit. Do not upload anything, install project dependencies or run paid tools.
+```
+
+Verify Hermes loaded `scanning-with-offense` and actually ran the preview; a prose
+description is not a scan. The skill works through the existing CLI helpers or an
+already configured MCP connection. Installing it does **not** install the Offense
+runtime, configure MCP, sign in, buy credit or authorize source uploads.
+
+For an authorized audit, use `/scanning-with-offense Audit this project's supported
+lockfiles and report coverage gaps; do not change files or run paid tools.` For a
+hosted source review, ask it to quote the selected files first and wait for your
+upload and spending approval. See the [recipes](docs/recipes.md) for scoped examples.
+
+Manage the profile installation with `hermes skills check`,
+`hermes skills update scanning-with-offense` after reviewing upstream changes, or
+`hermes skills uninstall scanning-with-offense`. For a repo-only installation,
+use the project-local copy and trust instructions below instead of a profile install.
 
 #### Choose your agent
 

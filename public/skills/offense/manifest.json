@@ -41,8 +41,8 @@
     },
     {
       "path": "scripts/cli.mjs",
-      "bytes": 631481,
-      "sha256": "92d48975ea3fc394ef8b0e1965abaf866964ab3363dc93274cdd94e0b7687126"
+      "bytes": 1112263,
+      "sha256": "c5c4d67caa0375f00540b08cd5909af4ebf5f53651e7c980675a9b0887aba721"
     },
     {
       "path": "scripts/update.mjs",
