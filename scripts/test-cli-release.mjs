@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, readdir, rm, access } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, access, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -36,7 +36,7 @@ assert.ok(run('tar', ['-xOzf', archive, 'package/LICENSE']).includes('Apache Lic
 assert.ok(run('tar', ['-xOzf', archive, 'package/NOTICE']).includes('Offense'));
 assert.ok(run('tar', ['-xOzf', archive, 'package/THIRD_PARTY_LICENSES.txt']).includes('smol-toml'));
 
-const temporary = await mkdtemp(path.join(tmpdir(), 'offense-cli-release-'));
+const temporary = await realpath(await mkdtemp(path.join(tmpdir(), 'offense-cli-release-')));
 try {
   // Exclude real user credentials and npm configuration; use an isolated prefix.
   const env = { PATH: process.env.PATH, HOME: temporary, npm_config_cache: path.join(temporary, 'cache'),

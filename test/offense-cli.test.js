@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, mkdir, chmod, lstat, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, mkdir, chmod, lstat, rm, symlink, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
@@ -12,7 +12,7 @@ const TOKEN = 'offense_sk_' + 'a'.repeat(64), OLD_TOKEN = 'purple_scan_' + 'b'.r
 const DEVICE = 'd'.repeat(64), JOB = 'c'.repeat(32);
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } });
 async function fixture(t, options = {}) {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'offense-cli-test-'));
+  const directory = await realpath(await mkdtemp(path.join(os.tmpdir(), 'offense-cli-test-')));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const config = path.join(directory, 'config.json'), stdout = [], stderr = [], calls = [], opened = [];
   let clock = 0;
