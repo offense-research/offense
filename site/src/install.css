@@ -1,0 +1,45 @@
+.install-page nav { display: flex; gap: 28px; margin-left: auto; font: 12px var(--mono); }
+.install-page nav a { padding: 14px 0; }
+.install-page a:hover { color: var(--red); }
+.install-intro { padding: 64px 0 44px; }
+.install-intro .eyebrow { color: var(--red); margin-bottom: 22px; }
+.install-intro h1 { font-size: clamp(38px, 5vw, 66px); line-height: 1.06; max-width: 850px; }
+.install-intro > p:last-child { max-width: 660px; color: var(--muted); font-size: 18px; line-height: 1.65; margin: 24px 0 0; }
+.install-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: start; }
+.install-card { background: var(--paper); color: var(--ink); color-scheme: light; padding: 32px; }
+.install-card .eyebrow { color: #606060; margin-bottom: 22px; }
+.install-card h2 { font-size: 32px; margin-bottom: 24px; }
+.install-card label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.install-card input { display: block; width: 100%; min-height: 48px; padding: 12px; border: 1px solid #999; border-radius: 0; background: #fff; color: #111; font: 13px var(--mono); }
+.install-card input:focus-visible { outline: 2px solid #b92311; outline-offset: 3px; }
+.install-card form p { color: #555; font-size: 12px; line-height: 1.6; margin: 10px 0 22px; }
+.install-card .button { display: flex; width: 100%; justify-content: center; background: #141414; color: #fff; border: 1px solid #141414; min-height: 48px; margin-top: 26px; font: 12px/1.5 var(--mono); }
+.install-card .button:hover { background: #b92311; color: #fff; border-color: #b92311; }
+.install-card button:disabled { opacity: .6; cursor: wait; }
+.install-card #install-error { color: #a01c0b; margin: 14px 0 0; }
+.install-card #install-error:empty { display: none; }
+.install-private { font: 11px/1.8 var(--mono); color: #555; border-top: 1px solid #ccc; padding-top: 20px; margin: 24px 0 0; }
+#install-ready { border-top: 2px solid #b92311; margin-top: 24px; padding-top: 22px; }
+#install-ready h3 { font-size: 19px; overflow-wrap: anywhere; }
+#install-ready p { font-size: 13px; line-height: 1.8; color: #444; }
+.install-explainer .eyebrow { color: var(--subtle); margin: 6px 0 22px; }
+.install-explainer h2 { font-size: 32px; line-height: 1.15; margin-bottom: 22px; }
+.install-explainer > code { display: block; padding: 16px; border: 1px solid var(--line); font: 12px/1.6 var(--mono); overflow-wrap: anywhere; }
+.install-explainer ul { padding-left: 20px; margin: 24px 0; }
+.install-explainer li { padding-left: 7px; margin-bottom: 16px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.install-explainer li::marker { color: var(--red); }
+.install-explainer strong { color: var(--text); }
+.install-boundary { border-left: 2px solid var(--red); padding-left: 18px; }
+.install-boundary p { font-size: 13px; line-height: 1.8; color: var(--muted); }
+.install-manual { border-top: 1px solid var(--line); margin-top: 48px; padding: 32px 0; }
+.install-manual h2 { font-size: 24px; }
+.install-manual p { font-size: 14px; line-height: 1.8; color: var(--muted); max-width: 850px; }
+.install-manual a, .install-footer a { text-decoration: underline; text-underline-offset: 4px; }
+.install-footer { display: flex; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--line); padding-block: 28px; font: 11px/1.8 var(--mono); color: var(--muted); }
+.install-footer a:last-child { margin-left: auto; }
+@media (max-width: 760px) {
+  .install-intro { padding-top: 40px; }
+  .install-layout { grid-template-columns: 1fr; gap: 40px; }
+  .install-card { padding: 24px; }
+  .install-page nav { gap: 16px; }
+}

@@ -9,6 +9,8 @@
 [![Discord](https://img.shields.io/badge/Discord-Join_the_community-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/xP7GCnyF)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-green?style=flat-square)](LICENSE)
 
+[![Add Offense to your repo](https://img.shields.io/badge/Add_Offense_to_your_repo-Open_an_installation_PR-ff2e17?style=for-the-badge&logo=github&logoColor=white)](docs/add-to-repository.md)
+
 **Security tools your AI agent can discover, call and verify.**
 
 Offense is a product by **[Offense Research, Inc.](https://offenseresearch.com)**.
@@ -26,6 +28,7 @@ and runs your tests—with its existing model, repository access and permissions
 [Report a vulnerability](SECURITY.md)
 
 **Start here:** [Give this to your agent](#give-this-to-your-agent) ·
+[Add with a PR](#add-offense-to-your-repository-with-a-pr) ·
 [Recipes](#recipes-from-the-landing-page) ·
 [Install the CLI](#install-the-cli) ·
 [Agent installation](#choose-your-agent) · [Choose a mode](#choose-how-to-run-it) ·
@@ -34,6 +37,25 @@ and runs your tests—with its existing model, repository access and permissions
 [Self-hosted platform](#run-the-self-hosted-platform) ·
 [Documentation](#documentation) · [Troubleshooting](#troubleshooting) ·
 [Community](#community-and-support)
+
+## Add Offense to your repository with a PR
+
+[**Add Offense to your repo →**](docs/add-to-repository.md)
+
+Copy the workflow template into a new branch and open a pull request using the
+instructions above. No Offense account or API key is required. The browser-based
+installer is prepared in this repository but **not deployed yet**; the button
+links to the working manual instructions until it is live.
+
+The starter adds **free npm/pnpm dependency audits on pull requests** using
+pinned, read-only GitHub Actions. It never installs or runs your app, edits code
+or calls paid Offense tools. Dependency metadata goes to OSV/npm; reports are
+retained as GitHub artifacts for seven days. Advisories are report-only;
+coverage warnings and scan errors fail the check. GitHub Actions usage limits
+and charges still apply. This is a dependency check, not the full tool catalog.
+
+[Review the template](site/public/templates/offense.yml) ·
+[Manual installation, privacy and updates](docs/add-to-repository.md)
 
 ## Give this to your agent
 
@@ -219,6 +241,71 @@ The [formula](Formula/offense.rb) installs the bundled CLI from a **commit-pinne
 SHA-256-checked public source archive** and brings its own Homebrew Node dependency.
 It does not run npm install scripts or download scanner images. This is a project
 tap, not a formula in Homebrew/core. Review the tap before installing it.
+
+### Ubuntu and Arch Linux
+
+Install Node and npm using the instructions for your distribution, then run the
+shared Offense install below. If you already have **Node.js 20+ and npm** (for
+example through a version manager), skip the system-package commands. Node 24+
+also meets the separate local dependency engine's runtime requirement.
+
+**Ubuntu 22.04 / 24.04 — Node.js 24 via NodeSource (amd64 or arm64):**
+
+Ubuntu's default `nodejs` package can be too old for this CLI. The following
+[NodeSource instructions](https://github.com/nodesource/distributions/wiki/Repository-Manual-Installation)
+add a third-party signed apt repository and install Node system-wide, including
+npm. Review that trust decision first. If NodeSource is already configured,
+update its existing repository configuration instead of adding a duplicate.
+
+```sh
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+sudo install -d -m 755 /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+sudo chmod 644 /etc/apt/keyrings/nodesource.gpg
+printf '%s\n' \
+  'Types: deb' \
+  'URIs: https://deb.nodesource.com/node_24.x/' \
+  'Suites: nodistro' \
+  'Components: main' \
+  "Architectures: $(dpkg --print-architecture)" \
+  'Signed-By: /etc/apt/keyrings/nodesource.gpg' \
+  | sudo tee /etc/apt/sources.list.d/nodesource.sources >/dev/null
+sudo apt-get update
+sudo apt-get install -y nodejs
+node --version
+npm --version
+```
+
+**Arch Linux — official Node.js and npm packages:**
+
+This performs a full system upgrade as well as installing the prerequisites;
+Arch does not support partial upgrades. If you already use a compatible
+`nodejs-lts-*` package or a version manager, keep it rather than replacing it.
+
+```sh
+sudo pacman -Syu --needed nodejs npm
+node --version
+npm --version
+```
+
+**Install Offense on either distribution, without `sudo npm`:**
+
+```sh
+npm install --global --prefix "$HOME/.local" --ignore-scripts \
+  https://offense.sh/downloads/offense-cli.tgz
+export PATH="$HOME/.local/bin:$PATH"
+offense --version
+offense --help
+```
+
+Add `export PATH="$HOME/.local/bin:$PATH"` to your `~/.bashrc` or `~/.zshrc` once
+to keep the command available in new terminals. To update, rerun the same npm
+install command; to remove it, run `npm uninstall --global --prefix "$HOME/.local"
+@offense-security/cli`. This uses the mutable hosted download described below,
+not a native `.deb`, Arch package or AUR package. Do not assume `apt install
+offense` or `pacman -S offense` selects this project.
 
 ### npx / npm exec — run without a global install
 

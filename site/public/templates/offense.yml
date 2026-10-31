@@ -1,0 +1,55 @@
+# Offense dependency audit: no Offense account, secrets or paid calls.
+# Review before merging: package names/versions are sent to OSV/npm.
+# Reports may contain sensitive dependency details; review artifact access.
+name: Offense dependency audit
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the project (never install its dependencies)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          path: project
+          persist-credentials: false
+      - name: Check out a pinned Offense engine
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: offense-research/offense
+          ref: 893deb3a7a99d6157cd536b58117722ca0cb7ce0
+          path: engine
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Install only the scanner, without lifecycle scripts
+        run: npm --prefix engine/offense ci --ignore-scripts --no-audit --no-fund
+      - name: Audit supported npm and pnpm lockfiles
+        run: node engine/offense/bin/offense.mjs scan project --output "$RUNNER_TEMP/offense-report" --plan-limit 0
+      - name: Check coverage (advisory matches are report-only)
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const report = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/offense-report/scan.json`, 'utf8'));
+          const warnings = report.warnings.length;
+          const matches = report.vulnerabilityCheck.findings.length;
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            `## Offense dependency audit\n${matches} advisory matches; ${warnings} coverage warnings.\n\nDownload offense-report to review. Matches are not confirmed exploitable vulnerabilities. This job does not block on advisories or propose fixes.\n`);
+          if (warnings) throw Error('Incomplete coverage: review warnings in scan.json.');
+          JS
+      - name: Keep evidence for review, including coverage failures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: offense-report
+          path: ${{ runner.temp }}/offense-report/
+          if-no-files-found: warn
+          retention-days: 7

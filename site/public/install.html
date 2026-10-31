@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#141414">
+  <title>Add Offense to your repository | Offense</title>
+  <meta name="description" content="Prepare a reviewable pull request that adds a free Offense dependency-audit workflow to your GitHub repository.">
+  <link rel="canonical" href="https://offense.sh/install">
+  <link rel="icon" type="image/svg+xml" href="/offense-mark.svg">
+  <link rel="stylesheet" href="/src/styles.css?v=14">
+  <link rel="stylesheet" href="/src/install.css?v=1">
+  <script type="module" src="/src/install.js?v=1"></script>
+</head>
+<body class="install-page">
+  <header class="site-header"><div class="container header-inner">
+    <a class="brand" href="/" aria-label="Offense home"><img src="/offense-mark.svg" alt="" width="24" height="24"> OFFENSE</a>
+    <nav aria-label="Main navigation"><a href="/tools">Tools</a><a href="https://github.com/offense-research/offense">Source ↗</a></nav>
+  </div></header>
+  <main class="container">
+    <section class="install-intro">
+      <p class="eyebrow">ONE FILE. ONE REVIEWABLE PR.</p>
+      <h1>Your next PR.<br>A security check included.</h1>
+      <p>Add a free dependency audit to GitHub Actions. No Offense account, API key or paid scans. You review the workflow before it runs.</p>
+    </section>
+    <div class="install-layout">
+      <section class="install-card" aria-labelledby="install-title">
+        <p class="eyebrow">01 / CHOOSE YOUR REPOSITORY</p>
+        <h2 id="install-title">Add Offense</h2>
+        <form id="install-form">
+          <label for="repository">GitHub repository</label>
+          <input id="repository" name="repository" placeholder="your-team/your-repo" required autocomplete="off" spellcheck="false" aria-describedby="repository-help">
+          <p id="repository-help">Paste a GitHub URL or enter owner/repository. Public and private repositories work with your GitHub access.</p>
+          <label for="branch">Base branch</label>
+          <input id="branch" name="branch" value="main" required autocomplete="off" spellcheck="false" aria-describedby="branch-help">
+          <p id="branch-help">Use an existing branch. Change to master if that is your default.</p>
+          <button class="button" type="submit" disabled>Prepare installation PR →</button>
+          <p id="install-error" role="alert"></p>
+        </form>
+        <section id="install-ready" hidden aria-label="Installation ready">
+          <h3>Ready for <span id="ready-repository"></span></h3>
+          <p>GitHub opens the prefilled workflow. Review it, click <strong>Commit changes</strong>, choose <strong>Create a new branch</strong>, then <strong>Propose changes</strong> and open the PR. Do not commit directly to your base branch.</p>
+          <a class="button" id="github-install" rel="noreferrer">Review on GitHub →</a>
+        </section>
+        <p class="install-private">No token to paste. No repository access granted to Offense. This page prepares a link; it does not create a branch or PR for you.</p>
+        <noscript><p>JavaScript is required for the link builder. Use the template and manual instructions below instead.</p></noscript>
+      </section>
+      <aside class="install-explainer" aria-label="What the pull request adds">
+        <p class="eyebrow">02 / REVIEW. MERGE. AUDIT.</p>
+        <h2>A small diff.<br>A clear starting point.</h2>
+        <code>.github/workflows/offense.yml</code>
+        <ul>
+          <li><strong>Runs on pull requests.</strong> Also run it manually from the Actions tab after merging.</li>
+          <li><strong>Reads npm and pnpm lockfiles.</strong> Does not install your app, execute its scripts, edit code or post comments.</li>
+          <li><strong>Leaves evidence, not surprise fixes.</strong> Download scan.json and remediation.md from the run. Advisories are report-only; coverage warnings and scan errors fail the check.</li>
+          <li><strong>Pinned and read-only.</strong> Offense and Actions are commit-pinned. The workflow requests only contents: read.</li>
+        </ul>
+        <div class="install-boundary"><strong>Before you merge</strong><p>Dependency names and versions go to OSV/npm. Reports stay in GitHub Actions artifacts for 7 days and may contain sensitive details. GitHub Actions usage limits and charges still apply. This is a dependency check, not the full scanner catalog.</p></div>
+      </aside>
+    </div>
+    <section class="install-manual" aria-labelledby="manual-title">
+      <h2 id="manual-title">Prefer to add the file yourself?</h2>
+      <p><a href="/templates/offense.yml" download="offense.yml">Download the workflow template ↓</a> or follow the <a href="https://github.com/offense-research/offense/blob/main/docs/add-to-repository.md">manual PR instructions ↗</a>. If your repo already has offense.yml, update it in a branch instead of overwriting it. GitHub may require sign-in, a fork, organization approval or Actions enablement.</p>
+    </section>
+  </main>
+  <footer class="container install-footer">A product by <a href="https://offenseresearch.com">Offense Research, Inc. ↗</a><a href="https://discord.gg/xP7GCnyF">Community ↗</a></footer>
+</body>
+</html>
