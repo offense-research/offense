@@ -25,6 +25,8 @@ export function registerOffenseApi(app, { intelligence, publicUrl, gateway, allo
     capabilities: [{
     name: 'audit_dependencies', mcpTool: 'offense.audit_dependencies', endpoint: '/api/offense/audit', inputSchema: auditInputSchema, outputSchema: auditOutputSchema,
     coverage: ['npm lockfile v2/v3', 'pnpm lockfile v6/v9'], authentication: 'none', mutatesRepository: false, runsModel: false,
+    scanning: { protocol: 'offense.scanning.v1', continuation: 'scanning.next', persistentServerState: false,
+      merge: 'Retain the full lockfiles and every contiguous scan page. Only the merged chain establishes full coverage; plan upgrades afterward.' },
     planning: { protocol: 'offense.planning.v1', continuation: 'remediation.planning.next', maxTargetsPerResponse: 10,
       fullScanRequiredForCompleteCoverage: true, persistentServerState: false, continuationRechecksOnlySelectedTargets: true,
       merge: 'Retain original full coverage and findings, merge planning pages, and check shared-parent/root conflicts across every page.' }

@@ -36,8 +36,8 @@
     },
     {
       "path": "scripts/offense.mjs",
-      "bytes": 290309,
-      "sha256": "13f94e45c2befe75652b34a69c2132ba705da9d465df9f7e54cf19339a76809b"
+      "bytes": 300493,
+      "sha256": "c292736d2270420facd75938ddeb56c3447fb137a7b31ddaaf17c2defe8d3094"
     },
     {
       "path": "scripts/cli.mjs",

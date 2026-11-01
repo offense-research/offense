@@ -4973,6 +4973,39 @@ var identity2 = (value) => `${value.package}\0${value.currentVersion || value.ve
 var findingIdentity = (value) => `${value.package?.name}\0${value.package?.installedVersion}`;
 var list2 = (value) => Array.isArray(value) ? value : [];
 var budgetCodes = /* @__PURE__ */ new Set(["plan_limit", "not_requested", "previously_attempted"]);
+function auditSummaryCounts(findings, scope = "full_audit") {
+  const advisories = new Set(findings.map((finding) => finding.advisoryId));
+  const cves = new Set(findings.flatMap((finding) => [...list2(finding.cves), ...list2(finding.aliases)]).filter((id) => typeof id === "string" && /^CVE-\d{4}-\d{4,}$/i.test(id)).map((id) => id.toUpperCase()));
+  const packageVersions = new Set(findings.map(findingIdentity));
+  const lockfiles = new Set(findings.flatMap((finding) => list2(finding.package.lockfiles)));
+  const locations = new Set(findings.flatMap((finding) => list2(finding.package.lockfiles).map((file) => `${findingIdentity(finding)}\0${file}`)));
+  return {
+    advisoryMatches: findings.length,
+    distinctAdvisoryIds: advisories.size,
+    distinctCves: cves.size,
+    affectedPackageVersions: packageVersions.size,
+    affectedLockfiles: lockfiles.size,
+    affectedPackageLockfileLocations: locations.size,
+    confirmedVulnerabilities: 0,
+    countingUnits: {
+      advisoryMatches: "package/version/advisory matches",
+      distinctAdvisoryIds: "distinct provider advisory IDs; aliases may overlap",
+      distinctCves: "distinct CVE aliases present in the returned evidence",
+      affectedPackageLockfileLocations: "distinct package/version/lockfile combinations, not installed instances",
+      confirmedVulnerabilities: "requires independent qualified reproduction evidence; never inferred from metadata"
+    },
+    provenance: {
+      capability: "offense.audit_dependencies",
+      evidence: "known_advisory_metadata",
+      scope,
+      discoveredNewVulnerabilities: false,
+      sourceReviewed: false,
+      exploitReproduced: false,
+      fixesApplied: false,
+      pullRequestsCreated: false
+    }
+  };
+}
 function coordinateAuditPlans(plans, blockers = []) {
   const coordinated = /* @__PURE__ */ new Map(), roots = /* @__PURE__ */ new Map();
   for (const item of plans) for (const route of list2(item.routes).filter((route2) => route2.recommended)) {
@@ -5163,6 +5196,76 @@ function mergeAuditContinuation(base, page) {
   result2.remediation.status = blockers.length || result2.remediation.planning.hasMore ? "partial" : "complete";
   result2.status = result2.coverage.status === "partial" || list2(result2.clientCoverage?.warnings).length || result2.remediation.status === "partial" ? "partial" : "complete";
   result2.providers = [...new Map([...list2(result2.providers), ...list2(page.providers)].map((provider) => [JSON.stringify([provider.id, provider.capability]), provider])).values()];
+  result2.remediation.agentPrompt = auditAgentPrompt(result2);
+  return result2;
+}
+
+// shared/offense-scanning.js
+var sameCursor = (a, b) => a?.metadataFingerprint === b?.metadataFingerprint && a?.packageOffset === b?.packageOffset && a?.advisoryOffset === b?.advisoryOffset && a?.batchFingerprint === b?.batchFingerprint;
+function validateScanPage(page) {
+  const scan = page.scanning;
+  if (!scan || scan.schemaVersion !== "offense.scanning.v1" || scan.metadataFingerprint !== page.metadataFingerprint || !Number.isInteger(scan.totalPackages) || scan.totalPackages < 1 || scan.totalPackages > 5e3 || page.coverage.planningOnly) {
+    throw Error("Invalid advisory scan page. Retain the previous successful report.");
+  }
+  const validCursor = (cursor) => cursor && cursor.metadataFingerprint === page.metadataFingerprint && Number.isInteger(cursor.packageOffset) && cursor.packageOffset >= 0 && cursor.packageOffset < scan.totalPackages && cursor.packageOffset % 100 === 0 && Number.isInteger(cursor.advisoryOffset) && cursor.advisoryOffset >= 0 && cursor.advisoryOffset <= 1e5 && (cursor.batchFingerprint === null || /^[a-f0-9]{64}$/.test(cursor.batchFingerprint)) && (cursor.advisoryOffset === 0 || !!cursor.batchFingerprint);
+  const start = scan.start || { packageOffset: 0, advisoryOffset: 0 };
+  if (scan.start !== null && !validCursor(scan.start) || scan.next !== null && (!validCursor(scan.next) || scan.next.packageOffset < start.packageOffset || scan.next.packageOffset === start.packageOffset && scan.next.advisoryOffset <= start.advisoryOffset) || page.coverage.checkedPackages !== (scan.next?.packageOffset ?? scan.totalPackages) - start.packageOffset || (scan.start || scan.next) && (page.status !== "partial" || page.coverage.status !== "partial")) {
+    throw Error("Advisory scan page made no valid progress. Retain the previous successful report.");
+  }
+}
+function mergeAuditScanPage(base, page, planLimit = 0) {
+  validateScanPage(page);
+  if (!base.scanning?.next || base.scanning.start !== null || base.metadataFingerprint !== page.metadataFingerprint || base.scanning.totalPackages !== page.scanning.totalPackages || !sameCursor(base.scanning.next, page.scanning.start) || base.coverage.checkedPackages !== page.scanning.start.packageOffset) {
+    throw Error("Advisory scan continuation does not match the saved scan.");
+  }
+  const result2 = structuredClone(base), findings = new Map(result2.findings.map((finding) => [finding.id, finding]));
+  for (const finding of page.findings) {
+    if (findings.has(finding.id)) throw Error("Advisory scan continuation repeated previously returned evidence.");
+    findings.set(finding.id, structuredClone(finding));
+  }
+  result2.findings = [...findings.values()];
+  result2.scanning.next = page.scanning.next;
+  result2.scanning.completedPages++;
+  result2.scanning.lastScannedAt = page.scannedAt;
+  result2.coverage.checkedPackages += page.coverage.checkedPackages;
+  result2.coverage.skippedPackages = Math.max(base.coverage.skippedPackages, page.coverage.skippedPackages);
+  result2.coverage.warnings = [.../* @__PURE__ */ new Set([...base.coverage.warnings, ...page.coverage.warnings])];
+  result2.coverage.advisoryScope = result2.scanning.next ? "scan_page" : "full_audit";
+  result2.coverage.status = result2.scanning.next || result2.coverage.warnings.length || result2.coverage.skippedPackages ? "partial" : "complete";
+  const rank = { critical: 4, high: 3, medium: 2, low: 1, unknown: 0 };
+  const targets = [...new Map([...result2.findings].sort((a, b) => (rank[b.severity] || 0) - (rank[a.severity] || 0)).map((finding) => [finding.remediation.targetId, finding])).values()];
+  const pending = targets.map((finding) => finding.remediation.targetId);
+  const canPlan = !result2.scanning.next && planLimit > 0;
+  result2.summary = {
+    ...auditSummaryCounts(result2.findings, result2.scanning.next ? "scan_page" : "full_audit"),
+    critical: result2.findings.filter((f) => f.severity === "critical").length,
+    high: result2.findings.filter((f) => f.severity === "high").length,
+    affectedPackages: targets.length,
+    checkedUpgradePaths: 0
+  };
+  result2.remediation.plans = [];
+  result2.remediation.blockers = targets.map((finding) => ({
+    targetId: finding.remediation.targetId,
+    package: finding.package.name,
+    version: finding.package.installedVersion,
+    status: "not_planned",
+    code: canPlan ? "plan_limit" : "not_requested",
+    category: "planning_deferred",
+    retryable: true,
+    reason: result2.scanning.next ? "Finish advisory scanning before upgrade planning." : "Upgrade planning has not run for this target.",
+    nextAction: result2.scanning.next ? "Continue with scanning.next and retain all previous pages." : "Continue with remediation.planning.next using the complete original lockfiles."
+  }));
+  result2.remediation.planning = {
+    ...result2.remediation.planning,
+    totalTargets: pending.length,
+    attemptedTargetIds: [],
+    remainingTargetIds: pending,
+    hasMore: canPlan && pending.length > 0,
+    next: canPlan && pending.length ? { metadataFingerprint: result2.metadataFingerprint, pendingTargetIds: pending } : null,
+    completedPages: 0
+  };
+  result2.remediation.status = canPlan && pending.length ? "partial" : "not_requested";
+  result2.status = result2.coverage.status === "partial" || result2.remediation.planning.hasMore ? "partial" : "complete";
   result2.remediation.agentPrompt = auditAgentPrompt(result2);
   return result2;
 }
@@ -5710,13 +5813,14 @@ async function runAudit(directory, {
   planLimit = 3,
   maxPages = 10,
   evidence,
+  resume,
   preview = false,
   fetchImpl = fetch
 } = {}, observer = { record() {
 }, output() {
 }, async flush() {
 } }) {
-  if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 10) throw Error("Planning pages must be an integer from 1 to 10.");
+  if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 10) throw Error("Scan and planning pages must be an integer from 1 to 10.");
   if (preview) return prepareAudit(directory, { planLimit });
   const base = serviceBase(endpoint);
   const root = await realpath3(directory), target = output ? path3.resolve(output) : await mkdtemp(path3.join(os2.tmpdir(), "offense-audit-"));
@@ -5770,44 +5874,38 @@ async function runAudit(directory, {
       throw error;
     }
   }
-  let report = await request(prepared.request), pages = 1, planningError = null;
-  if (report.coverage.planningOnly || report.remediation.planning && report.remediation.planning.scope !== "full_audit") throw Error("Expected a full advisory audit before planning continuations. No complete scan was established.");
-  const verificationStartedAt = performance.now();
-  let localVerification = null;
-  if (evidence) {
-    observer.record("local_verification", "started", { evidenceSource: "reviewed_artifact" });
-    try {
-      localVerification = await loadReviewedEvidence(root, path3.resolve(evidence), {
-        metadataFingerprint: prepared.local.metadataFingerprint,
-        findings: report.findings,
-        localEvidence: prepared.local.evidence
-      });
-    } catch (error) {
-      observer.record("local_verification", "failed", {
-        durationMs: performance.now() - verificationStartedAt,
-        errorCode: classifyTraceError(error),
-        evidenceSource: "reviewed_artifact"
-      });
-      throw error;
+  let report;
+  if (resume) {
+    const filename = path3.resolve(resume), info = await lstat3(filename);
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 24e6) throw Error("Resume requires a regular saved audit.json of at most 24 MB.");
+    report = JSON.parse(await readFile3(filename, "utf8"));
+    if (report.schemaVersion !== "offense.audit.v1" || report.capability !== "audit_dependencies" || report.metadataFingerprint !== prepared.local.metadataFingerprint || report.status !== "partial" || !Array.isArray(report.findings) || !report.findings.every(validFinding) || !report.scanning?.next || !Number.isInteger(report.scanning.completedPages) || report.scanning.completedPages < 1 || !Array.isArray(report.remediation?.plans) || report.remediation.plans.length || !Array.isArray(report.remediation.blockers)) {
+      throw Error("Resume requires an unfinished advisory scan matching the current dependency metadata.");
     }
+    delete report.localVerification;
+  } else report = await request(prepared.request);
+  let pages = report.scanning?.next ? 0 : 1, planningError = null, scanningError = null;
+  let scanPages = report.scanning?.completedPages || 1, scanRequests = resume ? 0 : 1;
+  if (report.coverage.planningOnly || report.remediation.planning && report.remediation.planning.scope !== "full_audit") throw Error("Expected a full advisory audit before planning continuations. No complete scan was established.");
+  if (report.scanning) {
+    validateScanPage(report);
+    if (report.scanning.start !== null) throw Error("Expected the first advisory scan page.");
   }
-  observer.record("local_verification", localVerification ? localVerification.status === "reviewed" ? "completed" : "partial" : "skipped", {
-    durationMs: performance.now() - verificationStartedAt,
-    evidenceSource: localVerification ? "reviewed_artifact" : "unknown",
-    ...localVerification ? { counts: {
-      compatibilityVerified: localVerification.counts.compatibility_verified,
-      mitigationsVerified: localVerification.counts.mitigation_verified,
-      securityRegressionsVerified: localVerification.counts.security_regression_verified
-    } } : {}
-  });
+  let localVerification = null;
   let saved;
   async function persist() {
     const startedAt = performance.now();
     const pending = !!report.remediation.planning?.hasMore;
     saved = {
       ...report,
-      ...prepared.local.warnings.length || planningError || planLimit > 0 && pending ? { status: "partial", serverStatus: report.status } : {},
+      ...prepared.local.warnings.length || scanningError || report.scanning?.next || planningError || planLimit > 0 && pending ? { status: "partial", serverStatus: report.status } : {},
       clientCoverage: prepared.local,
+      clientScanning: {
+        completedPages: scanPages,
+        maxPages,
+        stopReason: scanningError ? "request_failed" : report.scanning?.next ? "client_page_limit" : "finished",
+        ...scanningError ? { error: scanningError } : {}
+      },
       clientPlanning: {
         completedPages: pages,
         maxPages,
@@ -5833,13 +5931,58 @@ ${JSON.stringify(localVerification, null, 2)}` : "";
     const continuation = pending ? `
 
 Planning is unfinished. The saved audit.json retains remediation.planning.next with remaining stable target IDs. Continue via offense.audit_dependencies using the same sanitized files, planLimit, and planning: remediation.planning.next; preserve this original full scan and merge pages by targetId. A planning-only response is not a new full audit.${planningError ? ` Last request: ${planningError.message}` : ""}` : "";
-    await writeReport(prompt, `${report.remediation.agentPrompt || "No prepared remediation prompt was returned. Review audit.json and all blockers."}${coverage}${tasks}${patches}${verification}${continuation}
+    const scanning = report.scanning?.next ? `
+
+Advisory scanning is unfinished. Retain all findings and scanning.next in audit.json. Continue with the same complete sanitized files and scanning: scanning.next; merge contiguous pages before claiming full coverage or planning upgrades.${scanningError ? ` Last request: ${scanningError.message}` : ""}` : "";
+    await writeReport(prompt, `${report.remediation.agentPrompt || "No prepared remediation prompt was returned. Review audit.json and all blockers."}${coverage}${tasks}${patches}${verification}${scanning}${continuation}
 `);
     observer.record("report", "completed", { durationMs: performance.now() - startedAt, counts: { planningPages: pages } });
     await observer.flush();
   }
   await persist();
-  while (planLimit > 0 && report.remediation.planning?.hasMore && pages < maxPages) {
+  while (report.scanning?.next && scanRequests < maxPages) {
+    try {
+      scanRequests++;
+      const page = await request({ ...prepared.request, scanning: report.scanning.next });
+      report = mergeAuditScanPage(report, page, planLimit);
+      scanPages++;
+      pages = 0;
+    } catch (error) {
+      scanningError = { message: error.message, ...error.diagnostics ? { diagnostics: error.diagnostics } : {} };
+      await persist();
+      break;
+    }
+    await persist();
+  }
+  const verificationStartedAt = performance.now();
+  if (evidence && !report.scanning?.next) {
+    observer.record("local_verification", "started", { evidenceSource: "reviewed_artifact" });
+    try {
+      localVerification = await loadReviewedEvidence(root, path3.resolve(evidence), {
+        metadataFingerprint: prepared.local.metadataFingerprint,
+        findings: report.findings,
+        localEvidence: prepared.local.evidence
+      });
+    } catch (error) {
+      observer.record("local_verification", "failed", {
+        durationMs: performance.now() - verificationStartedAt,
+        errorCode: classifyTraceError(error),
+        evidenceSource: "reviewed_artifact"
+      });
+      throw error;
+    }
+  }
+  observer.record("local_verification", localVerification ? localVerification.status === "reviewed" ? "completed" : "partial" : "skipped", {
+    durationMs: performance.now() - verificationStartedAt,
+    evidenceSource: localVerification ? "reviewed_artifact" : "unknown",
+    ...localVerification ? { counts: {
+      compatibilityVerified: localVerification.counts.compatibility_verified,
+      mitigationsVerified: localVerification.counts.mitigation_verified,
+      securityRegressionsVerified: localVerification.counts.security_regression_verified
+    } } : {}
+  });
+  await persist();
+  while (!report.scanning?.next && planLimit > 0 && report.remediation.planning?.hasMore && pages < maxPages) {
     const startedAt = performance.now();
     observer.record("continuation", "started");
     try {
@@ -5866,6 +6009,8 @@ Planning is unfinished. The saved audit.json retains remediation.planning.next w
     confirmedVulnerabilities: 0,
     upgradePlans: report.remediation.plans.length,
     blockers: report.remediation.blockers.length,
+    scanningPages: scanPages,
+    remainingScanning: !!report.scanning?.next,
     planningPages: pages,
     remainingPlanningTargets: report.remediation.planning?.remainingTargetIds?.length || 0,
     localCoverageWarnings: prepared.local.warnings.length,
@@ -5876,7 +6021,7 @@ Planning is unfinished. The saved audit.json retains remediation.planning.next w
 }
 async function main(argv = process.argv.slice(2)) {
   if (!argv.length || argv.includes("--help")) {
-    console.log("Usage: node offense.mjs metadata [directory] [--plan-limit 0..10]\n       node offense.mjs audit [directory] [--plan-limit 0..10] [--max-pages 1..10] [--evidence file] [--output directory] [--preview] [--no-trace]\n       node offense.mjs doctor [directory]\n       node offense.mjs update [--check | --accept-local]\nNode 20+. Purple uses the offense server/tool. Sanitized npm/pnpm dependency metadata only; local evidence stays local. Audit continues bounded planning pages and saves unfinished target IDs. A minimized trace.json records observed helper stages/counts locally; it is never uploaded automatically. Share only trace.json, not the full audit report. --no-trace disables this export. Doctor verifies the endpoint without auditing; it cannot observe this agent session's tools. Installed skills check for updates on every run; help and previews stay offline. Exit 4 means start a new session.");
+    console.log("Usage: node offense.mjs metadata [directory] [--plan-limit 0..10]\n       node offense.mjs audit [directory] [--plan-limit 0..10] [--max-pages 1..10] [--resume audit.json] [--evidence file] [--output directory] [--preview] [--no-trace]\n       node offense.mjs doctor [directory]\n       node offense.mjs update [--check | --accept-local]\nNode 20+. Purple uses the offense server/tool. Sanitized npm/pnpm dependency metadata only; local evidence stays local. Audit automatically continues advisory scanning before planning, retaining complete lockfiles. --max-pages bounds each phase per invocation (default 10) within a shared 180-second budget. --resume continues unfinished advisory scanning from a trusted saved audit.json with unchanged metadata; retained evidence is not freshly rechecked. Partial reports retain scanning.next or unfinished planning target IDs. A minimized trace.json records observed helper stages/counts locally; it is never uploaded automatically. Share only trace.json, not the full audit report. --no-trace disables this export. Doctor verifies the endpoint without auditing; it cannot observe this agent session's tools. Installed skills check for updates on every run; help and previews stay offline. Exit 4 means start a new session.");
     return;
   }
   const action = argv.shift();
@@ -5889,6 +6034,7 @@ async function main(argv = process.argv.slice(2)) {
     if (key === "--plan-limit" && /^\d+$/.test(argv[0] || "")) options.planLimit = Number(argv.shift());
     else if (key === "--max-pages" && /^\d+$/.test(argv[0] || "")) options.maxPages = Number(argv.shift());
     else if (key === "--evidence" && argv[0] && !argv[0].startsWith("--")) options.evidence = argv.shift();
+    else if (key === "--resume" && argv[0] && !argv[0].startsWith("--")) options.resume = argv.shift();
     else if (key === "--output" && argv[0] && !argv[0].startsWith("--")) options.output = argv.shift();
     else if (key === "--preview") options.preview = true;
     else if (key === "--no-trace") options.trace = false;

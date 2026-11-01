@@ -109,7 +109,7 @@ export function registerOffenseMcp(app, { audit, admit = () => null, traces, usa
     server.setRequestHandler(ListToolsRequestSchema, async request => {
       if (request.params?.cursor) { trace?.reject('invalid_request'); throw new McpError(ErrorCode.InvalidParams, 'This tool list has no pagination cursor.'); }
       return { tools: [{ name: OFFENSE_MCP_TOOL, title: 'Offense dependency audit',
-        description: 'Use Purple to audit sanitized npm/pnpm dependency metadata for known advisory matches and checked upgrade paths. Resume deferred targets with remediation.planning.next while retaining the full scan and coordinating plans across pages. Does not read source, run tests, edit files, confirm exploitability or use a model key.',
+        description: 'Use Purple to audit sanitized npm/pnpm dependency metadata for known advisory matches and checked upgrade paths. First follow scanning.next with unchanged complete lockfiles and merge every contiguous advisory page; individual continuation pages are partial evidence. Then resume deferred targets with remediation.planning.next while retaining the full scan and coordinating plans across pages. Does not read source, run tests, edit files, confirm exploitability or use a model key.',
         inputSchema: auditInputSchema, outputSchema: auditOutputSchema,
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } },
         ...(gateway?.authenticate(req.get('authorization')?.replace(/^Bearer /, '')) ? SECURITY_MCP_TOOLS : [])] };

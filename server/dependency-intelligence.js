@@ -46,8 +46,16 @@ export function createDependencyIntelligence({ db, production = false, check = c
   }
   function prepare(input, strict = false) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new AnalysisError('Provide a dependency metadata object.');
-    if (strict && Object.keys(input).some(field => !['files', 'planLimit', 'planning'].includes(field))) throw new AnalysisError('Only files, planLimit and planning are accepted. Do not send provider credentials or source code.');
+    if (strict && Object.keys(input).some(field => !['files', 'planLimit', 'planning', 'scanning'].includes(field))) throw new AnalysisError('Only files, planLimit, planning and scanning are accepted. Do not send provider credentials or source code.');
     if (strict && input.planLimit !== undefined && (!Number.isInteger(input.planLimit) || input.planLimit < 0 || input.planLimit > 10)) throw new AnalysisError('planLimit must be an integer from 0 to 10.');
+    const scan = input.scanning;
+    if (scan !== undefined && (!scan || typeof scan !== 'object' || Array.isArray(scan) || input.planning !== undefined ||
+      Object.keys(scan).some(field => !['metadataFingerprint', 'packageOffset', 'advisoryOffset', 'batchFingerprint'].includes(field)) ||
+      !/^[a-f0-9]{64}$/.test(scan.metadataFingerprint) || !Number.isInteger(scan.packageOffset) || scan.packageOffset < 0 || scan.packageOffset > 4900 || scan.packageOffset % 100 ||
+      !Number.isInteger(scan.advisoryOffset) || scan.advisoryOffset < 0 || scan.advisoryOffset > 100000 ||
+      !(scan.batchFingerprint === null || /^[a-f0-9]{64}$/.test(scan.batchFingerprint)) || (scan.advisoryOffset > 0 && !scan.batchFingerprint))) {
+      throw new AnalysisError('Invalid advisory scanning continuation. Use scanning.next unchanged; do not combine scanning and planning.');
+    }
     if (strict && input.planning !== undefined && (!input.planning || typeof input.planning !== 'object' || Array.isArray(input.planning) ||
       Object.keys(input.planning).some(field => !['metadataFingerprint', 'pendingTargetIds'].includes(field)) ||
       !/^[a-f0-9]{64}$/.test(input.planning.metadataFingerprint) || !Array.isArray(input.planning.pendingTargetIds) ||
@@ -103,13 +111,13 @@ export function createDependencyIntelligence({ db, production = false, check = c
     catch (error) { if (error instanceof AnalysisError) throw error; throw new AnalysisError(`Analysis incomplete: ${error.message}`, 502, 'analysis_incomplete'); }
     finally { running--; }
   }
-  async function snapshot(prepared, boundedFetch, selected, trace) {
+  async function snapshot(prepared, boundedFetch, selected, trace, scanning) {
     const started = now(); trace?.record('advisory_scan', 'started');
     try {
-      const vulnerabilityCheck = await check(selected || prepared.packages, boundedFetch);
-      if (vulnerabilityCheck.status !== 'complete' || !Array.isArray(vulnerabilityCheck.findings)) throw new Error('The advisory check did not complete.');
-      trace?.record('advisory_scan', 'completed', { durationMs: Math.max(0, now() - started),
-        counts: { checkedPackages: (selected || prepared.packages).length, advisoryMatches: vulnerabilityCheck.findings.length } });
+      const vulnerabilityCheck = await check(selected || prepared.packages, boundedFetch, { scanning });
+      if ((vulnerabilityCheck.status !== 'complete' && !(scanning && vulnerabilityCheck.status === 'partial' && vulnerabilityCheck.scanning?.next)) || !Array.isArray(vulnerabilityCheck.findings)) throw new Error('The advisory check did not complete.');
+      trace?.record('advisory_scan', vulnerabilityCheck.status === 'partial' ? 'partial' : 'completed', { durationMs: Math.max(0, now() - started),
+        counts: { checkedPackages: vulnerabilityCheck.checkedPackages ?? (selected || prepared.packages).length, advisoryMatches: vulnerabilityCheck.findings.length } });
       return { repository: 'local checkout', revision: 'local lockfile metadata', scannedAt: now(), files: prepared.files.map(file => file.path),
         packages: prepared.packages, graph: prepared.graph, warnings: prepared.warnings, vulnerabilityCheck };
     } catch (error) {
@@ -134,8 +142,10 @@ export function createDependencyIntelligence({ db, production = false, check = c
     });
   }
   async function audit(input, req) {
-    const trace = offenseRequestTrace(req), prepared = prepareTraced(input, true, trace), planLimit = input.planLimit ?? 3;
+    const trace = offenseRequestTrace(req), prepared = prepareTraced(input, true, trace);
+    let planLimit = input.planLimit ?? 3;
     const metadataFingerprint = fingerprint(prepared.files.slice().sort((a, b) => a.path.localeCompare(b.path)));
+    if (input.scanning && input.scanning.metadataFingerprint !== metadataFingerprint) throw new AnalysisError('Scanning continuation does not match these exact dependency files. Start a new full audit.', 409, 'stale_scanning_cursor');
     const targetId = (name, version) => fingerprint(['npm', name, version, metadataFingerprint]);
     const continuation = input.planning;
     const installedTargets = new Map(prepared.packages.map(pkg => [targetId(pkg.name, pkg.version), pkg]));
@@ -146,7 +156,13 @@ export function createDependencyIntelligence({ db, production = false, check = c
     return execute(async boundedFetch => {
       const selectedIds = continuation?.pendingTargetIds.slice(0, planLimit);
       const selectedPackages = selectedIds?.map(id => installedTargets.get(id));
-      const current = await snapshot(prepared, boundedFetch, selectedPackages, trace), checkResult = current.vulnerabilityCheck;
+      const scanCursor = continuation ? undefined : input.scanning ? {
+        packageOffset: input.scanning.packageOffset, advisoryOffset: input.scanning.advisoryOffset, batchFingerprint: input.scanning.batchFingerprint
+      } : { packageOffset: 0, advisoryOffset: 0, batchFingerprint: null };
+      const current = await snapshot(prepared, boundedFetch, selectedPackages, trace, scanCursor), checkResult = current.vulnerabilityCheck;
+      const scanPage = !!(input.scanning || checkResult.scanning?.next);
+      // Planning starts only after the client has retained the full inventory.
+      if (scanPage) planLimit = 0;
       current.evidenceIdentity = metadataFingerprint;
       const grouped = new Map();
       for (const finding of [...checkResult.findings].sort((a, b) => rank(b.severity) - rank(a.severity) || key(a).localeCompare(key(b)))) {
@@ -217,7 +233,8 @@ export function createDependencyIntelligence({ db, production = false, check = c
           verification: { status: 'advisory_match', confirmed: false },
           remediation: { targetId: targetId(finding.package, finding.version), status: remediation?.status || blocker?.status || 'not_planned', planId: remediation?.id || null, blocker: blocker?.reason || null } };
       });
-      const coverage = { status: continuation || prepared.warnings.length || checkResult.skippedPackages > 0 ? 'partial' : 'complete',
+      const coverage = { status: scanPage || continuation || prepared.warnings.length || checkResult.skippedPackages > 0 ? 'partial' : 'complete',
+        ...(scanPage ? { advisoryScope: 'scan_page' } : {}),
         ...(continuation ? { planningOnly: true, advisoryScope: 'selected_planning_targets', checkedTargetIds: attemptedIds } : {}),
         checkedPackages: checkResult.checkedPackages ?? (selectedPackages || prepared.packages).length, skippedPackages: checkResult.skippedPackages || 0,
         lockfiles: current.files, packageManagers: [...new Set(current.files.map(file => file.endsWith('pnpm-lock.yaml') ? 'pnpm' : 'npm'))],
@@ -233,9 +250,12 @@ export function createDependencyIntelligence({ db, production = false, check = c
         note: 'An attempted or checked planning target is not a fixed or confirmed vulnerability. Failures retain concrete blockers and are not automatically retried.' };
       const report = { schemaVersion: AUDIT_SCHEMA_VERSION, capability: 'audit_dependencies', status: coverage.status === 'partial' || partialPlans ? 'partial' : 'complete',
         scannedAt: current.scannedAt, metadataFingerprint,
+        ...(checkResult.scanning ? { scanning: { schemaVersion: 'offense.scanning.v1', metadataFingerprint,
+          start: input.scanning || null, next: checkResult.scanning.next ? { metadataFingerprint, ...checkResult.scanning.next } : null,
+          totalPackages: checkResult.scanning.totalPackages, completedPages: 1 } } : {}),
         providers: [{ id: 'osv', capability: 'known_vulnerabilities', checkedAt: checkResult.checkedAt || current.scannedAt }, ...(rawPlans.length ? [{ id: 'npm_registry', capability: 'upgrade_metadata' }] : [])],
         coverage, findings,
-        summary: { ...auditSummaryCounts(findings, continuation ? 'planning_continuation' : 'full_audit'), critical: findings.filter(f => f.severity === 'critical').length, high: findings.filter(f => f.severity === 'high').length,
+        summary: { ...auditSummaryCounts(findings, scanPage ? 'scan_page' : continuation ? 'planning_continuation' : 'full_audit'), critical: findings.filter(f => f.severity === 'critical').length, high: findings.filter(f => f.severity === 'high').length,
           affectedPackages: targets.length, checkedUpgradePaths: plans.filter(p => p.status === 'path_checked').length },
         remediation: { status: !planLimit ? 'not_requested' : partialPlans ? 'partial' : 'complete', plans, blockers, planning,
           verificationSteps: ['Confirm the checkout and dependency metadata still match this report.', 'Assess affected APIs and advisory prerequisites using source evidence; leave unknown applicability explicit.', 'Record passing original repository checks before changing dependencies.', 'Coordinate parent, peer, runtime and source migrations in an isolated candidate.', 'Run the same normal checks and a security-specific regression before and after; a setup error is not a reproduction. Rescan every final resolved package.', 'Record test-fixture changes, changed behavior and coverage, runtime floors, and independent checks of behavior replaced by mocks.', 'Return a reviewable patch with blockers. Compatibility checks alone do not confirm exploit remediation.'] } };

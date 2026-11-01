@@ -43,6 +43,51 @@ The helper strips registry URLs, integrity data, package scripts, repository ide
 
 `planLimit` defaults to 3, accepts 0–10 and prioritizes higher severity package/version pairs **per response**. Zero requests advisory scanning without planning. Every omitted, failed or constrained path remains explicit. Reports are saved outside the source checkout as `audit.json` and `remediation.md`; a failed request does not overwrite a saved report.
 
+### Continue large advisory scans without splitting lockfiles
+
+The resumable scanning implementation requires the updated server and downloadable
+`offense.mjs` helper; this document is not evidence of a production deployment.
+The helper automatically follows `scanning.next` before upgrade planning. Every
+request includes the **same complete sanitized lockfiles**, preserving dependency
+paths and parent constraints. A single command can therefore complete scans that
+need more provider requests than one hosted execution allows.
+
+Each response carries `scanning` (`offense.scanning.v1`), with `start`, `next`,
+`totalPackages` and the metadata fingerprint. Send `next` unchanged as the next
+request's `scanning` field; do not also send `planning`. Cursors track package-batch
+and advisory-detail offsets. When resuming inside a batch, the server rechecks its
+advisory IDs and modification timestamps; changed evidence rejects the continuation
+instead of silently skipping or duplicating matches. No caller-supplied advisory
+details are trusted, and no server-side scan session is stored.
+
+**A continuation response is always partial evidence, even its last page.** Native
+MCP/REST callers must retain the first page and merge a contiguous chain, as
+`mergeAuditScanPage` in `shared/offense-scanning.js` does. It preserves each
+package/version/advisory match, recomputes unique advisory/CVE counts, checks
+cursor progress and completed-package totals, and only then enables planning.
+`coverage.checkedPackages` on a raw page counts packages whose advisory details
+finished on that page; the helper's saved report has the accumulated count.
+Provider updates between completed batches are not an atomic advisory snapshot;
+the original scan time and last-page time remain recorded.
+
+`--max-pages 1..10` (default 10) bounds each phase per invocation within a shared
+180-second deadline. On a failed continuation or reached bound, the helper keeps
+successful evidence and `scanning.next` in a partial `audit.json`. Resume an
+unfinished advisory scan from that trusted local file without resending already
+completed batches:
+
+```sh
+node /installed/offense/scripts/offense.mjs audit /path/to/repo \
+  --resume /private/report/audit.json --output /private/resumed-report
+```
+
+Resume requires unchanged dependency metadata; it is not a fresh security rescan.
+Only use reports you generated and retained locally, not untrusted supplied JSON.
+After a dependency change or changed advisory-batch evidence, start a new audit.
+Older clients that do not follow `scanning.next` receive a partial result, not a
+clean result. The separate hosted `offense audit` CLI and automation SDK do not
+automatically follow these scan cursors; use the downloadable helper for this flow.
+
 ### Continue planning without repeating the full scan
 
 The first full audit returns `remediation.planning` with fingerprint-scoped target identities, the attempted and remaining IDs, and `next`. Send `next` unchanged as the next request's `planning` field, with the same sanitized files and a positive `planLimit`:
@@ -79,6 +124,7 @@ Responses use `schemaVersion: "offense.audit.v1"` and contain:
 | `status` | Complete or partial for the requested analysis; never a security attestation. |
 | `providers` | Evidence provider and capability provenance. |
 | `metadataFingerprint` | SHA-256 of sorted normalized dependency files; not a source revision or Git commit. |
+| `scanning` | Advisory-page progress and continuation; merge the full chain before claiming full coverage. |
 | `coverage` | Checked/skipped packages, supported managers, warnings and unassessed source reachability. |
 | `findings` | Stable package/version/advisory identities, normalized/provider severity, source references, affected ranges and advisory-listed versions. |
 | `summary` | Advisory counts and checked metadata paths; confirmed vulnerabilities remain zero. |
@@ -100,7 +146,7 @@ The fingerprint is embedded in the remediation prompt as `evidenceIdentity`, wit
 
 The legacy skill, REST and MCP share durable quotas: 40 work requests/minute and 100/hour per hashed IP, 600/hour globally, and two executing analyses per controller. REST/MCP route switching does not create additional execution slots. Anonymous reports are not stored in customer workspaces and do not enter the confirmed-discovery metric or leaderboard. Expiring hashed quota counters, short-lived privacy-safe diagnostics and separate count-only daily usage aggregates have different retention boundaries. [Operator skill usage](operations-metrics.md#anonymous-skill-and-mcp-usage) records audit outcomes and returned match occurrences without retaining reports, source or identities.
 
-Requests accept at most 20 supported lockfiles, 5,000 entries and 2 MB of normalized metadata. One entire audit, including all planned packages, shares 90 upstream requests, a 90-second deadline, 12 MB per response and 24 MB aggregate provider bytes. Upstream hosts are restricted to HTTPS OSV/npm registry endpoints. Workers-compatible `redirect: manual` and explicit rejection of 3xx responses prevent redirects. No provider URL or API key can be selected in request arguments.
+Requests accept at most 20 supported lockfiles, 5,000 entries and 2 MB of normalized metadata. Each hosted request, including any planning, shares 90 upstream requests, a 90-second deadline, 12 MB per provider response and 24 MB aggregate provider bytes. Advisory scanning yields a cursor at up to 60 provider requests or between operations after 40 seconds, leaving headroom for bounded in-flight work. Rate limits still apply to every continuation. Provider errors, oversized responses and unsupported OSV pagination remain explicit failures; previous successful client pages survive. Upstream hosts are restricted to HTTPS OSV/npm registry endpoints. Workers-compatible `redirect: manual` and explicit rejection of 3xx responses prevent redirects. No provider URL or API key can be selected in request arguments.
 
 An advisory provider failure returns an error with no clean report. Successful scans survive subsequent planning errors as partial reports. HTTP uses structured `{error:{code,message}}` responses and 400/413/429/502/503 as appropriate; MCP returns protocol or tool errors. Coverage warnings keep the report partial even if there are zero returned matches. No vulnerabilities returned means no known matches in the checked scope at that time.
 

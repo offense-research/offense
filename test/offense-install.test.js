@@ -219,3 +219,96 @@ test('report symlinks cannot make an audit write into the checkout', async t => 
   await assert.rejects(auditDependencies(root, { output: path.join(outer, 'linked-checkout/should-not-create'), fetchImpl: () => assert.fail('Unsafe report parent sent metadata') }), /inside the source checkout/);
   await assert.rejects(lstat(path.join(root, 'should-not-create')), { code: 'ENOENT' });
 });
+
+test('large advisory audits continue automatically with full lockfiles and exact merged counts', async t => {
+  const { root, output } = await fixture(t);
+  const packages = { '': {} }, matches = new Map(), expected = new Set();
+  for (let n = 0; n < 2004; n++) packages[`node_modules/example-${String(n).padStart(4, '0')}`] = { version: '1.0.0' };
+  const add = (target, id) => {
+    const name = `example-${String(target * 29).padStart(4, '0')}`;
+    if (!matches.has(name)) matches.set(name, []);
+    matches.get(name).push(`GHSA-fixture-${id}`); expected.add(`${name}:GHSA-fixture-${id}`);
+  };
+  for (let id = 0; id < 263; id++) add(id < 200 ? 0 : id - 199, id);
+  for (let id = 0; id < 62; id++) add(1 + (id + 10) % 67, id);
+  const original = JSON.stringify({ lockfileVersion: 3, packages });
+  await writeFile(path.join(root, 'package-lock.json'), original);
+  const db = new DatabaseSync(':memory:'); t.after(() => db.close());
+  let outbound = 0, calls = 0;
+  const intelligence = createDependencyIntelligence({ db, fetchImpl: async (url, options) => {
+    outbound++;
+    if (url.endsWith('/querybatch')) return Response.json({ results: JSON.parse(options.body).queries.map(q => ({
+      vulns: (matches.get(q.package.name) || []).map(id => ({ id, modified: '2026-01-01T00:00:00Z' }))
+    })) });
+    const id = url.split('/').at(-1), number = Number(id.split('-').at(-1));
+    return Response.json({ id, aliases: [`CVE-2026-${10000 + number}`], database_specific: { severity: 'HIGH' } });
+  } });
+  const result = await auditDependencies(root, { output, planLimit: 0, fetchImpl: async (url, options) => {
+    calls++; outbound = 0;
+    const input = JSON.parse(options.body);
+    assert.equal(Object.keys(JSON.parse(input.files[0].content).packages).length, 2005);
+    const page = await intelligence.audit(input);
+    assert.ok(outbound <= 60, `Page exceeded bounded scan requests: ${outbound}`);
+    if (input.scanning || page.scanning.next) assert.equal(page.status, 'partial');
+    return Response.json(page);
+  } });
+  const saved = JSON.parse(await readFile(result.json, 'utf8'));
+  assert.ok(calls > 1 && calls <= 10);
+  assert.equal(result.scanningPages, calls); assert.equal(result.status, 'complete');
+  assert.equal(saved.coverage.checkedPackages, 2004); assert.equal(saved.coverage.status, 'complete');
+  assert.equal(saved.scanning.next, null);
+  assert.equal(saved.summary.advisoryMatches, 325); assert.equal(saved.summary.distinctAdvisoryIds, 263);
+  assert.equal(saved.summary.distinctCves, 263); assert.equal(saved.summary.affectedPackages, 68);
+  assert.deepEqual(new Set(saved.findings.map(f => `${f.package.name}:${f.advisoryId}`)), expected);
+  assert.equal(await readFile(path.join(root, 'package-lock.json'), 'utf8'), original);
+});
+
+test('scan interruptions retain resumable evidence, reject stale pages, and defer planning until complete', async t => {
+  const { root, outer, output } = await fixture(t), db = new DatabaseSync(':memory:');
+  t.after(() => db.close());
+  let changed = false, planned = 0;
+  const intelligence = createDependencyIntelligence({ db, fetchImpl: async url => {
+    if (url.endsWith('/querybatch')) return Response.json({ results: [{ vulns: Array.from({ length: changed ? 66 : 65 }, (_, n) => ({ id: `GHSA-test-${n}`, modified: '2026-01-01' })) }] });
+    return Response.json({ database_specific: { severity: 'HIGH' } });
+  }, plan: async (snapshot, name, version) => {
+    planned++;
+    assert.equal(snapshot.graph.nodes.length, 1);
+    return { name, currentVersion: version, targetVersion: '1.0.1', releases: [], steps: [], parentOptions: [], impact: { paths: [], parents: [] } };
+  } });
+  const fetchImpl = async (url, options) => Response.json(await intelligence.audit(JSON.parse(options.body)));
+  const limited = await auditDependencies(root, { output, planLimit: 1, maxPages: 1, fetchImpl });
+  const first = JSON.parse(await readFile(limited.json, 'utf8'));
+  assert.equal(first.status, 'partial'); assert.equal(first.findings.length, 59);
+  assert.equal(first.coverage.checkedPackages, 0); assert.ok(first.scanning.next); assert.equal(planned, 0);
+  const input = (await prepareAudit(root)).request;
+  await assert.rejects(intelligence.audit({ ...input, scanning: { ...first.scanning.next, metadataFingerprint: '0'.repeat(64) } }), /exact dependency files/);
+  await assert.rejects(intelligence.audit({ ...input, scanning: { ...first.scanning.next, advisoryOffset: -1 } }), /Invalid advisory scanning/);
+  changed = true;
+  await assert.rejects(intelligence.audit({ ...input, scanning: first.scanning.next }), /Advisory evidence changed/);
+  changed = false;
+  for (const failure of ['provider', 'cursor', 'replay']) {
+    let requests = 0;
+    const result = await auditDependencies(root, { output: path.join(outer, failure), planLimit: 1, fetchImpl: async (url, options) => {
+      requests++;
+      if (requests === 2 && failure === 'provider') throw Error('Provider unavailable');
+      const page = await intelligence.audit(JSON.parse(options.body));
+      if (requests === 2 && failure === 'cursor') page.scanning.start.advisoryOffset--;
+      if (requests === 2 && failure === 'replay') return Response.json(first);
+      return Response.json(page);
+    } });
+    const saved = JSON.parse(await readFile(result.json, 'utf8'));
+    assert.equal(saved.status, 'partial'); assert.equal(saved.findings.length, 59);
+    assert.deepEqual(saved.scanning.next, first.scanning.next);
+    assert.equal(saved.clientScanning.stopReason, 'request_failed');
+    assert.equal(planned, 0);
+  }
+  const completed = await auditDependencies(root, { output: path.join(outer, 'finished'), resume: limited.json, planLimit: 1, fetchImpl });
+  const saved = JSON.parse(await readFile(completed.json, 'utf8'));
+  assert.equal(planned, 1); assert.equal(saved.coverage.status, 'complete');
+  assert.equal(saved.findings.length, 65); assert.equal(saved.scanning.completedPages, 2);
+  assert.equal(saved.remediation.planning.hasMore, false);
+  assert.equal(await readFile(limited.json, 'utf8'), JSON.stringify(first, null, 2) + '\n');
+  await writeFile(path.join(root, 'package-lock.json'), lock.replace('1.0.0', '1.0.2').replace('"version":"1.0.0"', '"version":"1.0.2"'));
+  await assert.rejects(auditDependencies(root, { output: path.join(outer, 'stale'), resume: limited.json,
+    fetchImpl: () => assert.fail('Stale resume sent metadata') }), /matching the current dependency metadata/);
+});

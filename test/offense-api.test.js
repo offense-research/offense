@@ -6,6 +6,7 @@ import { request as httpRequest } from 'node:http';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { createDependencyIntelligence } from '../server/dependency-intelligence.js';
+import { checkVulnerabilities } from '../server/osv.js';
 import { registerSkillApi } from '../server/skill-api.js';
 import { registerOffenseApi } from '../server/offense-api.js';
 import { createWorkerApp } from '../workers/app-api.js';
@@ -126,6 +127,27 @@ test('the entire audit shares a bounded provider budget and uses the Worker-comp
   }, plan: async (snapshot, name, version, { fetchImpl }) => { await fetchImpl('https://registry.npmjs.org/semver'); return plan(snapshot, name, version); } });
   const report = await (await post(url)).json(); assert.equal(outbound, 90); assert.equal(report.status, 'partial'); assert.equal(report.findings.length, 2);
   assert.ok(report.remediation.blockers.every(item => item.reason.includes('budget')));
+});
+
+test('REST advisory cursors resume through MCP without presenting a last page as a full scan', async t => {
+  const { url } = await fixture(t, { check: checkVulnerabilities, fetchImpl: async (url, options) => {
+    if (url.endsWith('/querybatch')) return Response.json({ results: JSON.parse(options.body).queries.map(() => ({
+      vulns: Array.from({ length: 65 }, (_, n) => ({ id: `GHSA-mcp-${n}` }))
+    })) });
+    return Response.json({ database_specific: { severity: 'MODERATE' } });
+  } });
+  const first = await (await post(url, { files, planLimit: 0 })).json();
+  assert.equal(first.status, 'partial'); assert.ok(first.scanning.next);
+  const client = new Client({ name: 'scan-continuation', version: '1' });
+  await client.connect(new StreamableHTTPClientTransport(new URL(url + '/mcp'))); t.after(() => client.close());
+  const result = await client.callTool({ name: 'offense.audit_dependencies', arguments: { files, planLimit: 0, scanning: first.scanning.next } });
+  assert.notEqual(result.isError, true);
+  const last = result.structuredContent;
+  assert.equal(last.scanning.next, null); assert.equal(last.status, 'partial');
+  assert.equal(last.coverage.status, 'partial'); assert.equal(last.coverage.advisoryScope, 'scan_page');
+  assert.equal(first.findings.length + last.findings.length, 130);
+  assert.equal(new Set([...first.findings, ...last.findings].map(f => f.id)).size, 130);
+  assert.equal(last.summary.provenance.scope, 'scan_page');
 });
 
 test('manual provider redirects are rejected rather than followed', async t => {

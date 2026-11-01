@@ -13,6 +13,15 @@ export const auditInputSchema = {
       } } },
     planLimit: { type: 'integer', minimum: 0, maximum: 10, default: 3,
       description: 'Maximum affected package/version pairs to plan in this response, highest severity first. Zero scans only. Follow remediation.planning.next for remaining targets; omitted or failed paths remain explicit blockers.' },
+    scanning: { type: 'object', additionalProperties: false,
+      required: ['metadataFingerprint', 'packageOffset', 'advisoryOffset', 'batchFingerprint'],
+      description: 'Use scanning.next unchanged with the same complete sanitized files to continue advisory scanning. Retain all prior pages; a continuation alone is never a complete audit. Do not combine with planning.',
+      properties: {
+        metadataFingerprint: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+        packageOffset: { type: 'integer', minimum: 0, maximum: 4900, multipleOf: 100 },
+        advisoryOffset: { type: 'integer', minimum: 0, maximum: 100000 },
+        batchFingerprint: { anyOf: [{ type: 'null' }, { type: 'string', pattern: '^[a-f0-9]{64}$' }] }
+      } },
     planning: { type: 'object', additionalProperties: false, required: ['metadataFingerprint', 'pendingTargetIds'],
       description: 'Use remediation.planning.next unchanged with the same sanitized files to continue planning. This checks only selected planning targets; retain and merge the original full advisory report.',
       properties: {

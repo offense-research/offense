@@ -8,6 +8,7 @@ import { sanitizeLockfiles } from '../public/skills/purple/scripts/metadata.mjs'
 import { updateBeforeRun, updaterMain } from './skill-updater.mjs';
 import { collectLocalEvidence, loadReviewedEvidence } from './offense-local-evidence.mjs';
 import { mergeAuditContinuation } from '../shared/offense-planning.js';
+import { mergeAuditScanPage, validateScanPage } from '../shared/offense-scanning.js';
 import { createOffenseTrace, classifyTraceError, serializeOffenseTrace } from '../shared/offense-trace.js';
 
 const excluded = new Set(['node_modules', 'vendor', 'dist', 'build', 'coverage']);
@@ -274,8 +275,8 @@ export async function auditDependencies(directory, options = {}) {
 }
 
 async function runAudit(directory, { endpoint = 'https://app.purpleteam.sh', output, planLimit = 3, maxPages = 10,
-  evidence, preview = false, fetchImpl = fetch } = {}, observer = { record() {}, output() {}, async flush() {} }) {
-  if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 10) throw Error('Planning pages must be an integer from 1 to 10.');
+  evidence, resume, preview = false, fetchImpl = fetch } = {}, observer = { record() {}, output() {}, async flush() {} }) {
+  if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 10) throw Error('Scan and planning pages must be an integer from 1 to 10.');
   if (preview) return prepareAudit(directory, { planLimit });
   const base = serviceBase(endpoint);
   const root = await realpath(directory), target = output ? path.resolve(output) : await mkdtemp(path.join(os.tmpdir(), 'offense-audit-'));
@@ -324,11 +325,65 @@ async function runAudit(directory, { endpoint = 'https://app.purpleteam.sh', out
       throw error;
     }
   }
-  let report = await request(prepared.request), pages = 1, planningError = null;
+  let report;
+  if (resume) {
+    const filename = path.resolve(resume), info = await lstat(filename);
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 24_000_000) throw Error('Resume requires a regular saved audit.json of at most 24 MB.');
+    report = JSON.parse(await readFile(filename, 'utf8'));
+    if (report.schemaVersion !== 'offense.audit.v1' || report.capability !== 'audit_dependencies' || report.metadataFingerprint !== prepared.local.metadataFingerprint ||
+      report.status !== 'partial' || !Array.isArray(report.findings) || !report.findings.every(validFinding) || !report.scanning?.next ||
+      !Number.isInteger(report.scanning.completedPages) || report.scanning.completedPages < 1 ||
+      !Array.isArray(report.remediation?.plans) || report.remediation.plans.length || !Array.isArray(report.remediation.blockers)) {
+      throw Error('Resume requires an unfinished advisory scan matching the current dependency metadata.');
+    }
+    // Local evidence is recollected; never carry a previous reviewed assessment
+    // into a resumed scan without the explicit --evidence path.
+    delete report.localVerification;
+  } else report = await request(prepared.request);
+  let pages = report.scanning?.next ? 0 : 1, planningError = null, scanningError = null;
+  let scanPages = report.scanning?.completedPages || 1, scanRequests = resume ? 0 : 1;
   if (report.coverage.planningOnly || (report.remediation.planning && report.remediation.planning.scope !== 'full_audit')) throw Error('Expected a full advisory audit before planning continuations. No complete scan was established.');
-  const verificationStartedAt = performance.now();
+  if (report.scanning) {
+    validateScanPage(report);
+    if (report.scanning.start !== null) throw Error('Expected the first advisory scan page.');
+  }
   let localVerification = null;
-  if (evidence) {
+  let saved;
+  async function persist() {
+    const startedAt = performance.now();
+    const pending = !!report.remediation.planning?.hasMore;
+    saved = { ...report, ...(prepared.local.warnings.length || scanningError || report.scanning?.next || planningError || (planLimit > 0 && pending) ? { status: 'partial', serverStatus: report.status } : {}),
+      clientCoverage: prepared.local, clientScanning: { completedPages: scanPages, maxPages,
+        stopReason: scanningError ? 'request_failed' : report.scanning?.next ? 'client_page_limit' : 'finished',
+        ...(scanningError ? { error: scanningError } : {}) }, clientPlanning: { completedPages: pages, maxPages,
+        stopReason: planningError ? 'request_failed' : pending ? 'client_page_limit' : planLimit ? 'finished' : 'not_requested',
+        ...(planningError ? { error: planningError } : {}) }, ...(localVerification ? { localVerification } : {}) };
+    await writeReport(json, JSON.stringify(saved, null, 2) + '\n');
+    const coverage = prepared.local.warnings.length ? `\n\nLocal coverage warnings:\n${prepared.local.warnings.map(warning => `- ${warning}`).join('\n')}` : '';
+    const tasks = prepared.local.evidence.coverage.tasks.length ? `\n\nAgent-owned coverage follow-up (local inventory; not uploaded):\n${JSON.stringify(prepared.local.evidence.coverage.tasks, null, 2)}` : '';
+    const patches = prepared.local.evidence.patches.length ? '\n\nLocal dependency patches were found. Keep advisory matches visible until patch application, content guards, focused security regressions, and normal behavior are verified at this revision.' : '';
+    const verification = localVerification ? `\n\nLocal verification assessment (reviewer-supplied evidence, not an independent hosted confirmation):\n${JSON.stringify(localVerification, null, 2)}` : '';
+    const continuation = pending ? `\n\nPlanning is unfinished. The saved audit.json retains remediation.planning.next with remaining stable target IDs. Continue via offense.audit_dependencies using the same sanitized files, planLimit, and planning: remediation.planning.next; preserve this original full scan and merge pages by targetId. A planning-only response is not a new full audit.${planningError ? ` Last request: ${planningError.message}` : ''}` : '';
+    const scanning = report.scanning?.next ? `\n\nAdvisory scanning is unfinished. Retain all findings and scanning.next in audit.json. Continue with the same complete sanitized files and scanning: scanning.next; merge contiguous pages before claiming full coverage or planning upgrades.${scanningError ? ` Last request: ${scanningError.message}` : ''}` : '';
+    await writeReport(prompt, `${report.remediation.agentPrompt || 'No prepared remediation prompt was returned. Review audit.json and all blockers.'}${coverage}${tasks}${patches}${verification}${scanning}${continuation}\n`);
+    observer.record('report', 'completed', { durationMs: performance.now() - startedAt, counts: { planningPages: pages } });
+    await observer.flush();
+  }
+  await persist();
+  while (report.scanning?.next && scanRequests < maxPages) {
+    try {
+      scanRequests++;
+      const page = await request({ ...prepared.request, scanning: report.scanning.next });
+      report = mergeAuditScanPage(report, page, planLimit); scanPages++;
+      pages = 0;
+    } catch (error) {
+      scanningError = { message: error.message, ...(error.diagnostics ? { diagnostics: error.diagnostics } : {}) };
+      await persist(); break;
+    }
+    await persist();
+  }
+  const verificationStartedAt = performance.now();
+  if (evidence && !report.scanning?.next) {
     observer.record('local_verification', 'started', { evidenceSource: 'reviewed_artifact' });
     try {
       localVerification = await loadReviewedEvidence(root, path.resolve(evidence), {
@@ -345,26 +400,8 @@ async function runAudit(directory, { endpoint = 'https://app.purpleteam.sh', out
     ...(localVerification ? { counts: { compatibilityVerified: localVerification.counts.compatibility_verified,
       mitigationsVerified: localVerification.counts.mitigation_verified, securityRegressionsVerified: localVerification.counts.security_regression_verified } } : {})
   });
-  let saved;
-  async function persist() {
-    const startedAt = performance.now();
-    const pending = !!report.remediation.planning?.hasMore;
-    saved = { ...report, ...(prepared.local.warnings.length || planningError || (planLimit > 0 && pending) ? { status: 'partial', serverStatus: report.status } : {}),
-      clientCoverage: prepared.local, clientPlanning: { completedPages: pages, maxPages,
-        stopReason: planningError ? 'request_failed' : pending ? 'client_page_limit' : planLimit ? 'finished' : 'not_requested',
-        ...(planningError ? { error: planningError } : {}) }, ...(localVerification ? { localVerification } : {}) };
-    await writeReport(json, JSON.stringify(saved, null, 2) + '\n');
-    const coverage = prepared.local.warnings.length ? `\n\nLocal coverage warnings:\n${prepared.local.warnings.map(warning => `- ${warning}`).join('\n')}` : '';
-    const tasks = prepared.local.evidence.coverage.tasks.length ? `\n\nAgent-owned coverage follow-up (local inventory; not uploaded):\n${JSON.stringify(prepared.local.evidence.coverage.tasks, null, 2)}` : '';
-    const patches = prepared.local.evidence.patches.length ? '\n\nLocal dependency patches were found. Keep advisory matches visible until patch application, content guards, focused security regressions, and normal behavior are verified at this revision.' : '';
-    const verification = localVerification ? `\n\nLocal verification assessment (reviewer-supplied evidence, not an independent hosted confirmation):\n${JSON.stringify(localVerification, null, 2)}` : '';
-    const continuation = pending ? `\n\nPlanning is unfinished. The saved audit.json retains remediation.planning.next with remaining stable target IDs. Continue via offense.audit_dependencies using the same sanitized files, planLimit, and planning: remediation.planning.next; preserve this original full scan and merge pages by targetId. A planning-only response is not a new full audit.${planningError ? ` Last request: ${planningError.message}` : ''}` : '';
-    await writeReport(prompt, `${report.remediation.agentPrompt || 'No prepared remediation prompt was returned. Review audit.json and all blockers.'}${coverage}${tasks}${patches}${verification}${continuation}\n`);
-    observer.record('report', 'completed', { durationMs: performance.now() - startedAt, counts: { planningPages: pages } });
-    await observer.flush();
-  }
   await persist();
-  while (planLimit > 0 && report.remediation.planning?.hasMore && pages < maxPages) {
+  while (!report.scanning?.next && planLimit > 0 && report.remediation.planning?.hasMore && pages < maxPages) {
     const startedAt = performance.now();
     observer.record('continuation', 'started');
     try {
@@ -384,13 +421,14 @@ async function runAudit(directory, { endpoint = 'https://app.purpleteam.sh', out
   }
   return { status: saved.status, advisoryMatches: report.findings.length, confirmedVulnerabilities: 0,
     upgradePlans: report.remediation.plans.length, blockers: report.remediation.blockers.length,
+    scanningPages: scanPages, remainingScanning: !!report.scanning?.next,
     planningPages: pages, remainingPlanningTargets: report.remediation.planning?.remainingTargetIds?.length || 0,
     localCoverageWarnings: prepared.local.warnings.length,
     ...(localVerification ? { verification: localVerification.counts } : {}), json, prompt };
 }
 
 export async function main(argv = process.argv.slice(2)) {
-  if (!argv.length || argv.includes('--help')) { console.log('Usage: node offense.mjs metadata [directory] [--plan-limit 0..10]\n       node offense.mjs audit [directory] [--plan-limit 0..10] [--max-pages 1..10] [--evidence file] [--output directory] [--preview] [--no-trace]\n       node offense.mjs doctor [directory]\n       node offense.mjs update [--check | --accept-local]\nNode 20+. Purple uses the offense server/tool. Sanitized npm/pnpm dependency metadata only; local evidence stays local. Audit continues bounded planning pages and saves unfinished target IDs. A minimized trace.json records observed helper stages/counts locally; it is never uploaded automatically. Share only trace.json, not the full audit report. --no-trace disables this export. Doctor verifies the endpoint without auditing; it cannot observe this agent session\'s tools. Installed skills check for updates on every run; help and previews stay offline. Exit 4 means start a new session.'); return; }
+  if (!argv.length || argv.includes('--help')) { console.log('Usage: node offense.mjs metadata [directory] [--plan-limit 0..10]\n       node offense.mjs audit [directory] [--plan-limit 0..10] [--max-pages 1..10] [--resume audit.json] [--evidence file] [--output directory] [--preview] [--no-trace]\n       node offense.mjs doctor [directory]\n       node offense.mjs update [--check | --accept-local]\nNode 20+. Purple uses the offense server/tool. Sanitized npm/pnpm dependency metadata only; local evidence stays local. Audit automatically continues advisory scanning before planning, retaining complete lockfiles. --max-pages bounds each phase per invocation (default 10) within a shared 180-second budget. --resume continues unfinished advisory scanning from a trusted saved audit.json with unchanged metadata; retained evidence is not freshly rechecked. Partial reports retain scanning.next or unfinished planning target IDs. A minimized trace.json records observed helper stages/counts locally; it is never uploaded automatically. Share only trace.json, not the full audit report. --no-trace disables this export. Doctor verifies the endpoint without auditing; it cannot observe this agent session\'s tools. Installed skills check for updates on every run; help and previews stay offline. Exit 4 means start a new session.'); return; }
   const action = argv.shift();
   if (action === 'update') return updaterMain(['--skill', 'offense', ...argv], import.meta.url);
   if (!['metadata', 'audit', 'doctor'].includes(action)) throw Error('Expected metadata, audit or doctor.');
@@ -401,6 +439,7 @@ export async function main(argv = process.argv.slice(2)) {
     if (key === '--plan-limit' && /^\d+$/.test(argv[0] || '')) options.planLimit = Number(argv.shift());
     else if (key === '--max-pages' && /^\d+$/.test(argv[0] || '')) options.maxPages = Number(argv.shift());
     else if (key === '--evidence' && argv[0] && !argv[0].startsWith('--')) options.evidence = argv.shift();
+    else if (key === '--resume' && argv[0] && !argv[0].startsWith('--')) options.resume = argv.shift();
     else if (key === '--output' && argv[0] && !argv[0].startsWith('--')) options.output = argv.shift();
     else if (key === '--preview') options.preview = true;
     else if (key === '--no-trace') options.trace = false;
