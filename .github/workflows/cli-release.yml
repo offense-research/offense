@@ -64,6 +64,18 @@ jobs:
           cp dist/cli-release/offense.rb "$(brew --repository offense-research/release-check)/Formula/offense.rb"
           brew audit --strict offense-research/release-check/offense
           brew uninstall offense-research/release-check/offense
+      - name: Verify published Homebrew release when configured
+        shell: bash
+        run: |
+          # Before the first publication, the maintained formula uses a source archive.
+          if ! grep -q 'releases/download/cli-v' Formula/offense.rb; then exit 0; fi
+          cp Formula/offense.rb "$(brew --repository offense-research/release-check)/Formula/offense.rb"
+          brew install --build-from-source offense-research/release-check/offense
+          brew test offense-research/release-check/offense
+          brew style offense-research/release-check/offense
+          brew audit --strict offense-research/release-check/offense
+          brew livecheck offense-research/release-check/offense
+          brew uninstall offense-research/release-check/offense
       - name: Retain candidate for owner review, not publication
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

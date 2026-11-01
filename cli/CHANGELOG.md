@@ -1,8 +1,7 @@
 # Offense CLI 0.2.0
 
-First versioned open-source CLI release candidate. Publication is pending owner
-approval and successful macOS/Linux installation checks; this document is not a
-release announcement.
+First stable, versioned open-source CLI release for macOS and Linux, with
+Node.js 20+ support and a SHA-256-verified Homebrew installation.
 
 ## Included
 
@@ -14,7 +13,7 @@ release announcement.
   attacker prerequisites, business impact, recommended fixes and review priorities.
   Application severity remains unknown unless a complete, attributed review is supplied.
 - Local stack evidence and Kubernetes inventory commands with offline previews.
-- npm-compatible archive, SHA-256 checksum and a prepared Homebrew formula.
+- npm-compatible archive, SHA-256 checksum and a Homebrew formula.
 
 ## Requirements and boundaries
 
@@ -26,7 +25,7 @@ release announcement.
 - Self-hosted deployments can disable billing. Configure your own API origin and
   key; installing this client does not select or start that server.
 - No npm registry publication, hosted download replacement or deployment is
-  included in this release preparation.
+  included in this release.
 - `offense audit` currently saves one response and exits 2 for partial coverage or
   unfinished planning. Automatic scan/planning continuation and `--resume` belong
   to the separate downloadable `offense.mjs` helper, not this CLI command. Do not
