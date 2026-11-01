@@ -44,18 +44,28 @@ tag, npm-publish or deployment step. It:
 2. Installs the archive into a temporary npm prefix and tests it on Node 24 and
    the minimum supported Node 20. Checks include version/help, signed-out status,
    an explicit custom API origin and a Kubernetes preview that needs no cluster.
+   It also exports a partial synthetic audit as a PDF, checks private permissions,
+   preserves the source JSON and rejects overwriting an existing PDF, without login.
 3. Creates a disposable Homebrew tap and changes only the candidate's download
    URL to the local archive. Homebrew still verifies the actual SHA-256.
 4. Installs with Homebrew's Node dependency, runs the formula tests, checks style,
    audits the prepared release formula and uninstalls it.
 5. Retains the candidate as a short-lived CI artifact for review, not a GitHub
-   Release. Both operating-system jobs must pass. Compare their archive hashes
-   before selecting the final bytes; CI artifacts remain tied to their source SHA.
+   Release. Both operating-system jobs must pass. A final comparison job verifies
+   each checksum and requires every candidate file to be byte-identical across
+   macOS and Linux. The gzip OS marker is normalized; CI artifacts remain tied
+   to their source SHA.
 
 The offline tests do not certify login, hosted payments or every server feature.
 They never run paid calls, active assessments or cluster collection. The macOS
 job tests the architecture provided by `macos-latest`, not every Mac model or
 every macOS version. A Linux-only local check is not a substitute for that job.
+
+Known first-release limitation: `offense audit` saves one hosted response. It
+does not automatically follow advisory scan or planning cursors. Large audits
+remain partial (exit 2); the separate downloadable `offense.mjs` helper provides
+automatic continuation and interrupted-scan recovery. Keep this distinction in
+the release notes rather than advertising helper-only features as CLI features.
 
 ## Publication gate — owner approval required
 

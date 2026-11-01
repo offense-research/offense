@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, readdir, rm, access, realpath } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, access, realpath, writeFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -13,7 +13,9 @@ const archives = (await readdir(directory)).filter(name => /^offense-cli-\d+\.\d
 assert.equal(archives.length, 1, 'Expected exactly one versioned CLI archive');
 const archive = path.join(directory, archives[0]);
 const version = archives[0].slice('offense-cli-'.length, -4);
-const digest = createHash('sha256').update(await readFile(archive)).digest('hex');
+const archiveBytes = await readFile(archive);
+assert.equal(archiveBytes[9], 255, 'Release gzip headers must not encode the build operating system');
+const digest = createHash('sha256').update(archiveBytes).digest('hex');
 assert.equal(await readFile(path.join(directory, 'SHA256SUMS'), 'utf8'), `${digest}  ${archives[0]}\n`);
 const formula = await readFile(path.join(directory, 'offense.rb'), 'utf8');
 assert.ok(formula.includes(`sha256 "${digest}"`));
@@ -53,6 +55,22 @@ try {
   assert.equal(preview.status, 'preview');
   assert.equal(preview.scope.context, 'release-check');
   assert.equal(preview.scope.withNova, false);
+  const input = path.join(temporary, 'audit.json'), output = path.join(temporary, 'audit.pdf');
+  const evidence = JSON.stringify({ schemaVersion: 'offense.audit.v1', capability: 'audit_dependencies', status: 'partial',
+    coverage: { status: 'partial', checkedPackages: 1 },
+    findings: [{ advisoryId: 'RELEASE-FIXTURE', severity: 'high', summary: 'Synthetic denial of service advisory',
+      package: { name: 'release-fixture', installedVersion: '1.0.0' } }],
+    remediation: { plans: [], blockers: [{ reason: 'Synthetic incomplete evidence' }] } });
+  await writeFile(input, evidence, { mode: 0o600 });
+  const report = invoke(['report', '--input', input, '--output', output]);
+  assert.equal(report.reportStatus, 'partial', 'Export success must not imply a passing scan');
+  assert.ok(report.pages >= 2, 'The installed bundle includes finding explanations and evidence');
+  const pdf = await readFile(output);
+  assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
+  assert.equal((await stat(output)).mode & 0o777, 0o600);
+  assert.equal(await readFile(input, 'utf8'), evidence);
+  assert.throws(() => invoke(['report', '--input', input, '--output', output]));
+  assert.deepEqual(await readFile(output), pdf, 'Export must not overwrite an existing report');
   await assert.rejects(access(env.OFFENSE_CONFIG_DIR), { code: 'ENOENT' });
-  console.log(`PASS: CLI ${version} archive, licenses, checksum, npm installation and offline commands on ${process.version}`);
+  console.log(`PASS: CLI ${version} archive, licenses, checksum, npm installation and offline commands (including PDF export) on ${process.version}`);
 } finally { await rm(temporary, { recursive: true, force: true }); }

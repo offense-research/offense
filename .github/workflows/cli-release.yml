@@ -71,3 +71,19 @@ jobs:
           path: dist/cli-release/
           if-no-files-found: error
           retention-days: 14
+
+  compare-candidates:
+    name: Identical macOS and Linux release bytes
+    needs: package-and-homebrew
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: cli-candidate-*
+          path: candidates
+      - name: Verify checksums and compare every candidate file
+        run: |
+          (cd candidates/cli-candidate-ubuntu-latest && sha256sum --check SHA256SUMS)
+          (cd candidates/cli-candidate-macos-latest && sha256sum --check SHA256SUMS)
+          diff --recursive candidates/cli-candidate-ubuntu-latest candidates/cli-candidate-macos-latest

@@ -62,6 +62,9 @@ for (const [name, bytes] of Object.entries(entries).sort(([a], [b]) => a.localeC
 }
 blocks.push(Buffer.alloc(1024));
 const archive = gzipSync(Buffer.concat(blocks), { level: 9 });
+// RFC 1952 OS=255 (unknown): the tar payload is platform-independent, but zlib
+// otherwise stamps Linux/macOS differently and changes the release checksum.
+archive[9] = 255;
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 if (releaseDir) {
   const archiveName = `offense-cli-${packageMetadata.version}.tgz`;

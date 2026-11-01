@@ -49,6 +49,13 @@ offense quote opengrep --input request.json
 offense call opengrep --input request.json --max-price 0.10 --idempotency-key my-request-0001 --wait
 ```
 
+`offense audit` saves one response and exits 2 when coverage or upgrade planning
+is incomplete. It does not automatically follow `scanning.next` or
+`remediation.planning.next`. For large audits, use the separate downloadable
+`offense.mjs` helper's automatic continuation and `--resume` support, documented
+in [the dependency API guide](https://github.com/offense-research/offense/blob/main/docs/offense-api.md#continue-large-advisory-scans-without-splitting-lockfiles).
+Do not treat a partial report as a complete scan.
+
 Input files are explicit JSON requests; preview uploaded source and artifact
 scope first. The server checks the exact quote before reserving prepaid credit.
 Keep the same idempotency key and input when recovering an uncertain submission.
