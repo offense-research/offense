@@ -1,10 +1,10 @@
 class Offense < Formula
   desc "Security tools for coding agents: Offense hosted-service CLI"
   homepage "https://offense.sh"
-  url "https://github.com/offense-research/offense/archive/6e979cda6d9ba46ac6d5291fc356ab53e22fc910.tar.gz"
-  version "0.2.0"
-  sha256 "ecde8cff431b480aea3b7173f3e67db8b430048009709d12e4cea042b8f455cf"
+  url "https://github.com/offense-research/offense/releases/download/cli-v0.2.0/offense-cli-0.2.0.tgz"
+  sha256 "a2c475df0b69749d3abed5a425fe8a8e032865a9309cad64cc1984553740b1d1"
   license "Apache-2.0"
+  revision 1
 
   livecheck do
     url "https://github.com/offense-research/offense/releases/latest"
@@ -17,10 +17,10 @@ class Offense < Formula
   def install
     # Use the reviewed bundle, including its embedded third-party notices.
     # No npm lifecycle scripts, credentials or scanner engines are needed.
-    libexec.install "public/skills/offense/scripts/cli.mjs" => "offense"
+    libexec.install "dist/offense.mjs" => "offense"
     chmod 0755, libexec/"offense"
     (bin/"offense").write_env_script libexec/"offense", PATH: "#{formula_opt_bin("node")}:$PATH"
-    pkgshare.install "LICENSE", "NOTICE", "cli/THIRD_PARTY_LICENSES.txt"
+    pkgshare.install "LICENSE", "NOTICE", "THIRD_PARTY_LICENSES.txt"
   end
 
   test do

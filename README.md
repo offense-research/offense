@@ -276,10 +276,29 @@ offense --version
 offense --help
 ```
 
-The [formula](Formula/offense.rb) installs the bundled CLI from a **commit-pinned,
-SHA-256-checked public source archive** and brings its own Homebrew Node dependency.
+The [formula](Formula/offense.rb) installs the bundled CLI from the **versioned,
+SHA-256-checked [CLI 0.2.0 release](https://github.com/offense-research/offense/releases/tag/cli-v0.2.0)**
+and brings its own Homebrew Node dependency.
 It does not run npm install scripts or download scanner images. This is a project
 tap, not a formula in Homebrew/core. Review the tap before installing it.
+
+### Stable GitHub release — Node.js 20+
+
+Download `offense-cli-0.2.0.tgz` and `SHA256SUMS` from the
+[release page](https://github.com/offense-research/offense/releases/tag/cli-v0.2.0).
+In the download directory, verify the checksum before installing:
+
+```sh
+shasum -a 256 -c SHA256SUMS
+# On Linux, sha256sum --check SHA256SUMS is also supported.
+npm install --global ./offense-cli-0.2.0.tgz
+offense --version
+```
+
+Continue only if verification reports `offense-cli-0.2.0.tgz: OK`. This installs
+the GitHub release archive, not a package from the npm registry. Homebrew performs
+the checksum check automatically. The hosted-download commands below use a
+separate, mutable channel and may install an older version.
 
 ### Ubuntu and Arch Linux
 
@@ -381,9 +400,9 @@ pnpm --package=@offense-security/cli@https://offense.sh/downloads/offense-cli.tg
 bunx --package https://offense.sh/downloads/offense-cli.tgz offense --help
 ```
 
-**Download channel versus source:** these npm/npx/pnpm/Bun commands use the existing
+**Hosted download versus stable release:** these npm/npx/pnpm/Bun commands use the existing
 hosted archive, not an npm registry release. At verification on 2026-10-30 the
-archive was **0.1.0**, while the source-pinned Homebrew formula installs **0.2.0**.
+archive was **0.1.0**, while Homebrew and the GitHub release install **0.2.0**.
 The hosted URL can change independently of this repository; check `--version`
 and `--help` before relying on a command. Do not assume `npx offense` or
 `npm install -g offense` refers to this project. No npm registry package is
@@ -415,6 +434,8 @@ spending ceiling before submission. Install the [Agent Skill](#install-the-offen
 separately to teach your agent this workflow.
 
 To update Homebrew, run `brew update` then `brew upgrade offense-research/offense/offense`.
+The release formula has Homebrew revision 1 so users of the earlier source-pinned
+0.2.0 formula receive the published archive too; `offense --version` stays 0.2.0.
 For a global npm install, rerun its URL-based install command; `npm update` is not
 a promise to refresh a mutable download URL. Remove with
 `brew uninstall offense-research/offense/offense` or

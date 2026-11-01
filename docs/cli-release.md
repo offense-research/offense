@@ -1,8 +1,12 @@
 # Versioned CLI release procedure
 
-The first stable CLI target is **0.2.0**, with planned tag `cli-v0.2.0`. It is
-currently a local candidate, not a published release. Source publication approval does
-not automatically approve CLI artifacts, npm publication or deployment.
+The first stable CLI release is **0.2.0**, published as
+[`cli-v0.2.0`](https://github.com/offense-research/offense/releases/tag/cli-v0.2.0)
+from commit `83d061eebd9bff823b7688d32082db21d96cd15c`.
+The archive SHA-256 is `a2c475df0b69749d3abed5a425fe8a8e032865a9309cad64cc1984553740b1d1`.
+This release did not publish to npm, replace hosted downloads or deploy services.
+Future artifact releases require their own owner approval; source publication
+approval alone does not authorize them.
 
 ## Build without modifying the hosted downloads
 
@@ -89,8 +93,10 @@ After approval:
    `cli-vX.Y.Z` GitHub releases, and repeat the Homebrew install/test/audit checks
    against the public release URL. Update README installation/version guidance.
 
-Until step 4, the public tap keeps its working commit-pinned source URL. Preparing
-a release must not break existing installations by pointing at an absent asset.
+Until step 4, the public tap keeps its existing working URL. Preparing a release
+must not break existing installations by pointing at an absent asset. The checks
+also install, test, audit and livecheck the maintained formula's public release
+URL on macOS and Linux once it points to a versioned release.
 
 ## Future releases and Homebrew/core
 
@@ -99,6 +105,10 @@ packaged README example and the release notes together. The builder rejects a
 package/implementation version mismatch. The generated formula inherits the
 maintained formula's install logic and tests, adjusting only its release URL,
 version, checksum and the two archive layout paths.
+
+CLI 0.2.0 uses Homebrew `revision 1` so `brew upgrade` replaces the earlier
+source-pinned 0.2.0 installation. Remove that revision when bumping the upstream
+CLI version; formula revisions do not change `offense --version`.
 
 Homebrew/core submission is separate from maintaining this tap. Once its
 [acceptance criteria](https://docs.brew.sh/Acceptable-Formulae) and
