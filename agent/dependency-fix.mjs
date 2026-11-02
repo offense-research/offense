@@ -18,7 +18,10 @@ const generated = name => name.split('/').some(part => ['node_modules', '.pnpm-s
 const normalTest = name => /(^|\/)(?:test|tests|__tests__|scripts)\//.test(name) || /(^|\/)(?:test|spec)\.[cm]?[jt]sx?$/.test(name) || /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(name);
 const setupPassed = check => check?.passed === true && !check.timedOut && !check.signal;
 const validationPassed = check => !!check?.integrity && check.setup?.length > 0 && check.setup.every(setupPassed) && check.checks?.length > 0 && check.checks.every(setupPassed);
-const proxyEnvironment = () => Object.fromEntries(['HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy', 'NODE_USE_ENV_PROXY', 'npm_config_proxy', 'npm_config_https_proxy'].filter(name => process.env[name] !== undefined).map(name => [name, process.env[name]]));
+const proxyEnvironment = () => ({
+  ...Object.fromEntries(['HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy', 'NODE_USE_ENV_PROXY', 'npm_config_proxy', 'npm_config_https_proxy'].filter(name => process.env[name] !== undefined).map(name => [name, process.env[name]])),
+  ...(process.env.HTTPS_PROXY === 'http://purple-egress:8080' ? { npm_config_proxy: 'http://purple-egress:8080', npm_config_https_proxy: 'http://purple-egress:8080' } : {})
+});
 const safeMessage = (error, secret) => (secret ? String(error.message || error).split(secret).join('[REDACTED]') : String(error.message || error)).replace(/(?:gh[opsu]_[\w]+|github_pat_[\w]+|sk-or-[\w-]+|Bearer\s+\S+)/gi, '[REDACTED]').slice(0, 1000);
 const notice = value => String(value).replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 1000);
 const warningReason = item => item.reviewWarnings?.length && !item.reason.includes('Needs maintainer review:') ? item.reason + ' Needs maintainer review: ' + item.reviewWarnings.map(warning => `${warning.package}@${warning.version} is deprecated: ${warning.message}`).join(' ') : item.reason;
