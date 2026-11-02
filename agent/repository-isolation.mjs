@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { chmod, chown, lstat, mkdir, readdir, readFile } from 'node:fs/promises';
+import { chmod, chown, lstat, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export const REPOSITORY_UID = 1001;
@@ -28,12 +28,16 @@ async function regularDirectory(directory, mode, owner = 0) {
 export async function prepareIsolationDirectories({ workDirectory, outputDirectory }) {
   const home = path.join(workDirectory, 'command-home'), cache = path.join(workDirectory, 'npm-cache');
   if (!repositoryCommandIdentity()) return { home, cache };
+  const temp = path.join(workDirectory, 'command-tmp');
   // Traverse-only parents keep root-owned reports and controller output intact.
   await regularDirectory(outputDirectory, 0o711);
   await regularDirectory(workDirectory, 0o711);
   await regularDirectory(home, 0o700, REPOSITORY_UID);
   await regularDirectory(cache, 0o700, REPOSITORY_UID);
-  return { home, cache };
+  // Tests may need executable fixtures. Keep them in the repository-owned job
+  // mount rather than weakening the controller's noexec /tmp mount.
+  await regularDirectory(temp, 0o700, REPOSITORY_UID);
+  return { home, cache, temp };
 }
 
 export async function prepareRepositoryTree(directory) {
@@ -93,7 +97,13 @@ export async function reapRepositoryProcesses() {
 export async function runRepositoryCommand(argv, { cwd, env, timeoutMs = 90000, maxOutputBytes = 500000, repository = true, repositoryDirectory = cwd } = {}) {
   const identity = repository ? repositoryCommandIdentity() : undefined;
   if (identity) await reapRepositoryProcesses();
-  if (identity) env = { ...env, GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'safe.directory', GIT_CONFIG_VALUE_0: repositoryDirectory };
+  if (identity) {
+    // Keep the root-owned checkout usable without leaking command-scoped Git
+    // settings into nested tools that construct their own authentication env.
+    const config = path.join(repositoryDirectory, '.git', 'offense-command.gitconfig');
+    await writeFile(config, `[safe]\n\tdirectory = ${JSON.stringify(repositoryDirectory)}\n`, { mode: 0o644 });
+    env = { ...env, GIT_CONFIG_GLOBAL: config };
+  }
   return new Promise((resolve, reject) => {
     let child, stdout = '', stderr = '', bytes = 0, timedOut = false, truncated = false, settled = false;
     let exitCode = null, exitSignal = null, cleanupPromise, drainTimer;

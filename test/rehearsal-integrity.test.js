@@ -26,7 +26,9 @@ async function fixture(action) {
     for (const args of [['init'], ['add', '.'], ['-c', 'user.name=Purple fixture', '-c', 'user.email=fixture@example.com', 'commit', '-m', 'fixture']]) {
       execFileSync('git', args, { cwd: source, stdio: 'pipe' });
     }
-    return await runUpgradeRehearsal({ root, revision: 'a'.repeat(40), scenarios: [{ rationale: 'Exercise repository-check integrity.', changes: [] }] });
+    const result = await runUpgradeRehearsal({ root, revision: 'a'.repeat(40), scenarios: [{ rationale: 'Exercise repository-check integrity.', changes: [] }] });
+    assert.equal(await readFile(path.join(root, 'candidate-0/package.json'), 'utf8'), JSON.stringify(manifest), 'Unchanged manifests retain their exact bytes.');
+    return result;
   } finally { await rm(root, { recursive: true, force: true }); }
 }
 
@@ -41,6 +43,18 @@ test('unchanged tracked application and test files permit baseline/candidate com
   assert.equal(result.scenarios[0].checks.length, 2);
   for (const command of [...result.baseline.checks, ...result.scenarios[0].checks]) {
     assert.equal(command.exitCode, 0); assert.equal(command.signal, null); assert.equal(command.truncated, false);
+  }
+});
+
+test('nested rehearsal checks retain the restricted gateway without inheriting controller isolation', { timeout: 60000 }, async () => {
+  const prior = process.env.HTTPS_PROXY;
+  process.env.HTTPS_PROXY = 'http://purple-egress:8080';
+  try {
+    const result = await fixture("assert.equal(process.env.HTTPS_PROXY,'http://purple-egress:8080');assert.equal(process.env.PURPLE_FIX_EGRESS_PROXY,undefined);assert.equal(process.env.PURPLE_FIX_ISOLATE_COMMANDS,undefined);");
+    assert.equal(result.scenarios[0].status, 'tests_passed');
+  } finally {
+    if (prior === undefined) delete process.env.HTTPS_PROXY;
+    else process.env.HTTPS_PROXY = prior;
   }
 });
 

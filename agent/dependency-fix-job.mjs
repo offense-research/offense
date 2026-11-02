@@ -27,9 +27,11 @@ async function main() {
   await prepareArtifactOwnership(input.output);
   const redact = value => String(value).split(input.apiKey || '\0').join('[REDACTED]');
   try {
-    const report = input.mode === 'verify' ? await verifyDependencyFix({ reportFile: input.reportFile, output: input.verificationOutput, sandboxed: true }) : await runDependencyFix({ ...input, sandboxed: true }, {
+    const services = input.ci ? await (await import('../scripts/ci/dependency-services.mjs')).ciServices() : {};
+    const report = input.mode === 'verify' ? await verifyDependencyFix({ reportFile: input.reportFile, output: input.verificationOutput, sandboxed: true, commandTimeoutMs: input.ci ? 180000 : 90000 }, services) : await runDependencyFix({ ...input, sandboxed: true }, {
+      ...services,
       agent: request => runHermesTask({ ...request, model: input.model, apiKey: input.apiKey,
-        maxTurns: input.maxTurns, timeoutMs: input.agentTimeoutMs || 180000 })
+        endpoint: request.endpoint, maxTurns: input.maxTurns, timeoutMs: input.agentTimeoutMs || 180000 })
     });
     process.stdout.write(JSON.stringify({ status: report.status, evidencePath: report.evidencePath,
       reportPath: report.reportPath, patch: report.patch, handoff: report.handoff })+'\n');

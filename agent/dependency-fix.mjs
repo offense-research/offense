@@ -46,6 +46,8 @@ export async function runDependencyFix(input, services = {}) {
   if (!Number.isFinite(maxDurationMs) || maxDurationMs < 1000 || maxDurationMs > 30 * 60_000) throw new Error('Invalid dependency-fix time budget.');
   if (!Number.isFinite(commandTimeoutMs) || commandTimeoutMs < 100 || commandTimeoutMs > 180_000) throw new Error('Invalid repository command time limit.');
   const analyze = services.analyze || analyzeDependencies;
+  const metadataFor = services.collectMetadata || collectMetadata;
+  const target = finding => targeted(finding) && (!input.selectedTargets || input.selectedTargets.includes(`${finding.package}@${finding.version}`));
   let agent = services.agent;
   const { fingerprintCheckout, createDependencyPrHandoff } = await import('./pr-handoff.mjs');
   const sourceRoot = path.resolve(directory);
@@ -79,7 +81,7 @@ export async function runDependencyFix(input, services = {}) {
       'Only critical/high advisory matches are targeted automatically; all other findings remain explicit.'
     ] };
   if (Array.isArray(scan.vulnerabilityCheck?.findings)) report.checklist = scan.vulnerabilityCheck.findings.map(finding => ({ id: finding.id, package: finding.package, version: finding.version, severity: finding.severity,
-    targeted: targeted(finding), status: targeted(finding) ? 'pending' : 'deferred', reason: targeted(finding) ? 'Awaiting an independently checked candidate.' : 'Outside the default critical/high remediation scope; advisory remains visible.' }));
+    targeted: target(finding), status: target(finding) ? 'pending' : 'deferred', reason: target(finding) ? 'Awaiting an independently checked candidate.' : 'Outside the selected remediation scope; advisory remains visible.' }));
   let originalFingerprint, originalFiles;
   const protectedPaths = new Set();
   const persisted = async () => {
@@ -109,6 +111,7 @@ export async function runDependencyFix(input, services = {}) {
     }
     const result = await runRepositoryCommand(argv, { cwd, repository: !trusted, repositoryDirectory, timeoutMs: Math.min(timeout, deadline - Date.now()), env: {
         PATH: process.env.PATH, HOME: commandDirectories.home, CI: 'true', GIT_TERMINAL_PROMPT: '0',
+        TMPDIR: trusted ? undefined : commandDirectories.temp || process.env.TMPDIR,
         GIT_CONFIG_GLOBAL: argv[0] === 'git' ? controllerGitConfig : '/dev/null', GIT_CONFIG_NOSYSTEM: '1',
         npm_config_registry: 'https://registry.npmjs.org/', npm_config_userconfig: '/dev/null', npm_config_cache: commandDirectories.cache,
         npm_config_ignore_scripts: 'true', npm_config_audit: 'false', npm_config_fund: 'false',
@@ -128,6 +131,7 @@ export async function runDependencyFix(input, services = {}) {
     return result.stdout;
   }
   async function unchangedPolicies(candidate, files) {
+    if (services.validateCandidate) await services.validateCandidate(report.sourceDirectory, candidate);
     for (const name of files) {
       if (protectedPaths.has(name) || normalTest(name) || /(^|\/)(?:\.npmrc|\.gitattributes|\.gitmodules|\.yarnrc.*)$/.test(name)) {
         if (!(await readFile(path.join(report.sourceDirectory, name))).equals(await readFile(path.join(candidate, name)))) throw new Error(`Agent changed an existing test or repository execution policy: ${name}`);
@@ -153,14 +157,16 @@ export async function runDependencyFix(input, services = {}) {
     if (resolution.some(item => !setupPassed(item))) return { resolution, setup: [], checks: [], integrity: true };
     const before = await fingerprintCheckout(report.candidateDirectory);
     const setup = [];
+    const checks = [];
     for (const item of report.baseline.setup) {
       const result = await command(item.command, path.join(report.candidateDirectory, item.directory), 'candidate:install');
       setup.push({ ...result, executionDirectory: result.directory, directory: item.directory });
+      if (before !== await fingerprintCheckout(report.candidateDirectory)) return { resolution, setup, checks, integrity: false };
     }
-    const checks = [];
     if (setup.every(setupPassed)) for (const item of report.baseline.checks) {
       const result = await command(item.command, path.join(report.candidateDirectory, item.directory), 'candidate:check');
       checks.push({ ...result, executionDirectory: result.directory, directory: item.directory });
+      if (before !== await fingerprintCheckout(report.candidateDirectory)) return { resolution, setup, checks, integrity: false };
     }
     return { resolution, setup, checks, integrity: before === await fingerprintCheckout(report.candidateDirectory) };
   }
@@ -181,7 +187,7 @@ export async function runDependencyFix(input, services = {}) {
     const final = response.json ? JSON.parse(await readFile(response.json, 'utf8')) : response;
     if (before !== await fingerprintCheckout(report.candidateDirectory)) throw new Error('The candidate changed during its final advisory check.');
     if (final.vulnerabilityCheck?.status !== 'complete' || !Array.isArray(final.vulnerabilityCheck.findings) || final.warnings?.length) throw new Error('Final dependency rescan is incomplete or has coverage gaps.');
-    const metadata = await collectMetadata(report.candidateDirectory);
+    const metadata = await metadataFor(report.candidateDirectory);
     if (final.metadataFingerprint !== metadata.fingerprint) throw new Error('Final dependency scan does not match the candidate lockfiles.');
     if (!Number.isFinite(final.vulnerabilityCheck.checkedAt) || final.vulnerabilityCheck.checkedAt < report.startedAt - 5000) throw new Error('Final advisory check is stale.');
     report.finalScan = { status: 'complete', json: response.json || null, checkedAt: final.vulnerabilityCheck.checkedAt, fingerprint: digest(JSON.stringify(final)) };
@@ -204,11 +210,11 @@ export async function runDependencyFix(input, services = {}) {
     originalFingerprint = await fingerprintCheckout(sourceRoot);
     if (scan.repositoryRevision !== report.revision || scan.vulnerabilityCheck?.status !== 'complete' || !Array.isArray(scan.vulnerabilityCheck.findings)) throw new Error('Scan is incomplete or belongs to another repository revision.');
     if (!Number.isFinite(scan.vulnerabilityCheck.checkedAt) || scan.vulnerabilityCheck.checkedAt > Date.now() || Date.now() - scan.vulnerabilityCheck.checkedAt > 86400_000) throw new Error('Advisory evidence is stale; rescan before fixing.');
-    const metadata = await collectMetadata(sourceRoot);
+    const metadata = await metadataFor(sourceRoot);
     if (scan.metadataFingerprint !== metadata.fingerprint || metadata.warnings.length || scan.warnings?.length) throw new Error('Dependency files changed or scan coverage is incomplete; rescan this checkout.');
     report.evidence.metadataFingerprint = metadata.fingerprint; report.evidence.scanFingerprint = digest(JSON.stringify(scan));
     report.checklist = scan.vulnerabilityCheck.findings.map(finding => ({ id: finding.id, package: finding.package, version: finding.version, severity: finding.severity,
-      targeted: targeted(finding), status: targeted(finding) ? 'pending' : 'deferred', reason: targeted(finding) ? 'Awaiting an independently checked candidate.' : 'Outside the default critical/high remediation scope; advisory remains visible.' }));
+      targeted: target(finding), status: target(finding) ? 'pending' : 'deferred', reason: target(finding) ? 'Awaiting an independently checked candidate.' : 'Outside the selected remediation scope; advisory remains visible.' }));
     await persisted();
     if (!report.checklist.some(item => item.targeted)) { report.status = 'no_changes'; return report; }
     const chosenPlans = [], changes = new Map();
@@ -217,6 +223,7 @@ export async function runDependencyFix(input, services = {}) {
       if (!affected.length) continue;
       try {
         const additions = coordinatedChanges({ plans: [plan] });
+        if (services.validateChanges) services.validateChanges(additions);
         if (additions.some(item => changes.has(`${item.name}@${item.currentVersion}`) && changes.get(`${item.name}@${item.currentVersion}`).targetVersion !== item.targetVersion)) throw new Error('Conflicting coordinated target versions require manual review.');
         for (const change of additions) changes.set(`${change.name}@${change.currentVersion}`, change);
         chosenPlans.push(plan);
@@ -235,7 +242,7 @@ export async function runDependencyFix(input, services = {}) {
     await prepareRepositoryTree(report.sourceDirectory);
     report.evidence.sourceFingerprint = await fingerprintCheckout(report.sourceDirectory);
     originalFiles = (await git(report.sourceDirectory, ['ls-files', '-z'])).split('\0').filter(Boolean);
-    for (const name of originalFiles) if (normalTest(name) || /(^|\/)(?:\.npmrc|\.gitattributes|\.gitmodules|\.yarnrc.*)$/.test(name)) protectedPaths.add(name);
+    for (const name of originalFiles) if (normalTest(name) || (services.allowedPath && !services.allowedPath(name)) || /(^|\/)(?:\.npmrc|\.gitattributes|\.gitmodules|\.yarnrc.*)$/.test(name)) protectedPaths.add(name);
     for (const name of originalFiles.filter(name => /(^|\/)package\.json$/.test(name))) {
       const manifest = JSON.parse(await readFile(path.join(report.sourceDirectory, name), 'utf8'));
       for (const script of ['test', 'typecheck', 'build'].map(key => manifest.scripts?.[key]).filter(value => typeof value === 'string')) {
@@ -245,11 +252,12 @@ export async function runDependencyFix(input, services = {}) {
         }
       }
     }
-    const initial = await (services.rehearse || runUpgradeRehearsal)({ root, revision: report.revision, scenarios: [{ rationale: 'Checked coordinated security upgrades.', changes: report.changes }], repositoryIsolationPath: new URL('./repository-isolation.mjs', import.meta.url).href, pnpmParserPath: new URL('../public/skills/purple/scripts/pnpm.mjs', import.meta.url).href });
+    const initial = await (services.rehearse || runUpgradeRehearsal)({ root, revision: report.revision, scenarios: [{ rationale: 'Checked coordinated security upgrades.', changes: report.changes }], repositoryIsolationPath: new URL('./repository-isolation.mjs', import.meta.url).href, checks: services.checks || input.checks, pnpmParserPath: new URL('../public/skills/purple/scripts/pnpm.mjs', import.meta.url).href });
     const normalized = item => ({ ...item, executionDirectory: item.directory, directory: path.relative('source', item.directory) || '.' });
     report.baseline = { ...initial.baseline, setup: (initial.baseline?.setup || []).map(normalized), checks: (initial.baseline?.checks || []).map(normalized) };
     if (await fingerprintCheckout(report.sourceDirectory) !== report.evidence.sourceFingerprint) throw new Error('Baseline setup or tests changed the original checkout.');
     if (!validationPassed(report.baseline)) throw new Error('Original installation/checks did not pass or no baseline checks exist. Fix the baseline independently before claiming a passing dependency fix.');
+    services.validateVerification?.(report.baseline);
     if (!initial.scenarios?.[0]) throw new Error('No upgrade candidate was produced.');
     let lastAgent;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -340,6 +348,8 @@ export async function verifyDependencyFix({ reportFile, sandboxed = false, outpu
     await fingerprintCheckout(prior.sourceDirectory) !== prior.evidence.sourceFingerprint ||
     await fingerprintCheckout(prior.candidateDirectory) !== prior.evidence.candidateFingerprint) throw new Error('Report patch/source/candidate evidence changed; verification refuses to overwrite the report.');
   if (!validationPassed(prior.baseline) || !prior.candidate || !Array.isArray(prior.checklist)) throw new Error('The report has no passing original baseline or advisory checklist.');
+  services.validateVerification?.(prior.baseline);
+  if (services.validateCandidate) await services.validateCandidate(prior.sourceDirectory, prior.candidateDirectory);
   const destination = output ? path.resolve(output) : await mkdtemp(path.join(path.dirname(path.resolve(reportFile)), 'verification-'));
   if (inside(path.resolve(prior.sourceDirectory), destination) || inside(path.resolve(prior.candidateDirectory), destination) || destination === path.dirname(path.resolve(reportFile))) throw new Error('Write new verification artifacts outside checkouts and the original report directory.');
   await mkdir(destination, { recursive: true, mode: 0o700 });
@@ -354,6 +364,7 @@ export async function verifyDependencyFix({ reportFile, sandboxed = false, outpu
     const checkout = inside(prior.sourceDirectory, cwd) ? prior.sourceDirectory : prior.candidateDirectory;
     await prepareRepositoryTree(checkout);
     const result = await runRepositoryCommand(argv, { cwd, repositoryDirectory: checkout, timeoutMs: commandTimeoutMs, env: { PATH: process.env.PATH, HOME: commandDirectories.home, CI: 'true',
+        TMPDIR: commandDirectories.temp || process.env.TMPDIR,
         GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', npm_config_userconfig: '/dev/null',
         npm_config_registry: 'https://registry.npmjs.org/', npm_config_cache: commandDirectories.cache, npm_config_ignore_scripts: 'true',
         npm_config_strict_peer_deps: 'true', npm_config_engine_strict: 'true', npm_config_audit: 'false', npm_config_fund: 'false',
@@ -366,17 +377,24 @@ export async function verifyDependencyFix({ reportFile, sandboxed = false, outpu
       { cwd: directory, repository: false, env: { PATH: process.env.PATH, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' }, timeoutMs: commandTimeoutMs });
     if (clean.code !== 0 || clean.signal || clean.timedOut || clean.truncated) throw new Error('Ignored artifacts could not be cleared before independent checks.');
     const before = await fingerprintCheckout(directory), setup = [], checks = [];
-    for (const item of prior.baseline.setup) setup.push({ ...await command(item.command, path.join(directory, item.directory), `${phase}:install`), directory: item.directory });
-    if (setup.every(setupPassed)) for (const item of prior.baseline.checks) checks.push({ ...await command(item.command, path.join(directory, item.directory), `${phase}:check`), directory: item.directory });
+    for (const item of prior.baseline.setup) {
+      setup.push({ ...await command(item.command, path.join(directory, item.directory), `${phase}:install`), directory: item.directory });
+      if (before !== await fingerprintCheckout(directory)) return { setup, checks, integrity: false };
+    }
+    if (setup.every(setupPassed)) for (const item of prior.baseline.checks) {
+      checks.push({ ...await command(item.command, path.join(directory, item.directory), `${phase}:check`), directory: item.directory });
+      if (before !== await fingerprintCheckout(directory)) return { setup, checks, integrity: false };
+    }
     return { setup, checks, integrity: before === await fingerprintCheckout(directory) };
   }
   try {
     report.baseline = await check(prior.sourceDirectory, 'baseline'); report.candidate = await check(prior.candidateDirectory, 'candidate');
     if (!validationPassed(report.baseline) || !validationPassed(report.candidate)) throw new Error('Original or candidate checks failed or changed the checkout during re-verification.');
     const analyze = services.analyze || analyzeDependencies;
+    const metadataFor = services.collectMetadata || collectMetadata;
     const response = await analyze(prior.candidateDirectory, { endpoint, output: path.join(destination, 'candidate-scan'), planLimit: 0, log: () => {} });
     const scan = response.json ? JSON.parse(await readFile(response.json, 'utf8')) : response;
-    const metadata = await collectMetadata(prior.candidateDirectory);
+    const metadata = await metadataFor(prior.candidateDirectory);
     if (scan.vulnerabilityCheck?.status !== 'complete' || !Array.isArray(scan.vulnerabilityCheck.findings) || scan.warnings?.length || scan.metadataFingerprint !== metadata.fingerprint ||
       !Number.isFinite(scan.vulnerabilityCheck.checkedAt) || scan.vulnerabilityCheck.checkedAt < report.startedAt - 5000) throw new Error('Re-verification requires a complete, current advisory rescan of this candidate.');
     report.remainingAdvisories = scan.vulnerabilityCheck.findings;

@@ -1,0 +1,50 @@
+name: Offense dependency audit
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: offense-audit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: controller
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: project
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: baseline
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: offense-research/offense
+          ref: 981146b8b0edf5365a5d292a0a93f9b66725de27
+          path: engine
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install only the pinned scanner
+        run: npm --prefix engine/offense ci --ignore-scripts --no-audit --no-fund
+      - name: Compare supported dependency inputs
+        env:
+          OFFENSE_AUDIT_ENGINE: ${{ github.workspace }}/engine
+        run: node controller/scripts/ci/dependency-audit.mjs project "$RUNNER_TEMP/offense-audit" baseline
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: offense-audit
+          path: ${{ runner.temp }}/offense-audit/
+          retention-days: 7
+          if-no-files-found: warn
