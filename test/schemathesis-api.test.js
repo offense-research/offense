@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, symlink, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, symlink, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -139,8 +139,13 @@ test('API image context writes only fixed inspected files and preserves customiz
   await assert.rejects(writeApiImageContext(path.join(root, 'linked/elsewhere')), /symlinks/);
 });
 
-test('real no-network Schemathesis image finds missing auth and server errors, then safe controls pass', { skip: process.env.PURPLE_API_TEST_E2E !== '1', timeout: 180000 }, async t => {
+test('real no-network Schemathesis image finds missing auth and server errors, then safe controls pass', { skip: process.env.PURPLE_API_TEST_E2E !== '1', timeout: 360000 }, async t => {
   const { root, options } = await fixture(t, true);
+  const context = path.join(root, 'image');
+  await writeApiImageContext(context);
+  assert.equal((await stat(path.join(context, 'schemathesis-sandbox.py'))).mode & 0o777, 0o600);
+  const build = spawnSync('docker', ['build', '-t', API_TEST_IMAGE, context], { encoding: 'utf8', timeout: 180000, maxBuffer: 8 * 1024 * 1024 });
+  assert.equal(build.status, 0, build.stderr);
   const before = await runApiTest({ ...options, output: path.join(root, 'before') });
   const baseline = JSON.parse(await readFile(before.report));
   assert.equal(before.status, 'complete');

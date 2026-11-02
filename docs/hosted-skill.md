@@ -80,7 +80,7 @@ Use `--preview` to inspect metadata, `--plan-limit 0` for advisory-only checks, 
 To repeat the pnpm workspace integration checks with real OSV/npm requests:
 
 ```sh
-docker build -t purple-skill-e2e:pnpm-10.32.1 test/fixtures/pnpm
+docker build -t purple-skill-e2e:pnpm-10.34.5 test/fixtures/pnpm
 node scripts/e2e-skill-pnpm.mjs
 node scripts/e2e-skill-pnpm.mjs --baseline-failure
 ```
