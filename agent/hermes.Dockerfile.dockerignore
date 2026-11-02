@@ -10,9 +10,6 @@
 !public/skills/purple/scripts/
 !public/skills/purple/scripts/*.mjs
 !scripts/
-!scripts/e2e-hermes-runtime.mjs
-!scripts/e2e-dependency-fix.mjs
-
 !offense/
 !offense/**
 offense/node_modules/

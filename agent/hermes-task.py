@@ -248,5 +248,5 @@ if __name__ == '__main__':
         print(json.dumps(value, ensure_ascii=False))
     except Exception as error:
         print(json.dumps({'protocolVersion': 1, 'status': 'blocked', 'summary': 'Hermes could not complete this constrained task. Check runtime availability, model credentials and supported output.',
-            'errorCode': str(error) if str(error).startswith('Hermes tool allowlist mismatch:') else type(error).__name__, 'runtime': {'name': 'hermes', 'revision': None, 'expectedRevision': 'c1600692ec30985e7c7e736b78b674283f94b8bb'},
+            'errorCode': str(error) if str(error).startswith('Hermes tool allowlist mismatch:') else type(error).__name__, 'runtime': {'name': 'hermes', 'revision': None, 'expectedRevision': '27c61463814f27ada4c2d5625a8839ed51f01f41'},
             'usage': {'costUsd': None, 'costKind': 'unverified', 'billingEligible': False}}))

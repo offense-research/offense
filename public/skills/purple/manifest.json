@@ -51,8 +51,8 @@
     },
     {
       "path": "scripts/api-test-image.mjs",
-      "bytes": 18525,
-      "sha256": "38a7e17818eece09496e9cd1f1421901bc6b724d00fe07ed3f6811811b07b899"
+      "bytes": 18754,
+      "sha256": "f60ae5fa7c1cde9fb9bdcf737d4263381a6c6bf1bd7f16b8975e77b6edc5e8da"
     },
     {
       "path": "scripts/hardened-image.mjs",

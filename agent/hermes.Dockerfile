@@ -1,15 +1,15 @@
 # Dedicated dependency-fix runtime; the existing Pi image remains available.
 FROM node:24-bookworm-slim AS node_runtime
 FROM python:3.14-slim-bookworm
-ARG HERMES_REVISION=c1600692ec30985e7c7e736b78b674283f94b8bb
+ARG HERMES_REVISION=27c61463814f27ada4c2d5625a8839ed51f01f41
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=node_runtime /usr/local/bin/node /usr/local/bin/node
 COPY --from=node_runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && npm install --global pnpm@10.32.1 && npm cache clean --force \
-    && python -m pip install --no-cache-dir uv==0.10.10
+    && npm install --global pnpm@10.34.5 && npm cache clean --force \
+    && python -m pip install --no-cache-dir uv==0.13.4
 RUN git init /opt/hermes && git -C /opt/hermes remote add origin https://github.com/NousResearch/hermes-agent.git \
     && git -C /opt/hermes fetch --depth=1 origin "${HERMES_REVISION}" \
     && git -C /opt/hermes checkout --detach FETCH_HEAD \

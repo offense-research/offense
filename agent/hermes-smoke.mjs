@@ -66,7 +66,7 @@ try {
   if (image) {
     const program = `import {runHermesTask} from '/opt/purple/agent/hermes-runtime.mjs';let raw='';for await(const chunk of process.stdin)raw+=chunk;console.log(JSON.stringify(await runHermesTask(JSON.parse(raw))));`;
     result = await new Promise((resolve, reject) => {
-      const child = spawn('docker', ['run', '--rm', '--read-only', '--network=host', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--pids-limit=64', '--memory=1g',
+      const child = spawn('docker', ['run', '--rm', '-i', '--read-only', '--network=host', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--pids-limit=64', '--memory=1g',
         '--tmpfs=/tmp:rw,nosuid,nodev,size=256m', '--mount', `type=bind,source=${root},target=/smoke`, '--user=1000:1000', '--entrypoint=node', image, '--disable-sigusr1', '--input-type=module', '-e', program], { stdio: ['pipe', 'pipe', 'pipe'] });
       let out = '', err = '';
       child.stdout.on('data', c => { out += c; }); child.stderr.on('data', c => { err += c; });

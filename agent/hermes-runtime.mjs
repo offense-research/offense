@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const HERMES_REVISION = 'c1600692ec30985e7c7e736b78b674283f94b8bb';
+export const HERMES_REVISION = '27c61463814f27ada4c2d5625a8839ed51f01f41';
 const script = fileURLToPath(new URL('./hermes-task.py', import.meta.url));
 const inside = (parent, child) => child === parent || child.startsWith(parent + path.sep);
 const maxJson = 512 * 1024;
