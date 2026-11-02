@@ -118,6 +118,64 @@ test('workflow has no fork-triggered secret path, keeps publisher separate, and 
   for (const wf of [audit, agent]) for (const job of Object.values(wf.jobs)) for (const step of job.steps) if (step.uses) assert.match(step.uses, /@[a-f0-9]{40}$/);
 });
 
+test('the always-present CI gate fails closed on missing, failed, cancelled or unexpectedly skipped checks', async () => {
+  const ci = YAML.parse(await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
+  assert.deepEqual(ci.on.push.branches, ['main']);
+  assert.equal(ci.on.pull_request, null);
+  assert.equal(ci.concurrency['cancel-in-progress'], true);
+  assert.equal(ci.jobs['ci-gate'].if, '${{ always() }}');
+  assert.deepEqual(ci.jobs['ci-gate'].needs, ['changes', 'verify', 'audit', 'cli', 'runtime']);
+  for (const name of ['dependency-audit', 'cli-release', 'dependency-runtime']) {
+    const workflow = YAML.parse(await readFile(new URL(`../.github/workflows/${name}.yml`, import.meta.url), 'utf8'));
+    assert.deepEqual(Object.keys(workflow.on).sort(), ['workflow_call', 'workflow_dispatch']);
+    assert.deepEqual(workflow.permissions, { contents: 'read' });
+    assert.doesNotMatch(JSON.stringify(workflow), /secrets\.|secrets: inherit/);
+  }
+  const gate = ci.jobs['ci-gate'].steps[0].run;
+  const success = { CHANGES: 'success', VERIFY: 'success', AUDIT: 'success', CLI: 'success', RUNTIME_REQUIRED: 'true', RUNTIME: 'success' };
+  const run = patch => execFileSync('bash', ['-eu', '-c', gate], { env: { PATH: process.env.PATH, ...success, ...patch }, stdio: 'pipe' });
+  assert.match(run({}).toString(), /All applicable CI checks passed/);
+  assert.match(run({ RUNTIME_REQUIRED: 'false', RUNTIME: 'skipped' }).toString(), /All applicable CI checks passed/);
+  for (const key of ['CHANGES', 'VERIFY', 'AUDIT', 'CLI', 'RUNTIME']) {
+    for (const result of ['failure', 'cancelled', 'skipped', '']) assert.throws(() => run({ [key]: result }));
+  }
+  for (const required of ['', 'unknown']) assert.throws(() => run({ RUNTIME_REQUIRED: required, RUNTIME: 'skipped' }));
+  assert.throws(() => run({ RUNTIME_REQUIRED: 'false', RUNTIME: 'failure' }));
+});
+
+test('runtime selection handles docs-only PRs, affected files and deletions without workflow path filters', async () => {
+  const ci = YAML.parse(await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
+  const script = ci.jobs.changes.steps.find(step => step.id === 'paths').run;
+  const root = await mkdtemp(path.join(tmpdir(), 'ci-paths-'));
+  const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: 'pipe' }).trim();
+  const commit = () => { git(['add', '.']); git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-m', 'fixture']); return git(['rev-parse', 'HEAD']); };
+  try {
+    git(['init']); const base = commit();
+    const output = path.join(root, '.git', 'output');
+    const run = async (event, head) => {
+      await writeFile(output, '');
+      execFileSync('bash', ['-eu', '-c', script], { cwd: root, env: { PATH: process.env.PATH, EVENT: event, BASE: base, HEAD: head, GITHUB_OUTPUT: output }, stdio: 'pipe' });
+      return readFile(output, 'utf8');
+    };
+    await writeFile(path.join(root, 'README.md'), 'documentation');
+    assert.equal(await run('pull_request', commit()), 'runtime=false\n');
+    for (const file of ['agent/runtime.mjs', 'scripts/offense.mjs', 'public/skills/purple/scripts/purple.mjs', 'package-lock.json', '.github/workflows/ci.yml', 'test/new.test.js']) {
+      await mkdir(path.dirname(path.join(root, file)), { recursive: true });
+      await writeFile(path.join(root, file), 'changed');
+      assert.equal(await run('pull_request', commit()), 'runtime=true\n');
+      git(['reset', '--hard', base]);
+    }
+    await mkdir(path.join(root, 'agent'), { recursive: true });
+    await writeFile(path.join(root, 'agent/deleted.mjs'), 'removed');
+    const beforeDelete = commit(); git(['rm', 'agent/deleted.mjs']); const deleted = commit();
+    execFileSync('bash', ['-eu', '-c', script], { cwd: root, env: { PATH: process.env.PATH, EVENT: 'pull_request', BASE: beforeDelete, HEAD: deleted, GITHUB_OUTPUT: output }, stdio: 'pipe' });
+    assert.match(await readFile(output, 'utf8'), /runtime=true\n$/);
+    assert.equal(await run('push', ''), 'runtime=true\n');
+    assert.equal(await run('workflow_dispatch', ''), 'runtime=true\n');
+    await assert.rejects(run('pull_request', 'missing-revision'));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 test('plan selection preserves findings and chooses a checked nonbreaking group', async () => {
   const { selectPlan } = await import('../scripts/ci/select-dependency-plan.mjs');
   const findings = [{ package: 'x', version: '1.0.0', severity: 'HIGH' }, { package: 'y', version: '1.0.0', severity: 'CRITICAL' }];

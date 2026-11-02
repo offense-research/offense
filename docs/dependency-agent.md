@@ -29,7 +29,42 @@ repair step uses an operator-owned OpenRouter model credential.
   No merge, approval or deployment is automated.
 - **Dependency runtime acceptance:** PRs affecting the runtime build the public
   image and exercise actual pinned Hermes with a synthetic loopback model and
-  external networking disabled. No provider key or model spending is required.
+  external networking disabled. A second acceptance scenario uses the real
+  repository's four installs and six checks, a planted patch-upgrade compatibility
+  failure, actual Hermes repair, a fresh credential-free verifier, bundle export,
+  and the publisher with a GitHub API stub. Only advisory intelligence, model
+  responses and GitHub transport are synthetic; npm artifacts and registry
+  identity checks remain real. No provider key or model spending is required.
+
+## CI gate and acceptance
+
+`CI` owns the reusable audit, CLI and runtime workflows. Every PR (including
+forks and docs-only PRs) gets `ci-gate`; it requires root/engine verification,
+complete audit coverage and both platforms' CLI/Homebrew checks. Runtime changes
+also require Docker acceptance. Runtime selection happens inside the workflow,
+not in a workflow-level path filter, so an intentional skip cannot leave a
+required check permanently pending. Missing, failed, cancelled or unexpectedly
+skipped prerequisites fail the gate. Main pushes and manual CI runs always run
+runtime acceptance. Feature-branch pushes do not duplicate PR CI, and new commits
+cancel superseded PR checks. The paid agent still serializes without cancellation.
+
+After this workflow is merged and its check is available, add **`ci-gate`** (GitHub
+Actions) to the default branch ruleset's required status checks. Keep existing
+review requirements. Adding a workflow job alone does not enable enforcement.
+
+Run the same secret-free acceptance locally from a clean committed checkout:
+
+```sh
+docker build -f agent/hermes.Dockerfile -t offense-hermes:test .
+node scripts/ci/dependency-acceptance.mjs --image offense-hermes:test --output /tmp/offense-acceptance-reports
+```
+
+The synthetic fixture exists only in a disposable clone. Its deliberate failure
+must occur before repair; attempts to weaken its test or controller policy must
+be denied. Both containers retain the production UID, capability, network and
+resource limits, with a fresh restricted gateway for each phase. Only bounded
+reports are retained. Invalid bundle controls must fail before any API request.
+This does not validate paid-model quality or actual GitHub publication settings.
 
 ## Activate after merging
 
