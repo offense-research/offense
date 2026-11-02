@@ -235,7 +235,14 @@ test('synthetic patch compatibility', () => {
     }
     const bundle = JSON.parse(await readFile(path.join(output, 'bundle.json')));
     const publication = await stubPublish(bundle, await readFile(path.join(fixture, 'package.json')), expected);
-    assert.deepEqual(publication.changedFiles.sort(), ['package-lock.json', 'package.json', sourceFile].sort());
+    const expectedFiles = ['package-lock.json', 'package.json', sourceFile];
+    assert.deepEqual(publication.changedFiles.filter(file => expectedFiles.includes(file)).sort(), expectedFiles.toSorted());
+    // npm can reorder keys while resolving an otherwise unchanged nested lock.
+    // Permit that formatting only, not additional dependency or source changes.
+    for (const change of bundle.changes.filter(change => !expectedFiles.includes(change.path))) {
+      assert.ok(change.path.endsWith('/package-lock.json'), 'unexpected non-lockfile change');
+      assert.deepEqual(JSON.parse(Buffer.from(change.content, 'base64')), JSON.parse(await readFile(path.join(fixture, change.path))), 'unexpected semantic change to another lockfile');
+    }
     const verified = JSON.parse(await readFile(path.join(output, 'verification-ci/fix.json')));
     const summary = { passed: true, ...expected, fixtureSha: pinned.revision, installsPerCheckout: verified.baseline.setup.length, checksPerCheckout: verified.baseline.checks.length, separateVerifier: true, ...publication,
       syntheticBoundaries: ['advisory intelligence', 'loopback model responses', 'GitHub API transport'], providerCredentialsUsed: false };
