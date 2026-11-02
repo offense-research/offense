@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { loadPolicy, allowedPath, digest } from './dependency-policy.mjs';
+import { loadPolicy, allowedPath, digest, validateCheckMatrix } from './dependency-policy.mjs';
 export function validateBundle(bundle, { repository, runId, engineSha, policy, now = Date.now() }) {
   if (bundle.version !== 1 || bundle.repository !== repository || bundle.runId !== runId || bundle.engineSha !== engineSha || bundle.policyHash !== digest(JSON.stringify(policy)) ||
     !/^[a-f0-9]{40}$/.test(bundle.baseSha || '') || !Number.isFinite(bundle.finishedAt) || now - bundle.finishedAt > 3600_000 || bundle.finishedAt > now + 30000) throw Error('Bundle identity or freshness mismatch.');
@@ -23,10 +23,7 @@ export async function exportBundle(reportFile, destination) {
   if (!report.reverifiedFrom) throw Error('Independent re-verification is required.');
   const policy = await loadPolicy();
   await candidatePolicy(report.sourceDirectory, report.candidateDirectory, policy);
-  for (const phase of [report.baseline, report.candidate]) {
-    const actual = phase.checks.map(c => JSON.stringify({ directory: c.directory, command: c.command }));
-    if (JSON.stringify(actual) !== JSON.stringify(policy.checks.map(c => JSON.stringify(c)))) throw Error('Verification did not run the full trusted check matrix.');
-  }
+  for (const phase of [report.baseline, report.candidate]) validateCheckMatrix(phase, policy);
   const bundle = { version: 1, repository: process.env.GITHUB_REPOSITORY, runId: process.env.GITHUB_RUN_ID, engineSha: process.env.OFFENSE_ENGINE_SHA,
     baseSha: report.revision, finishedAt: report.finishedAt, policyHash: digest(JSON.stringify(policy)),
     body, changes: changes.map(c => ({ ...c, sha256: digest(Buffer.from(c.content || '', 'base64')) })),

@@ -144,6 +144,31 @@ test('agent test weakening cannot qualify a dependency fix even if its self-repo
   } finally { await f.cleanup(); }
 });
 
+test('a repair cannot weaken a later check and restore it before the final fingerprint', { timeout: 120000 }, async () => {
+  const f = await fixture();
+  try {
+    const file = path.join(f.directory, 'package.json');
+    const manifest = JSON.parse(await readFile(file, 'utf8'));
+    const originalTest = await readFile(path.join(f.directory, 'test/app.test.cjs'), 'utf8');
+    manifest.scripts.typecheck = 'node restore.cjs';
+    await writeFile(file, JSON.stringify(manifest));
+    await writeFile(path.join(f.directory, 'restore.cjs'), `require('node:fs').writeFileSync('test/app.test.cjs',${JSON.stringify(originalTest)});\n`);
+    f.run(['git', 'add', '.']);
+    f.run(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.com', 'commit', '-m', 'Add second check']);
+    f.scan.repositoryRevision = f.run(['git', 'rev-parse', 'HEAD']).trim();
+    f.scan.metadataFingerprint = (await collectMetadata(f.directory)).fingerprint;
+    await writeFile(f.scanFile, JSON.stringify(f.scan));
+    const report = await runDependencyFix({ ...f, sandboxed: true, maxAttempts: 1 }, { analyze: f.analyze, agent: async input => {
+      await writeFile(path.join(input.candidateDirectory, 'app.cjs'), `require('node:fs').writeFileSync('test/app.test.cjs','process.exit(0);\\n');module.exports=items=>items.map(item=>item.name);\n`);
+      return { status: 'completed', runtime: { name: 'hermes' } };
+    } });
+    assert.equal(report.publishEligible, false);
+    assert.equal(report.candidate.integrity, false);
+    assert.equal(report.candidate.checks.length, 1, 'The restore command must never run after a check rewrites tests.');
+    assert.equal(report.candidate.checks[0].passed, true, 'A zero exit code is not enough.');
+  } finally { await f.cleanup(); }
+});
+
 test('custom original check entry points are protected even without a conventional test filename', { timeout: 120000 }, async () => {
   const f = await fixture({ rootCheck: true });
   try {

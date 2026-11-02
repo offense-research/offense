@@ -156,14 +156,16 @@ export async function runDependencyFix(input, services = {}) {
     if (resolution.some(item => !setupPassed(item))) return { resolution, setup: [], checks: [], integrity: true };
     const before = await fingerprintCheckout(report.candidateDirectory);
     const setup = [];
+    const checks = [];
     for (const item of report.baseline.setup) {
       const result = await command(item.command, path.join(report.candidateDirectory, item.directory), 'candidate:install');
       setup.push({ ...result, executionDirectory: result.directory, directory: item.directory });
+      if (before !== await fingerprintCheckout(report.candidateDirectory)) return { resolution, setup, checks, integrity: false };
     }
-    const checks = [];
     if (setup.every(setupPassed)) for (const item of report.baseline.checks) {
       const result = await command(item.command, path.join(report.candidateDirectory, item.directory), 'candidate:check');
       checks.push({ ...result, executionDirectory: result.directory, directory: item.directory });
+      if (before !== await fingerprintCheckout(report.candidateDirectory)) return { resolution, setup, checks, integrity: false };
     }
     return { resolution, setup, checks, integrity: before === await fingerprintCheckout(report.candidateDirectory) };
   }
@@ -249,11 +251,12 @@ export async function runDependencyFix(input, services = {}) {
         }
       }
     }
-    const initial = await (services.rehearse || runUpgradeRehearsal)({ root, revision: report.revision, scenarios: [{ rationale: 'Checked coordinated security upgrades.', changes: report.changes }], repositoryIsolationPath: new URL('./repository-isolation.mjs', import.meta.url).href, checks: input.checks, pnpmParserPath: new URL('../public/skills/purple/scripts/pnpm.mjs', import.meta.url).href });
+    const initial = await (services.rehearse || runUpgradeRehearsal)({ root, revision: report.revision, scenarios: [{ rationale: 'Checked coordinated security upgrades.', changes: report.changes }], repositoryIsolationPath: new URL('./repository-isolation.mjs', import.meta.url).href, checks: services.checks || input.checks, pnpmParserPath: new URL('../public/skills/purple/scripts/pnpm.mjs', import.meta.url).href });
     const normalized = item => ({ ...item, executionDirectory: item.directory, directory: path.relative('source', item.directory) || '.' });
     report.baseline = { ...initial.baseline, setup: (initial.baseline?.setup || []).map(normalized), checks: (initial.baseline?.checks || []).map(normalized) };
     if (await fingerprintCheckout(report.sourceDirectory) !== report.evidence.sourceFingerprint) throw new Error('Baseline setup or tests changed the original checkout.');
     if (!validationPassed(report.baseline)) throw new Error('Original installation/checks did not pass or no baseline checks exist. Fix the baseline independently before claiming a passing dependency fix.');
+    services.validateVerification?.(report.baseline);
     if (!initial.scenarios?.[0]) throw new Error('No upgrade candidate was produced.');
     let lastAgent;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -344,6 +347,8 @@ export async function verifyDependencyFix({ reportFile, sandboxed = false, outpu
     await fingerprintCheckout(prior.sourceDirectory) !== prior.evidence.sourceFingerprint ||
     await fingerprintCheckout(prior.candidateDirectory) !== prior.evidence.candidateFingerprint) throw new Error('Report patch/source/candidate evidence changed; verification refuses to overwrite the report.');
   if (!validationPassed(prior.baseline) || !prior.candidate || !Array.isArray(prior.checklist)) throw new Error('The report has no passing original baseline or advisory checklist.');
+  services.validateVerification?.(prior.baseline);
+  if (services.validateCandidate) await services.validateCandidate(prior.sourceDirectory, prior.candidateDirectory);
   const destination = output ? path.resolve(output) : await mkdtemp(path.join(path.dirname(path.resolve(reportFile)), 'verification-'));
   if (inside(path.resolve(prior.sourceDirectory), destination) || inside(path.resolve(prior.candidateDirectory), destination) || destination === path.dirname(path.resolve(reportFile))) throw new Error('Write new verification artifacts outside checkouts and the original report directory.');
   await mkdir(destination, { recursive: true, mode: 0o700 });
@@ -370,8 +375,14 @@ export async function verifyDependencyFix({ reportFile, sandboxed = false, outpu
       { cwd: directory, repository: false, env: { PATH: process.env.PATH, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' }, timeoutMs: commandTimeoutMs });
     if (clean.code !== 0 || clean.signal || clean.timedOut || clean.truncated) throw new Error('Ignored artifacts could not be cleared before independent checks.');
     const before = await fingerprintCheckout(directory), setup = [], checks = [];
-    for (const item of prior.baseline.setup) setup.push({ ...await command(item.command, path.join(directory, item.directory), `${phase}:install`), directory: item.directory });
-    if (setup.every(setupPassed)) for (const item of prior.baseline.checks) checks.push({ ...await command(item.command, path.join(directory, item.directory), `${phase}:check`), directory: item.directory });
+    for (const item of prior.baseline.setup) {
+      setup.push({ ...await command(item.command, path.join(directory, item.directory), `${phase}:install`), directory: item.directory });
+      if (before !== await fingerprintCheckout(directory)) return { setup, checks, integrity: false };
+    }
+    if (setup.every(setupPassed)) for (const item of prior.baseline.checks) {
+      checks.push({ ...await command(item.command, path.join(directory, item.directory), `${phase}:check`), directory: item.directory });
+      if (before !== await fingerprintCheckout(directory)) return { setup, checks, integrity: false };
+    }
     return { setup, checks, integrity: before === await fingerprintCheckout(directory) };
   }
   try {

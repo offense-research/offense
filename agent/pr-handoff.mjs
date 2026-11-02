@@ -266,10 +266,10 @@ function branchValid(branch) {
   return typeof branch==='string'&&branch.length<=180&&/^[A-Za-z0-9][A-Za-z0-9._/-]+$/.test(branch)&&!branch.includes('..')&&!branch.includes('//')&&
     branch.split('/').every(part=>part&&!part.startsWith('.')&&!part.endsWith('.')&&!part.endsWith('.lock'));
 }
-async function matchesPublishedCommit(transport, prefix, revision, head, changes) {
+export async function matchesPublishedCommit(transport, prefix, revision, head, changes) {
   const compare=await transport.request('GET',`${prefix}/compare/${revision}...${head}`);
   if(!compare||compare.total_commits!==1||!Array.isArray(compare.files)||compare.files.length!==changes.length)return false;
-  if(!changes.every(change=>compare.files.some(file=>file.filename===change.path && (change.status==='D'?file.status==='removed':file.sha===change.sha))))return false;
+  if(!changes.every(change=>compare.files.some(file=>file.filename===change.path && file.status===({A:'added',M:'modified',D:'removed'})[change.status] && (change.status==='D'||file.sha===change.sha))))return false;
   const commit=await transport.request('GET',`${prefix}/git/commits/${head}`);
   if(!revisionPattern.test(commit?.tree?.sha||'')||commit.parents?.length!==1||commit.parents[0].sha!==revision)return false;
   const tree=await transport.request('GET',`${prefix}/git/trees/${commit.tree.sha}?recursive=1`);

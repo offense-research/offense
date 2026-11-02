@@ -1,6 +1,8 @@
 import { readFile, appendFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { validateBundle } from './dependency-bundle.mjs';
-import { loadPolicy, validateManifest, validateLock, digest } from './dependency-policy.mjs';
+import { loadPolicy, validateManifest, validateRegistryArtifacts, digest } from './dependency-policy.mjs';
+import { matchesPublishedCommit } from '../../agent/pr-handoff.mjs';
 import { fileURLToPath } from 'node:url';
 async function api(method, endpoint, body) {
   const response = await fetch(`https://api.github.com${endpoint}`, { method, redirect: 'error', signal: AbortSignal.timeout(30000), headers: {
@@ -21,13 +23,22 @@ export async function publishBundle(bundle, { policy, api, expected, summaryFile
       const before = await api('GET', `${prefix}/contents/${c.path}?ref=${bundle.baseSha}`);
       validateManifest(JSON.parse(Buffer.from(before.content, 'base64')), JSON.parse(value));
     }
-    if (c.path.endsWith('package-lock.json')) validateLock(JSON.parse(value));
+    if (c.path.endsWith('package-lock.json')) await validateRegistryArtifacts(JSON.parse(value));
   }
   // Deterministic branch; never overwrite another run or maintainer edits.
   const branch = `offense/dependencies-${bundle.baseSha.slice(0, 12)}-${digest(JSON.stringify(bundle.changes)).slice(0, 12)}`;
   const existing = await api('GET', `${prefix}/pulls?state=all&head=${encodeURIComponent(repo.owner.login + ':' + branch)}`);
   if (existing.length) {
-    return existing[0].html_url;
+    const pr = existing[0];
+    if (existing.length !== 1 || pr.state !== 'open' || pr.draft !== true || pr.base?.ref !== repo.default_branch || pr.head?.ref !== branch || pr.head?.repo?.full_name !== bundle.repository) throw Error('Existing PR is not the expected open draft.');
+    const head = await api('GET', `${prefix}/git/ref/heads/${encodeURIComponent(branch)}`);
+    const changes = bundle.changes.map(change => {
+      const bytes = Buffer.from(change.content, 'base64');
+      return { ...change, sha: createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex') };
+    });
+    if (head.object.sha !== pr.head.sha || !await matchesPublishedCommit({ request: api }, prefix, bundle.baseSha, head.object.sha, changes)) throw Error('Existing PR no longer matches the verified bundle.');
+    if (summaryFile) await appendFile(summaryFile, `Existing verified draft PR: ${pr.html_url}\n`);
+    return pr.html_url;
   } else {
     const base = await api('GET', `${prefix}/git/commits/${bundle.baseSha}`);
     const tree = [];

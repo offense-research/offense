@@ -44,8 +44,8 @@ repair step uses an operator-owned OpenRouter model credential.
 
    | Variable | Value |
    | --- | --- |
-   | `OFFENSE_AGENT_REPOSITORY` | Your exact `owner/repository` |
-   | `OFFENSE_CI_ENGINE_SHA` | Full reviewed commit SHA containing this implementation |
+   | `OFFENSE_AGENT_REPOSITORY` | `offense-research/offense` (forks use their own exact identity) |
+   | `OFFENSE_CI_ENGINE_SHA` | Full reviewed implementation commit SHA on the default branch **after merge**, not the draft branch head |
    | `OFFENSE_AGENT_MODEL` | Explicit OpenRouter model ID approved by the operator |
    | `OFFENSE_AGENT_ENABLED` | `true` after setup |
    | `OFFENSE_AGENT_PUBLISH` | Leave unset initially; `true` enables scheduled draft PRs |
@@ -80,11 +80,18 @@ allowed manifests/locks and `src/`, `server/`, `shared/` remain protected. V1 do
 not publish added regression tests automatically; a change needing those needs a
 maintainer follow-up. All modified manifests preserve scripts and engines, and
 registry lock entries require public npm HTTPS URLs and integrity digests.
+The controller and publisher also compare each registry artifact with npm's
+release metadata: the name, version, tarball URL and integrity must all match.
+A lockfile cannot claim a patched version while downloading an older tarball.
+Workspace links and unresolved registry entries require manual policy review.
 
 The controller first installs without lifecycle scripts, then explicitly applies
 the existing reviewed BugPatrol patch and generates Worker test sources. It runs
 the same root build/tests and nested engine test/check commands on baseline and
-candidate. A broken baseline, stale input, edited tests, incomplete audit, new
+candidate. The container loads its matrix from the pinned controller, not model
+input. Re-verification and export reject missing/substituted installs or checks.
+Integrity is checked after every command, before the next command can execute a
+rewritten test. A broken baseline, stale input, edited tests, incomplete audit, new
 advisory, changed base or failed check prevents publication. Runtime caps are not
 a dollar spending guarantee; enforce the dollar budget at the provider.
 
@@ -111,7 +118,10 @@ artifact from this successful workflow run. It never uses `workflow_run` or
 
 Concurrent repair runs serialize. A deterministic branch prevents overwriting
 other runs or human edits; existing matching PRs are reported. If a network
-failure occurs between branch creation and PR creation, the retry fails safely
+response identifies an existing PR, it must still be an open draft targeting the
+default branch with the exact verified file bytes, modes and parent commit.
+Retargeted, edited, closed or ready-for-review PRs are not silently reused.
+If a network failure occurs between branch creation and PR creation, the retry fails safely
 on the existing branch: inspect it and create the draft PR manually, or remove
 that unmerged bot branch before retrying. No force push is performed.
 
