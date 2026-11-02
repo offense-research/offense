@@ -1,12 +1,9 @@
 name: Offense dependency audit
 on:
-  pull_request:
+  workflow_call:
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: offense-audit-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 jobs:
   audit:
     runs-on: ubuntu-latest

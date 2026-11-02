@@ -2,12 +2,43 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      runtime: ${{ steps.paths.outputs.runtime }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync } from 'node:fs';
+          const paths = process.env.EVENT === 'pull_request'
+            ? execFileSync('git', ['diff', '--name-only', '-z', process.env.BASE, process.env.HEAD, '--'], { encoding: 'utf8' }).split('\0') : [];
+          const runtime = process.env.EVENT !== 'pull_request' || paths.some(file =>
+            /^(agent|offense|scripts|test|public\/skills|\.github)\//.test(file) || /^package(-lock)?\.json$/.test(file));
+          appendFileSync(process.env.GITHUB_OUTPUT, `runtime=${runtime}\n`);
+          JS
+
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -24,3 +55,36 @@ jobs:
       - run: npm --prefix offense ci --ignore-scripts --no-audit --no-fund
       - run: npm --prefix offense test
       - run: npm --prefix offense run check
+
+  audit:
+    uses: ./.github/workflows/dependency-audit.yml
+
+  cli:
+    uses: ./.github/workflows/cli-release.yml
+
+  runtime:
+    needs: changes
+    if: needs.changes.outputs.runtime == 'true'
+    uses: ./.github/workflows/dependency-runtime.yml
+
+  ci-gate:
+    if: ${{ always() }}
+    needs: [changes, verify, audit, cli, runtime]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all applicable checks
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          VERIFY: ${{ needs.verify.result }}
+          AUDIT: ${{ needs.audit.result }}
+          CLI: ${{ needs.cli.result }}
+          RUNTIME_REQUIRED: ${{ needs.changes.outputs.runtime }}
+          RUNTIME: ${{ needs.runtime.result }}
+        run: |
+          for result in "$CHANGES" "$VERIFY" "$AUDIT" "$CLI"; do
+            test "$result" = success || { echo 'A mandatory check did not succeed.'; exit 1; }
+          done
+          case "$RUNTIME_REQUIRED:$RUNTIME" in
+            true:success|false:skipped) echo 'All applicable CI checks passed.' ;;
+            *) echo 'Runtime acceptance did not match the required result.'; exit 1 ;;
+          esac
