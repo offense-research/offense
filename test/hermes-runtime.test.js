@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { runHermesTask, preflightHermes, HERMES_REVISION } from '../agent/hermes-runtime.mjs';
 
@@ -24,6 +24,56 @@ function childStub(result, inspect) {
   };
 }
 const answer={protocolVersion:1,status:'completed',summary:'Reviewable changes',runtime:{name:'hermes',revision:HERMES_REVISION},usage:{costUsd:null,costKind:'unverified',billingEligible:false}};
+
+for (const scenario of [
+  { name: 'success', program: `console.log(${JSON.stringify(JSON.stringify(answer))}); process.exit(0);` },
+  { name: 'timeout', program: '', timeoutMs: 1000, error: /time budget/ },
+  { name: 'cancellation', program: "process.stdout.write('ready');", cancel: true, error: /canceled/ },
+  { name: 'excessive stdout', program: "process.stdout.write('PRIVATE-DIAGNOSTIC'.repeat(40000));", error: /excessive output/ },
+  { name: 'excessive stderr', program: "process.stderr.write('PRIVATE-DIAGNOSTIC'.repeat(10000));", error: /excessive diagnostic/ },
+  { name: 'nonzero exit', program: "process.stderr.write('PRIVATE-DIAGNOSTIC'); process.exit(7);", error: /runtime failed/ },
+]) {
+  test(`Hermes cleans up its real subprocess and private home after ${scenario.name}`, { timeout: 10000 }, async t => fixture(async root => {
+    const controller = new AbortController();
+    let child, closed, home;
+    t.after(async () => {
+      if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      if (home) await rm(home, { recursive: true, force: true });
+    });
+    // Substitute only the worker program; use real OS processes and pipes.
+    const execution = runHermesTask({ candidateDirectory: root+'/candidate', outputDirectory: root+'/output',
+      task: {}, model: 'fixture', apiKey: 'model-canary', signal: controller.signal, timeoutMs: scenario.timeoutMs || 5000 }, {
+      hermesPath: root,
+      spawnImpl(_python, _args, options) {
+        home = options.cwd;
+        child = spawn(process.execPath, ['-e', `process.stdin.resume(); ${scenario.program} setInterval(() => {}, 1000);`], options);
+        closed = new Promise(resolve => child.once('close', resolve));
+        if (scenario.cancel) child.stdout.once('data', () => controller.abort());
+        return child;
+      },
+    });
+    if (scenario.error) {
+      await assert.rejects(execution, error => {
+        assert.match(error.message, scenario.error);
+        assert.ok(!error.message.includes('PRIVATE-DIAGNOSTIC'));
+        return true;
+      });
+    } else assert.deepEqual(await execution, answer);
+    await closed;
+    assert.ok(child.exitCode !== null || child.signalCode !== null, 'worker must exit, not outlive its invocation');
+    await assert.rejects(stat(home), { code: 'ENOENT' });
+  }));
+}
+
+test('Hermes rejects a stale revision before importing upstream code', async () => fixture(async root => {
+  await writeFile(path.join(root, 'run_agent.py'), "raise RuntimeError('This code must not run')\n");
+  await writeFile(path.join(root, '.purple-revision'), 'unreviewed-revision\n');
+  const result = await preflightHermes({ hermesPath: root, python: 'python3' });
+  assert.equal(result.status, 'blocked');
+  assert.equal(result.errorCode, 'ValueError');
+  assert.equal(result.runtime.expectedRevision, HERMES_REVISION);
+  assert.equal(result.usage.billingEligible, false);
+}));
 
 test('Hermes uses stdin credentials, an isolated job home and no inherited platform or preload settings', async()=>fixture(async root=>{
   const old=process.env.WHOP_API_KEY;process.env.WHOP_API_KEY='billing-canary';let firstHome;
