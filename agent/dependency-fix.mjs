@@ -81,7 +81,7 @@ export async function runDependencyFix(input, services = {}) {
       'Only critical/high advisory matches are targeted automatically; all other findings remain explicit.'
     ] };
   if (Array.isArray(scan.vulnerabilityCheck?.findings)) report.checklist = scan.vulnerabilityCheck.findings.map(finding => ({ id: finding.id, package: finding.package, version: finding.version, severity: finding.severity,
-    targeted: target(finding), status: target(finding) ? 'pending' : 'deferred', reason: target(finding) ? 'Awaiting an independently checked candidate.' : 'Outside the default critical/high remediation scope; advisory remains visible.' }));
+    targeted: target(finding), status: target(finding) ? 'pending' : 'deferred', reason: target(finding) ? 'Awaiting an independently checked candidate.' : 'Outside the selected remediation scope; advisory remains visible.' }));
   let originalFingerprint, originalFiles;
   const protectedPaths = new Set();
   const persisted = async () => {
@@ -211,7 +211,7 @@ export async function runDependencyFix(input, services = {}) {
     if (scan.metadataFingerprint !== metadata.fingerprint || metadata.warnings.length || scan.warnings?.length) throw new Error('Dependency files changed or scan coverage is incomplete; rescan this checkout.');
     report.evidence.metadataFingerprint = metadata.fingerprint; report.evidence.scanFingerprint = digest(JSON.stringify(scan));
     report.checklist = scan.vulnerabilityCheck.findings.map(finding => ({ id: finding.id, package: finding.package, version: finding.version, severity: finding.severity,
-      targeted: target(finding), status: target(finding) ? 'pending' : 'deferred', reason: target(finding) ? 'Awaiting an independently checked candidate.' : 'Outside the default critical/high remediation scope; advisory remains visible.' }));
+      targeted: target(finding), status: target(finding) ? 'pending' : 'deferred', reason: target(finding) ? 'Awaiting an independently checked candidate.' : 'Outside the selected remediation scope; advisory remains visible.' }));
     await persisted();
     if (!report.checklist.some(item => item.targeted)) { report.status = 'no_changes'; return report; }
     const chosenPlans = [], changes = new Map();
