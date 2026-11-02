@@ -97,6 +97,9 @@ a dollar spending guarantee; enforce the dollar budget at the provider.
 
 The candidate uses the existing internal Docker network and restricted CONNECT
 proxy. Controller/model processes and repository commands have separate users.
+Nested checks retain the same restricted gateway. Executable test fixtures use
+a private repository-user temporary directory in the job mount; the controller's
+`/tmp` stays `noexec`, and no Docker socket is supplied to tests.
 No Docker socket, host home, GitHub token or production credentials is mounted.
 Only controller code receives the model credential over stdin. Reports and
 candidate code are untrusted data. The model has scoped file tools; it does not

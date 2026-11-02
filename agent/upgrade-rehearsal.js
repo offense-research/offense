@@ -14,14 +14,16 @@ export async function runUpgradeRehearsal(input) {
   const deadline = startedAt + 11 * 60_000;
   const commands = [];
   const cloudflareCa = await fs.access('/etc/cloudflare/certs/cloudflare-containers-ca.crt').then(() => true, () => false);
+  const egressProxy = (process.env.PURPLE_FIX_EGRESS_PROXY || process.env.HTTPS_PROXY) === 'http://purple-egress:8080' ? 'http://purple-egress:8080' : null;
   async function command(argv, cwd, phase, timeout = 90000) {
     if (Date.now() >= deadline) throw new Error('Rehearsal time budget exhausted.');
     const environment = { PATH: process.env.PATH, HOME: isolatedDirectories?.home || '/tmp/purple-rehearsal-home', CI: 'true',
+      TMPDIR: isolatedDirectories?.temp || process.env.TMPDIR,
       GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', npm_config_registry: 'https://registry.npmjs.org/',
       npm_config_userconfig: '/dev/null', npm_config_ignore_scripts: 'true',
       npm_config_audit: 'false', npm_config_fund: 'false', npm_config_update_notifier: 'false', npm_config_engine_strict: 'true', npm_config_strict_peer_deps: 'true',
       npm_config_cache: isolatedDirectories?.cache || '/tmp/purple-rehearsal-cache',
-      ...(process.env.PURPLE_FIX_EGRESS_PROXY === 'http://purple-egress:8080' ? { HTTP_PROXY: process.env.PURPLE_FIX_EGRESS_PROXY, HTTPS_PROXY: process.env.PURPLE_FIX_EGRESS_PROXY, NO_PROXY: '127.0.0.1,localhost', npm_config_proxy: process.env.PURPLE_FIX_EGRESS_PROXY, npm_config_https_proxy: process.env.PURPLE_FIX_EGRESS_PROXY, NODE_USE_ENV_PROXY: '1' } : {}),
+      ...(egressProxy ? { HTTP_PROXY: egressProxy, HTTPS_PROXY: egressProxy, NO_PROXY: '127.0.0.1,localhost', npm_config_proxy: egressProxy, npm_config_https_proxy: egressProxy, NODE_USE_ENV_PROXY: '1' } : {}),
       ...(cloudflareCa ? { NODE_EXTRA_CA_CERTS: '/etc/cloudflare/certs/cloudflare-containers-ca.crt' } : {}) };
     if (isolation) {
       const trusted = argv[0] === 'git';
@@ -246,7 +248,7 @@ export async function runUpgradeRehearsal(input) {
           applied.push({ file, field, ...change });
         }
       }
-      await fs.writeFile(target, `${JSON.stringify(manifest, null, 2)}\n`);
+      if (applied.some(change => change.file === file)) await fs.writeFile(target, `${JSON.stringify(manifest, null, 2)}\n`);
     }
     for (const project of projects) {
       // pnpm transitive upgrades are resolved through checked parent upgrades.
@@ -266,7 +268,7 @@ export async function runUpgradeRehearsal(input) {
           applied.push({ file, field: 'overrides', ...change });
         }
       }
-      await fs.writeFile(target, `${JSON.stringify(manifest, null, 2)}\n`);
+      if (applied.some(change => change.file === file)) await fs.writeFile(target, `${JSON.stringify(manifest, null, 2)}\n`);
     }
     const resolution = [];
     for (const project of projects) resolution.push(await command(managerFor(project) === 'pnpm' ?

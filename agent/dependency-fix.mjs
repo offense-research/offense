@@ -111,6 +111,7 @@ export async function runDependencyFix(input, services = {}) {
     }
     const result = await runRepositoryCommand(argv, { cwd, repository: !trusted, repositoryDirectory, timeoutMs: Math.min(timeout, deadline - Date.now()), env: {
         PATH: process.env.PATH, HOME: commandDirectories.home, CI: 'true', GIT_TERMINAL_PROMPT: '0',
+        TMPDIR: trusted ? undefined : commandDirectories.temp || process.env.TMPDIR,
         GIT_CONFIG_GLOBAL: argv[0] === 'git' ? controllerGitConfig : '/dev/null', GIT_CONFIG_NOSYSTEM: '1',
         npm_config_registry: 'https://registry.npmjs.org/', npm_config_userconfig: '/dev/null', npm_config_cache: commandDirectories.cache,
         npm_config_ignore_scripts: 'true', npm_config_audit: 'false', npm_config_fund: 'false',
@@ -363,6 +364,7 @@ export async function verifyDependencyFix({ reportFile, sandboxed = false, outpu
     const checkout = inside(prior.sourceDirectory, cwd) ? prior.sourceDirectory : prior.candidateDirectory;
     await prepareRepositoryTree(checkout);
     const result = await runRepositoryCommand(argv, { cwd, repositoryDirectory: checkout, timeoutMs: commandTimeoutMs, env: { PATH: process.env.PATH, HOME: commandDirectories.home, CI: 'true',
+        TMPDIR: commandDirectories.temp || process.env.TMPDIR,
         GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', npm_config_userconfig: '/dev/null',
         npm_config_registry: 'https://registry.npmjs.org/', npm_config_cache: commandDirectories.cache, npm_config_ignore_scripts: 'true',
         npm_config_strict_peer_deps: 'true', npm_config_engine_strict: 'true', npm_config_audit: 'false', npm_config_fund: 'false',
