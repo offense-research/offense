@@ -85,13 +85,18 @@ async function insideImage(input) {
     const finding = { id: 'GHSA-synthetic-acceptance', package: 'lodash', version: '4.17.20', severity: 'HIGH', summary: 'Synthetic acceptance advisory, not live security evidence' };
     // Keep real coverage/registry validation in services.collectMetadata. Only
     // the external advisory answer is deterministic, independent of OSV changes.
-    services.analyze = async directory => {
+    services.analyze = async (directory, options = {}) => {
       const metadata = await collectMetadata(directory);
       const lock = JSON.parse(await readFile(path.join(directory, 'package-lock.json')));
       const old = lock.packages['node_modules/lodash'].version === '4.17.20';
-      return { repositoryRevision: input.revision, metadataFingerprint: metadata.fingerprint, warnings: [],
+      const scan = { repositoryRevision: input.revision, metadataFingerprint: metadata.fingerprint, warnings: [],
         vulnerabilityCheck: { status: 'complete', checkedAt: Date.now(), findings: old ? [finding] : [] },
         plans: old ? [{ name: 'lodash', currentVersion: '4.17.20', targetVersion: '4.17.21', considered: [{ version: '4.17.21', advisories: 0 }], parentOptions: [] }] : [] };
+      if (!options.output) return scan;
+      await mkdir(options.output, { recursive: true });
+      const json = path.join(options.output, 'scan.json');
+      await writeFile(json, JSON.stringify(scan));
+      return { json, warnings: 0 };
     };
     let report, feedback;
     if (input.mode === 'repair') {
@@ -103,6 +108,8 @@ async function insideImage(input) {
         services.validateVerification(feedback);
         assert.equal(feedback.checks.filter(check => !check.passed).length, 1, 'exactly the planted compatibility test must fail');
         assert.match(feedback.checks.find(check => !check.passed).output, /synthetic patch compatibility/);
+        await writeFile(path.join(input.output, 'failed-candidate.json'), JSON.stringify(feedback));
+        console.log('Acceptance: observed the planted failure; invoking pinned Hermes.');
         return runHermesTask(request);
       };
       report = await runDependencyFix({ directory: input.directory, output: input.output, scanFile, repository: input.repository,
@@ -114,7 +121,6 @@ async function insideImage(input) {
       assert.equal(model.calls.length, 4); assert.deepEqual(model.errors, []);
       const replies = model.calls.at(-1).messages.filter(message => message.role === 'tool');
       for (const id of ['call_1', 'call_2']) assert.match(replies.find(reply => reply.tool_call_id === id)?.content || '', /read-only|outside the allowed code surface/, 'both test and policy edits must be denied');
-      await writeFile(path.join(input.output, 'failed-candidate.json'), JSON.stringify(feedback));
     } else {
       assert.equal(input.mode, 'verify');
       report = await verifyDependencyFix({ reportFile: path.join(input.output, 'fix.json'), output: path.join(input.output, 'verification-ci'), sandboxed: true, commandTimeoutMs: 180000 }, services);
@@ -145,6 +151,7 @@ async function stubPublish(bundle, originalManifest, expected) {
   const { loadPolicy, digest } = await import('./dependency-policy.mjs');
   const policy = await loadPolicy(), calls = [], blobs = new Map();
   const prefix = `/repos/${bundle.repository}`;
+  let branch;
   const api = async (method, endpoint, body) => {
     calls.push({ method, endpoint, body });
     if (method === 'GET' && endpoint === prefix) return { default_branch: 'main', owner: { login: 'acceptance' }, html_url: 'https://github.invalid/acceptance/fixture' };
@@ -159,8 +166,11 @@ async function stubPublish(bundle, originalManifest, expected) {
       return { sha: 'candidate-tree' };
     }
     if (method === 'POST' && endpoint === `${prefix}/git/commits`) { assert.equal(body.tree, 'candidate-tree'); assert.deepEqual(body.parents, [bundle.baseSha]); return { sha: 'candidate-commit' }; }
-    if (method === 'POST' && endpoint === `${prefix}/git/refs`) { assert.equal(body.sha, 'candidate-commit'); return {}; }
-    if (method === 'POST' && endpoint === `${prefix}/pulls`) { assert.equal(body.draft, true); assert.equal(body.base, 'main'); return { html_url: 'https://github.invalid/acceptance/fixture/pull/1' }; }
+    if (method === 'POST' && endpoint === `${prefix}/git/refs`) {
+      assert.equal(body.sha, 'candidate-commit'); assert.match(body.ref, /^refs\/heads\/offense\/dependencies-/);
+      branch = body.ref.slice('refs/heads/'.length); return {};
+    }
+    if (method === 'POST' && endpoint === `${prefix}/pulls`) { assert.equal(body.draft, true); assert.equal(body.base, 'main'); assert.equal(body.head, branch); return { html_url: 'https://github.invalid/acceptance/fixture/pull/1' }; }
     throw new Error(`Unexpected publisher request: ${method} ${endpoint}`);
   };
   for (const mutate of [copy => { copy.runId += '-wrong'; }, copy => { copy.changes[0].content = Buffer.from('tampered').toString('base64'); }, copy => { copy.evidence.candidatePassed = false; }]) {
@@ -226,7 +236,8 @@ test('synthetic patch compatibility', () => {
     const bundle = JSON.parse(await readFile(path.join(output, 'bundle.json')));
     const publication = await stubPublish(bundle, await readFile(path.join(fixture, 'package.json')), expected);
     assert.deepEqual(publication.changedFiles.sort(), ['package-lock.json', 'package.json', sourceFile].sort());
-    const summary = { passed: true, ...expected, fixtureSha: pinned.revision, installsPerCheckout: 4, checksPerCheckout: 6, separateVerifier: true, ...publication,
+    const verified = JSON.parse(await readFile(path.join(output, 'verification-ci/fix.json')));
+    const summary = { passed: true, ...expected, fixtureSha: pinned.revision, installsPerCheckout: verified.baseline.setup.length, checksPerCheckout: verified.baseline.checks.length, separateVerifier: true, ...publication,
       syntheticBoundaries: ['advisory intelligence', 'loopback model responses', 'GitHub API transport'], providerCredentialsUsed: false };
     await writeFile(path.join(evidence, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
     console.log(JSON.stringify(summary));
