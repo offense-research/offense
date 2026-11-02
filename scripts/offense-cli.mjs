@@ -15,7 +15,10 @@ import { prepareGitHistoryBundle } from '../public/skills/purple/scripts/git-his
 import { collectStackEvidence, buildStackImage } from './stack-collection.mjs';
 import { analyzeStackEvidence } from './stack-analysis.mjs';
 import { collectKubernetesInventory, kubernetesCollectionScope } from './kubernetes-collection.mjs';
+import { portExposureScope, scanPortExposure } from './port-exposure.mjs';
 import { renderPdfReport } from './pdf-report.mjs';
+import { mergeAuditScanPage, validateScanPage } from '../shared/offense-scanning.js';
+import { mergeAuditContinuation } from '../shared/offense-planning.js';
 
 export const OFFENSE_CLI_VERSION = '0.2.0';
 export const OFFENSE_ENDPOINT = 'https://offense.sh';
@@ -75,13 +78,13 @@ async function configDirectory(directory, { create = false, privateDirectory = t
   return true;
 }
 
-async function secureRead(filename, { privateFile = true } = {}) {
+async function secureRead(filename, { privateFile = true, maxBytes = 2_000_000 } = {}) {
   await noSymlinks(filename);
   let handle;
   try {
     handle = await open(filename, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
     const info = await handle.stat();
-    if (!info.isFile() || !owned(info) || (privateFile && (info.mode & 0o077)) || info.size > 2_000_000) {
+    if (!info.isFile() || !owned(info) || (privateFile && (info.mode & 0o077)) || info.size > maxBytes) {
       throw new CliError('Configuration must be an owned, bounded regular file with private permissions.');
     }
     return await handle.readFile('utf8');
@@ -151,7 +154,7 @@ function argumentsFor(argv) {
   const values = new Set(['endpoint', 'input', 'max-price', 'idempotency-key', 'client', 'project', 'output', 'plan-limit',
     'file', 'target', 'repository', 'schema', 'format', 'account-id', 'token-env', 'package-name', 'package-version',
     'expected-digest', 'expected-identity', 'expected-issuer', 'image', 'container', 'declaration', 'build-receipt',
-    'sbom', 'scan-report', 'dockerfile', 'context', 'kubeconfig']);
+    'sbom', 'scan-report', 'dockerfile', 'context', 'kubeconfig', 'max-pages', 'resume', 'ports', 'expected-ports']);
   for (let i = 0; i < argv.length; i++) {
     const word = argv[i];
     if (!word.startsWith('--')) { positionals.push(word); continue; }
@@ -233,6 +236,40 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
     return safe;
   };
   const print = value => output(scrub(JSON.stringify(value, null, 2)) + '\n');
+  async function runPorts(positionals, flags) {
+    if (positionals.length !== 2 || positionals[1] !== 'scan') throw new CliError('Use offense ports scan --target IP --ports PORT,PORT.');
+    const allowed = new Set(['target', 'ports', 'expected-ports', 'output', 'preview', 'run', 'confirm-active-testing', 'json']);
+    if (Object.keys(flags).some(name => !allowed.has(name))) throw new CliError('Unsupported port scan option. This command is local and does not use hosted credentials or billing.');
+    if (flags.run && flags.preview) throw new CliError('Choose --preview or --run.');
+    const options = { target: flags.target, ports: flags.ports, expectedPorts: flags['expected-ports'] };
+    let scope;
+    try { scope = portExposureScope(options); }
+    catch (error) { throw new CliError(error.message, { code: 'invalid_scope' }); }
+    if (!flags.run) {
+      print({ operation: 'port_exposure', status: 'preview', scope, networkRequests: 0,
+        next: 'Review the address and ports, verify permission, then add --run --confirm-active-testing. Preview makes no network connections.' });
+      return 0;
+    }
+    if (!flags['confirm-active-testing']) throw new CliError('Confirm permission to connect to this IP and these ports with --confirm-active-testing.');
+    const directory = flags.output ? path.resolve(flags.output) : await mkdtemp(path.join(tmpdir(), 'offense-ports-'));
+    await configDirectory(directory, { create: true });
+    const filename = path.join(directory, 'port-exposure.json');
+    await noSymlinks(filename);
+    // Refuse replacement before opening any socket; keep each scan's evidence.
+    const handle = await open(filename, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW || 0), 0o600);
+    const controller = new AbortController(), cancel = () => controller.abort();
+    process.once('SIGINT', cancel); process.once('SIGTERM', cancel);
+    try {
+      const report = await scanPortExposure(options, { signal: controller.signal });
+      await handle.writeFile(JSON.stringify(report, null, 2) + '\n'); await handle.sync();
+      print({ operation: 'port_exposure', status: report.status, report: filename, summary: report.summary, policyStatus: report.policyStatus,
+        note: 'Local TCP observations only; no upload or charge. Unexpected exposure requires review, not an assumption of exploitability.' });
+      return report.status === 'complete' && report.policyStatus !== 'violations' ? 0 : 2;
+    } finally {
+      process.removeListener('SIGINT', cancel); process.removeListener('SIGTERM', cancel);
+      await handle.close();
+    }
+  }
   async function runKubernetes(positionals, flags) {
     if (positionals.length !== 2 || positionals[1] !== 'collect') throw new CliError('Use offense k8s collect --context NAME.');
     const allowed = new Set(['context', 'kubeconfig', 'output', 'preview', 'run', 'with-nova', 'with-popeye', 'json']);
@@ -344,13 +381,13 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
     }
     knownSecrets.add(token); return token;
   }
-  async function request(endpoint, route, { token, body, idempotencyKey, allowError = false } = {}) {
+  async function request(endpoint, route, { token, body, idempotencyKey, allowError = false, signal = AbortSignal.timeout(60000) } = {}) {
     if (token) knownSecrets.add(token);
     let response;
     try { response = await fetchImpl(new URL(route, endpoint).href, { method: body === undefined ? 'GET' : 'POST',
       headers: { accept: 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}),
         ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(idempotencyKey ? { 'idempotency-key': idempotencyKey } : {}) },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }), redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(60000) }); }
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }), redirect: 'manual', credentials: 'omit', signal }); }
     catch { throw new CliError('Could not reach Offense. The request outcome is unknown; reuse the same idempotency key for a paid retry.', { code: 'network_error' }); }
     if (response.status >= 300 && response.status < 400) { await response.body?.cancel(); throw new CliError('Offense redirects are not followed with credentials.', { code: 'redirect_refused' }); }
     const value = await boundedJson(response);
@@ -522,12 +559,13 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
       const { positionals, flags } = argumentsFor(argv);
       if (flags.version) { print({ name: 'Offense', company: 'Offense Security', version: OFFENSE_CLI_VERSION }); return 0; }
       if (flags.help || positionals[0] === 'help') {
-        print({ name: 'Offense', company: 'Offense Security', commands: ['audit [directory] [--output directory] [--plan-limit 0..10]', 'login [--no-browser]', 'logout', 'status', 'whoami', 'tools [list|show <tool>]', 'balance', 'topup', 'quote <tool> --input input.json', 'call <tool> --input input.json --max-price USD [--idempotency-key KEY] [--wait]',
+        print({ name: 'Offense', company: 'Offense Security', commands: ['audit [directory] [--output directory] [--plan-limit 0..10] [--max-pages 1..10] [--resume audit.json]', 'login [--no-browser]', 'logout', 'status', 'whoami', 'tools [list|show <tool>]', 'balance', 'topup', 'quote <tool> --input input.json', 'call <tool> --input input.json --max-price USD [--idempotency-key KEY] [--wait]',
           'artifact <tool> --file PATH [--from-repo] [--preview | --run --max-price USD] [--idempotency-key KEY]',
         'assess <tool> [--project DIR | --schema FILE | --file ARTIFACT --format apk|ipa | --repository OWNER/REPO] [--target HTTPS_ORIGIN] [--preview | --run --max-price USD]',
           'stack check --project DIR [--image IMAGE] --container NAME [--declaration FILE] [--build-receipt FILE] [--sbom FILE] [--scan-report FILE] [--output DIR]',
           'stack build --project DIR --image LOCAL_TAG [--dockerfile RELATIVE_PATH] [--preview | --run] [--output DIR]',
           'k8s collect --context NAME [--kubeconfig FILE] [--preview | --run] [--with-nova] [--with-popeye] [--output DIR]',
+          'ports scan --target IP --ports PORT,PORT [--expected-ports PORT,PORT|none] [--preview | --run --confirm-active-testing] [--output DIR]',
           'report --input audit.json|job.json --output report.pdf',
           'target challenge --target HTTPS_ORIGIN [--output DIR] [--preview]', 'target verify --input CHALLENGE_FILE [--preview]',
           'job <id>', 'mcp', 'mcp install --client codex|claude|cursor --project .'],
@@ -537,6 +575,7 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
       const action = positionals[0] || 'status';
       if (action === 'stack') return await runStack(positionals, flags);
       if (action === 'k8s') return await runKubernetes(positionals, flags);
+      if (action === 'ports') return await runPorts(positionals, flags);
       if (action === 'report') {
         if (positionals.length !== 1 || !flags.input || !flags.output || !/\.pdf$/i.test(flags.output) ||
             Object.keys(flags).some(key => !['input', 'output', 'json'].includes(key))) {
@@ -555,8 +594,12 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
       const cfg = await configuration(), endpoint = serviceEndpoint(flags.endpoint || env.OFFENSE_API_URL || cfg.endpoint || OFFENSE_ENDPOINT);
       if (['artifact', 'assess', 'target'].includes(action)) return await runAdvanced(action, positionals, flags, endpoint, cfg);
       if (action === 'audit') {
-        if (positionals.length > 2 || flags['plan-limit'] !== undefined && !/^(?:[0-9]|10)$/.test(flags['plan-limit'])) throw new CliError('Use offense audit [directory] with --plan-limit from 0 to 10.');
+        if (positionals.length > 2 || flags['plan-limit'] !== undefined && !/^(?:[0-9]|10)$/.test(flags['plan-limit']) ||
+            flags['max-pages'] !== undefined && !/^(?:[1-9]|10)$/.test(flags['max-pages'])) {
+          throw new CliError('Use offense audit [directory] with --plan-limit from 0 to 10 and --max-pages from 1 to 10.');
+        }
         const planLimit = flags['plan-limit'] === undefined ? 3 : Number(flags['plan-limit']);
+        const maxPages = flags['max-pages'] === undefined ? 10 : Number(flags['max-pages']);
         const root = await realpath(positionals[1] || process.cwd());
         const metadata = await collectDependencyMetadata(root);
         const payload = { files: metadata.files, planLimit };
@@ -566,33 +609,105 @@ export function createOffenseCli({ env = process.env, fetchImpl = fetch, output 
           if (serialized.includes(secret)) throw new CliError('Dependency metadata contains an Offense credential; it was not uploaded.');
         }
         const metadataFingerprint = createHash('sha256').update(JSON.stringify(metadata.files.slice().sort((a, b) => a.path.localeCompare(b.path)))).digest('hex');
-        const { value: report } = await request(endpoint, '/api/offense/audit', { body: payload });
-        if (!object(report) || report.schemaVersion !== 'offense.audit.v1' || report.capability !== 'audit_dependencies' ||
+        function validateReport(report) {
+          if (!object(report) || report.schemaVersion !== 'offense.audit.v1' || report.capability !== 'audit_dependencies' ||
             !['complete', 'partial'].includes(report.status) || !object(report.coverage) || !safeInteger(report.coverage.checkedPackages) ||
             !Array.isArray(report.findings) || !object(report.summary) || report.summary.advisoryMatches !== report.findings.length ||
             report.summary.confirmedVulnerabilities !== 0 || !object(report.remediation) || !Array.isArray(report.remediation.plans) ||
-            !Array.isArray(report.remediation.blockers) || report.coverage.planningOnly ||
-            report.remediation.planning && report.remediation.planning.scope !== 'full_audit') {
-          throw new CliError('Offense returned an incomplete audit report. No clean result was established.', { code: 'invalid_audit_report' });
+            !Array.isArray(report.remediation.blockers) || !['complete', 'partial'].includes(report.coverage.status) ||
+            report.findings.some(finding => !object(finding) || typeof finding.id !== 'string' || !finding.id ||
+              typeof finding.advisoryId !== 'string' || !object(finding.package) || typeof finding.package.name !== 'string' ||
+              typeof finding.package.installedVersion !== 'string' || !Array.isArray(finding.package.lockfiles) ||
+              typeof finding.remediation?.targetId !== 'string') ||
+            new Set(report.findings.map(finding => finding.id)).size !== report.findings.length) {
+            throw new CliError('Offense returned an incomplete audit report. No clean result was established.', { code: 'invalid_audit_report' });
+          }
+          if (report.metadataFingerprint !== metadataFingerprint) throw new CliError('The audit report does not match the dependency metadata sent. It was not saved.', { code: 'audit_fingerprint_mismatch' });
         }
-        if (report.metadataFingerprint !== metadataFingerprint) throw new CliError('The audit report does not match the dependency metadata sent. It was not saved.', { code: 'audit_fingerprint_mismatch' });
         let target = flags.output ? path.resolve(flags.output) : await mkdtemp(path.join(tmpdir(), 'offense-audit-'));
         if (target === root || target.startsWith(root + path.sep)) throw new CliError('Choose an audit report directory outside the source checkout.');
         await configDirectory(target, { create: true }); target = await realpath(target);
         if (target === root || target.startsWith(root + path.sep)) throw new CliError('Audit report output resolves inside the source checkout.');
-        const partial = metadata.warnings.length > 0 || report.status === 'partial' || Boolean(report.remediation.planning?.hasMore);
-        const saved = { ...report, status: partial ? 'partial' : 'complete', serverStatus: report.status,
-          clientCoverage: { metadataFingerprint, inspectedLockfiles: metadata.inspectedLockfiles, warnings: metadata.warnings } };
         const jsonPath = path.join(target, 'audit.json'), promptPath = path.join(target, 'remediation.md');
+        const deadline = now() + 180_000, deadlineSignal = AbortSignal.timeout(180_000);
+        async function auditRequest(extra = {}) {
+          const remaining = deadline - now();
+          if (remaining <= 0 || deadlineSignal.aborted) throw new CliError('Audit invocation reached its 180-second limit.', { code: 'audit_deadline' });
+          const { value } = await request(endpoint, '/api/offense/audit', { body: { ...payload, ...extra },
+            signal: AbortSignal.any([deadlineSignal, AbortSignal.timeout(Math.min(120_000, remaining))]) });
+          validateReport(value);
+          return value;
+        }
+        let report;
+        if (flags.resume) {
+          report = JSON.parse(await secureRead(path.resolve(flags.resume), { maxBytes: 24_000_000 }));
+          validateReport(report);
+          if (report.status !== 'partial' || report.clientContinuation?.endpoint !== endpoint ||
+              !(report.scanning?.next || report.remediation.planning?.hasMore)) {
+            throw new CliError('Resume requires a trusted unfinished CLI audit from the same endpoint and unchanged dependency metadata.');
+          }
+          report.status = report.serverStatus || report.status;
+          // Current local coverage replaces the saved observation; retained advisory evidence is not a fresh scan.
+          delete report.clientCoverage;
+        } else report = await auditRequest();
+        if (report.coverage.planningOnly || report.remediation.planning && report.remediation.planning.scope !== 'full_audit') {
+          throw new CliError('Expected a full advisory audit, not a detached continuation page.');
+        }
+        if (report.scanning) {
+          validateScanPage(report);
+          if (report.scanning.start !== null || !Number.isSafeInteger(report.scanning.completedPages) || report.scanning.completedPages < 1) {
+            throw new CliError('Expected an advisory scan starting at the first page with valid retained progress.');
+          }
+        }
+        let scanRequests = flags.resume ? 0 : 1, planningRequests = flags.resume || report.scanning?.next || !planLimit ? 0 : 1;
+        let stopReason = 'pending', continuationError, saved;
         const notices = metadata.warnings.length ? '\n\nLocal coverage warnings:\n' + metadata.warnings.map(warning => '- ' + warning).join('\n') : '';
-        const planning = report.remediation.planning?.hasMore ? '\n\nUpgrade planning remains incomplete. Retain this full audit and the recorded remediation.planning.next cursor when requesting continuation pages.' : '';
-        await atomicWrite(jsonPath, JSON.stringify(saved, null, 2) + '\n');
-        await atomicWrite(promptPath, String(report.remediation.agentPrompt || 'Review audit.json and its coverage, advisory matches and remediation blockers.') + notices + planning + '\n');
+        async function persist() {
+          const pending = Boolean(report.scanning?.next || report.remediation.planning?.hasMore);
+          const partial = metadata.warnings.length > 0 || report.status === 'partial' || report.coverage.status === 'partial' || pending || Boolean(continuationError);
+          saved = { ...report, status: partial ? 'partial' : 'complete', serverStatus: report.status,
+            clientCoverage: { metadataFingerprint, inspectedLockfiles: metadata.inspectedLockfiles, warnings: metadata.warnings },
+            clientContinuation: { endpoint, maxPages, scanRequests, planningRequests, stopReason,
+              ...(continuationError ? { error: continuationError } : {}) } };
+          const content = JSON.stringify(saved, null, 2) + '\n';
+          if (Buffer.byteLength(content) > 24_000_000) throw new CliError('Merged audit exceeds the 24 MB report limit; the last saved page is retained.');
+          await atomicWrite(jsonPath, content);
+          const scanning = report.scanning?.next ? '\n\nAdvisory scanning remains incomplete. Retain audit.json and resume with unchanged dependency metadata.' : '';
+          const planning = report.remediation.planning?.hasMore ? '\n\nUpgrade planning remains incomplete. Retain this full audit and resume its remaining targets.' : '';
+          await atomicWrite(promptPath, String(report.remediation.agentPrompt || 'Review audit.json and its coverage, advisory matches and remediation blockers.') + notices + scanning + planning + '\n');
+        }
+        await persist();
+        while (report.scanning?.next || planLimit > 0 && report.remediation.planning?.hasMore) {
+          const scanning = Boolean(report.scanning?.next);
+          if ((scanning ? scanRequests : planningRequests) >= maxPages) { stopReason = 'page_limit'; break; }
+          if (now() >= deadline || deadlineSignal.aborted) { stopReason = 'deadline'; break; }
+          try {
+            if (scanning) {
+              scanRequests++;
+              report = mergeAuditScanPage(report, await auditRequest({ scanning: report.scanning.next }), planLimit);
+            } else {
+              const next = report.remediation.planning.next;
+              if (!next || next.metadataFingerprint !== metadataFingerprint || !Array.isArray(next.pendingTargetIds) ||
+                  !next.pendingTargetIds.length || next.pendingTargetIds.length > 5000) throw new CliError('Invalid planning continuation; the previous report is retained.');
+              planningRequests++;
+              report = mergeAuditContinuation(report, await auditRequest({ planning: next }));
+            }
+          } catch (error) {
+            stopReason = now() >= deadline || deadlineSignal.aborted ? 'deadline' : 'request_failed';
+            continuationError = { code: error.code || 'invalid_continuation', message: scrub(error.message) };
+            break;
+          }
+          await persist();
+        }
+        if (stopReason === 'pending') stopReason = report.remediation.planning?.hasMore ? 'not_requested' : 'finished';
+        await persist();
         print({ status: saved.status, serverStatus: report.status, advisoryMatches: report.findings.length,
           checkedPackages: report.coverage.checkedPackages, confirmedVulnerabilities: 0, localCoverageWarnings: metadata.warnings,
           upgradePlans: report.remediation.plans.length, blockers: report.remediation.blockers.length,
+          remainingScanning: Boolean(report.scanning?.next), remainingPlanningTargets: report.remediation.planning?.remainingTargetIds?.length || 0,
+          continuation: saved.clientContinuation,
           json: jsonPath, prompt: promptPath, note: 'Known advisory matches are not confirmed vulnerabilities. No repository files were changed.' });
-        return partial ? 2 : 0;
+        return saved.status === 'partial' ? 2 : 0;
       }
       if (action === 'login') { await login(endpoint, flags, cfg); return 0; }
       if (action === 'logout') {

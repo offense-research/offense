@@ -771,11 +771,19 @@ claims. The **local engine** is separate from the **platform API**:
 | Task | Terminal | Coding agent | HTTP / application integration |
 | --- | --- | --- | --- |
 | Local dependency audit | `node offense/bin/offense.mjs scan PROJECT` | Local stdio `offense.audit_dependencies` | No local-engine HTTP server is required |
+| Local TCP exposure (unreleased) | `node scripts/offense-cli.mjs ports scan --target IP --ports 22,80,443` previews only | Run the CLI locally with explicit scope and permission | No API, login, upload or charge; not in CLI 0.2.0 |
 | Inspect platform tools | `node scripts/offense-cli.mjs tools` | Platform `offense.security_tools` | `GET /v1/catalog`; availability is deployment-specific |
 | Quote a platform job | Use the checked-out CLI's `--help` for the selected input family | `offense.security_quote` | `POST /v1/quotes` |
 | Run a platform job | Select the tool and reviewed inputs with an explicit maximum charge | `offense.security_call` | `POST /v1/call/:tool` with an idempotency key and charge cap |
 | Retrieve a platform result | Use the CLI's result command for the job ID | `offense.security_result` | `GET /v1/scans/:id` |
 | Check account balance | `node scripts/offense-cli.mjs balance` | `offense.account` | `GET /v1/account` |
+
+For [local port exposure](cli/README.md#local-port-exposure-unreleased), select one
+literal IP and up to 256 TCP ports. Review the preview, then add
+`--run --confirm-active-testing` only with permission. An optional
+`--expected-ports` allowlist flags unexpected reachability without claiming
+exploitability; timeouts remain unknown. Results describe your current network
+vantage point, not necessarily public internet exposure.
 
 Platform MCP uses the configured server's `/mcp` endpoint and appropriate
 authentication. Never paste tokens into a chat, commit them to MCP configuration
@@ -793,6 +801,7 @@ and configuring a policy does not automatically install a deployment hook.
 | --- | --- |
 | Local `doctor`, `metadata`, and `scan --preview` | Nothing; these inspect local inputs without network calls |
 | Local dependency analysis | Sanitized dependency names/versions go to OSV; public package metadata is queried from npm |
+| Local `ports scan` (unreleased) | Preview sends nothing; an authorized run makes bounded TCP connections only to the selected IP/ports. Reports stay local. |
 | Self-hosted source scanning | Submitted source goes to your configured API and its local scanner containers, not the Offense hosted service |
 | Hosted execution | The selected inputs go to the hosted service; review the tool's scope and data requirements before submitting |
 

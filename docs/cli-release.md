@@ -65,11 +65,13 @@ They never run paid calls, active assessments or cluster collection. The macOS
 job tests the architecture provided by `macos-latest`, not every Mac model or
 every macOS version. A Linux-only local check is not a substitute for that job.
 
-Known first-release limitation: `offense audit` saves one hosted response. It
+Known published 0.2.0 limitation: `offense audit` saves one hosted response. It
 does not automatically follow advisory scan or planning cursors. Large audits
 remain partial (exit 2); the separate downloadable `offense.mjs` helper provides
-automatic continuation and interrupted-scan recovery. Keep this distinction in
-the release notes rather than advertising helper-only features as CLI features.
+automatic continuation and interrupted-scan recovery. The development CLI now
+also supports [automatic continuation and resume](../cli/README.md#automatic-audit-continuation-unreleased).
+Publish that change under a new version after approval; never rebuild or replace
+the existing 0.2.0 assets or move its tag. Its historical release notes remain unchanged.
 
 ## Publication gate — owner approval required
 

@@ -49,12 +49,39 @@ offense quote opengrep --input request.json
 offense call opengrep --input request.json --max-price 0.10 --idempotency-key my-request-0001 --wait
 ```
 
-`offense audit` saves one response and exits 2 when coverage or upgrade planning
-is incomplete. It does not automatically follow `scanning.next` or
-`remediation.planning.next`. For large audits, use the separate downloadable
-`offense.mjs` helper's automatic continuation and `--resume` support, documented
-in [the dependency API guide](https://github.com/offense-research/offense/blob/main/docs/offense-api.md#continue-large-advisory-scans-without-splitting-lockfiles).
-Do not treat a partial report as a complete scan.
+### Automatic audit continuation (unreleased)
+
+The development CLI automatically finishes advisory scanning before continuing
+upgrade planning. Every request retains the complete sanitized lockfiles; it
+never splits the dependency graph. Each valid page updates the private
+`audit.json` and `remediation.md` outside your source checkout.
+
+```sh
+offense audit /path/to/project --plan-limit 3 --max-pages 10 --output /private/reports/audit
+# After a page limit, timeout or interrupted request, resume the saved progress:
+offense audit /path/to/project --resume /private/reports/audit/audit.json \
+  --plan-limit 3 --max-pages 10 --output /private/reports/audit
+```
+
+`--max-pages` accepts 1–10 (default 10), independently bounding requests in each
+phase per invocation, within a shared 180-second network budget. `--plan-limit`
+accepts 0–10 (default 3) targets per planning request; 0 skips planning but still
+continues advisory scanning. Every page counts toward the service's rate limits.
+Failures and bounds preserve the last valid findings and cursor, return exit 2,
+and record a stop reason in `clientContinuation`. Invalid first responses return
+exit 1; neither case establishes a clean scan.
+
+Resume only your own trusted CLI report: it must be an owned, private regular
+file, no larger than 24 MB, from the same endpoint and matching the current
+sanitized metadata. Resume supports unfinished scans and planning. Previously
+saved findings are retained, not freshly rechecked; after dependency changes,
+start a new audit instead. Local coverage warnings and real planning blockers
+still make a fully paginated report partial. Reports are not signed.
+
+**Published CLI 0.2.0 remains single-response-only.** These options require the
+development CLI built from source, not the existing GitHub/Homebrew release.
+For that release, use the separate `offense.mjs` helper for large audits, as
+documented in [the dependency API guide](https://github.com/offense-research/offense/blob/main/docs/offense-api.md#continue-large-advisory-scans-without-splitting-lockfiles).
 
 Input files are explicit JSON requests; preview uploaded source and artifact
 scope first. The server checks the exact quote before reserving prepaid credit.
@@ -184,6 +211,62 @@ reviewed permissions. Neither is enabled by default. Reports omit environment
 values, raw manifests and diagnostics, but retain sensitive names and image
 references: review before sharing. Repository documentation in
 `docs/kubernetes-collector.md` provides the RBAC template, schema and limits.
+
+### Local port exposure (unreleased)
+
+The development CLI can check one explicitly authorized IP from your own
+machine, without login, uploads or billing. **Published CLI 0.2.0 does not
+include this command.** From a source checkout with Node.js 24+ and dependencies
+installed, preview your selected scope first:
+
+```sh
+# Loopback example; replace the IP only with a target you are authorized to test.
+node scripts/offense-cli.mjs ports scan --target 127.0.0.1 --ports 22,80,443 \
+  --expected-ports 80,443
+# After reviewing scope and confirming permission, connect and save the report:
+node scripts/offense-cli.mjs ports scan --target 127.0.0.1 --ports 22,80,443 \
+  --expected-ports 80,443 --run --confirm-active-testing --output /private/reports/ports
+```
+
+Preview is the default and makes no connections or output files. Both `--run`
+and `--confirm-active-testing` are required to connect. Authorization is your
+responsibility: this local command does not prove ownership. It is not a hosted
+tool, does not bypass hosted target verification, and cannot be invoked through
+the hosted tool catalog or MCP endpoint.
+
+Scope is **one literal IPv4 or IPv6 address and 1–256 explicit, comma-separated
+TCP ports** (1–65535). No hostnames, CIDRs, ranges, automatic discovery, UDP,
+raw packets, banners, application payloads or exploit probes. Unspecified,
+multicast, link-local and IPv4-mapped IPv6 targets are rejected; private unicast
+and loopback addresses are supported. Connections are limited to 10 starts per
+second, 8 concurrent sockets, 2 seconds per connection and a 120-second scan
+budget. Even connection-only testing can appear in service/security logs.
+
+`--expected-ports` is an optional allowlist within the selected ports, **not a
+requirement that those services be running**. Use `none` to expect no reachable
+ports. Omit it to inventory reachability without policy findings. A reachable
+port outside the allowlist becomes `unexpected_exposure`, with unknown severity
+and review priority—not a confirmed vulnerability. Each finding explains the
+possible attacker access, prerequisites, business implications, unknowns and
+recommended remediation without guessing a service from its port number.
+
+Results distinguish `reachable`, `refused` and `unknown`. A timeout is unknown,
+not closed. The private `port-exposure.json` records scope, timestamps, source
+addresses where available, coverage and policy results. Reachability is from
+**this machine's network route**, not proof of internet exposure. Review intended
+access with the service owner before restricting ingress or disabling a listener;
+rescan from the networks that matter. No firewall or service configuration is
+changed. Unselected ports and other protocols are not assessed.
+
+Choose a new private output directory; existing files and symbolic links are
+refused before connecting. Without `--output`, the CLI creates a private temporary
+directory and prints its path. Reports contain sensitive infrastructure details;
+review before sharing. Ctrl-C/SIGTERM stops new connections and saves partial
+observations; forced termination or disk failures cannot guarantee a saved report.
+Exit 0 means all selected connections resolved without unexpected exposure (or
+no policy was supplied); exit 2 means unknown results or unexpected exposure;
+exit 1 means a scope/output/command error. None establishes vulnerability absence.
+This schema is JSON-only; `offense report` does not yet export it to PDF.
 
 Binary artifacts and assessments use the same private login credential. Preview
 is offline and is the default; `--run` plus an approved `--max-price` is required

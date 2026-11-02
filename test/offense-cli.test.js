@@ -4,10 +4,12 @@ import { mkdtemp, writeFile, readFile, mkdir, chmod, lstat, rm, symlink, realpat
 import path from 'node:path';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
 import { parse as parseToml } from 'smol-toml';
 import { parse as parseJsonc } from 'jsonc-parser';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { createOffenseCli, dollarsToMicros, installProjectMcp, serviceEndpoint } from '../scripts/offense-cli.mjs';
+import { createDependencyIntelligence } from '../server/dependency-intelligence.js';
 
 const TOKEN = 'offense_sk_' + 'a'.repeat(64), OLD_TOKEN = 'purple_scan_' + 'b'.repeat(64);
 const DEVICE = 'd'.repeat(64), JOB = 'c'.repeat(32);
@@ -647,6 +649,115 @@ test('free audit keeps reports outside the source checkout and retains incomplet
   assert.match(await readFile(path.join(output, 'remediation.md'), 'utf8'), /planning remains incomplete/);
 });
 
+async function pagedAuditFixture(t, options = {}) {
+  const db = new DatabaseSync(':memory:'); t.after(() => db.close());
+  const intelligence = createDependencyIntelligence({ db, fetchImpl: async (url, request) => {
+    if (url.endsWith('/querybatch')) return json({ results: JSON.parse(request.body).queries.map(({ package: pkg }) => ({
+      vulns: Array.from({ length: pkg.name === 'first' ? 65 : 1 }, (_, index) => ({ id: `GHSA-${pkg.name}-${index}`, modified: '2026-01-01' }))
+    })) });
+    return json({ database_specific: { severity: 'HIGH' }, aliases: ['CVE-2026-12345'] });
+  }, plan: async (_snapshot, name, version) => ({ name, currentVersion: version, targetVersion: '1.0.1',
+    releases: [], steps: [], parentOptions: [], impact: { paths: [], parents: [] } }) });
+  const f = await fixture(t, { ...options, handler: async (url, request, count) => {
+    const input = JSON.parse(request.body);
+    assert.equal(request.headers.authorization, undefined);
+    assert.deepEqual(Object.keys(JSON.parse(input.files[0].content).packages), ['', 'node_modules/first', 'node_modules/second', 'node_modules/third']);
+    const page = await intelligence.audit(input);
+    return options.page ? options.page(page, input, count) : json(page);
+  } });
+  const project = await auditProject(f.directory), output = path.join(f.directory, 'reports');
+  const lock = JSON.stringify({ lockfileVersion: 3, packages: { '': {},
+    'node_modules/first': { version: '1.0.0' }, 'node_modules/second': { version: '1.0.0' }, 'node_modules/third': { version: '1.0.0' } } });
+  await writeFile(path.join(project, 'package-lock.json'), lock);
+  return { ...f, project, output, lock, report: async () => JSON.parse(await readFile(path.join(output, 'audit.json'), 'utf8')) };
+}
+
+test('CLI completes advisory scanning before planning all targets and retains exact original evidence', async t => {
+  const f = await pagedAuditFixture(t);
+  assert.equal(await f.cli.run(['audit', f.project, '--plan-limit', '1', '--output', f.output]), 0);
+  const saved = await f.report();
+  assert.equal(saved.coverage.checkedPackages, 3); assert.equal(saved.coverage.status, 'complete');
+  assert.equal(saved.findings.length, 67); assert.equal(saved.summary.advisoryMatches, 67);
+  assert.equal(saved.summary.distinctCves, 1); assert.equal(saved.summary.confirmedVulnerabilities, 0);
+  assert.equal(new Set(saved.findings.map(finding => finding.id)).size, 67);
+  assert.equal(saved.scanning.completedPages, 2); assert.equal(saved.scanning.next, null);
+  assert.deepEqual(saved.remediation.plans.map(plan => plan.package).sort(), ['first', 'second', 'third']);
+  assert.equal(saved.remediation.planning.hasMore, false); assert.equal(saved.remediation.blockers.length, 0);
+  assert.equal(saved.clientContinuation.scanRequests, 2); assert.equal(saved.clientContinuation.planningRequests, 3);
+  assert.equal(saved.clientContinuation.stopReason, 'finished');
+  assert.equal(await readFile(path.join(f.project, 'package-lock.json'), 'utf8'), f.lock);
+});
+
+test('CLI page limits retain resumable scan and planning evidence, with local coverage kept partial', async t => {
+  const f = await pagedAuditFixture(t);
+  const args = ['audit', f.project, '--plan-limit', '1', '--max-pages', '1', '--output', f.output];
+  assert.equal(await f.cli.run(args), 2);
+  let saved = await f.report();
+  assert.equal(saved.findings.length, 59); assert.equal(saved.coverage.checkedPackages, 0);
+  assert.equal(saved.remediation.plans.length, 0); assert.equal(saved.clientContinuation.stopReason, 'page_limit');
+  const resume = ['--resume', path.join(f.output, 'audit.json')];
+  assert.equal(await f.cli.run([...args, ...resume]), 2);
+  saved = await f.report();
+  assert.equal(saved.findings.length, 67); assert.equal(saved.scanning.next, null);
+  assert.equal(saved.remediation.plans.length, 1); assert.equal(saved.remediation.planning.remainingTargetIds.length, 2);
+  await mkdir(path.join(f.project, 'uncovered')); await writeFile(path.join(f.project, 'uncovered/package.json'), '{}');
+  assert.equal(await f.cli.run(['audit', f.project, '--plan-limit', '1', '--output', f.output, ...resume]), 2);
+  saved = await f.report();
+  assert.equal(saved.remediation.plans.length, 3); assert.equal(saved.remediation.planning.hasMore, false);
+  assert.equal(saved.clientContinuation.scanRequests, 0); assert.equal(saved.clientContinuation.planningRequests, 2);
+  assert.equal(saved.serverStatus, 'complete'); assert.equal(saved.status, 'partial');
+  assert.match(saved.clientCoverage.warnings.join('\n'), /uncovered\/package.json/);
+});
+
+test('CLI preserves its last valid scan after provider failure, replay, mismatched metadata or planning non-progress', async t => {
+  for (const failure of ['provider', 'replay', 'fingerprint', 'planning']) await t.test(failure, async t => {
+    let first, fail = true;
+    const f = await pagedAuditFixture(t, { page: (page, input) => {
+      if (!input.scanning && !input.planning) first = structuredClone(page);
+      if (fail && (failure === 'planning' ? input.planning : input.scanning)) {
+        if (failure === 'provider') throw Error('Provider unavailable');
+        if (failure === 'replay') return json(first);
+        if (failure === 'fingerprint') page.metadataFingerprint = '0'.repeat(64);
+        if (failure === 'planning') page.remediation.planning.attemptedTargetIds = [];
+      }
+      return json(page);
+    } });
+    const args = ['audit', f.project, '--plan-limit', '1', '--output', f.output];
+    assert.equal(await f.cli.run(args), 2);
+    const saved = await f.report();
+    assert.equal(saved.findings.length, failure === 'planning' ? 67 : 59);
+    assert.equal(saved.remediation.plans.length, 0); assert.equal(saved.clientContinuation.stopReason, 'request_failed');
+    assert.ok(saved.clientContinuation.error);
+    fail = false;
+    assert.equal(await f.cli.run([...args, '--resume', path.join(f.output, 'audit.json')]), 0);
+    assert.equal((await f.report()).findings.length, 67); assert.equal((await f.report()).remediation.plans.length, 3);
+  });
+});
+
+test('CLI deadlines and scan-only mode stop safely, and unsafe or stale resume inputs never contact the service', async t => {
+  let clock = 0;
+  const f = await pagedAuditFixture(t, { overrides: { now: () => clock }, page: page => { clock = 180_001; return json(page); } });
+  assert.equal(await f.cli.run(['audit', f.project, '--plan-limit', '0', '--output', f.output]), 2);
+  assert.equal(f.calls.length, 1); assert.equal((await f.report()).clientContinuation.stopReason, 'deadline');
+  assert.equal((await f.report()).findings.length, 59);
+  const resume = path.join(f.output, 'audit.json'), original = await readFile(resume, 'utf8');
+  for (const args of [
+    ['--max-pages', '0'], ['--max-pages', '11'],
+    ['--resume', resume, '--endpoint', 'https://another.example']
+  ]) assert.equal(await f.cli.run(['audit', f.project, '--output', f.output, ...args]), 1);
+  await chmod(resume, 0o644);
+  assert.equal(await f.cli.run(['audit', f.project, '--resume', resume, '--output', f.output]), 1);
+  await chmod(resume, 0o600);
+  const link = path.join(f.directory, 'linked.json'); await symlink(resume, link);
+  assert.equal(await f.cli.run(['audit', f.project, '--resume', link, '--output', f.output]), 1);
+  await writeFile(path.join(f.project, 'package-lock.json'), f.lock.replaceAll('1.0.0', '1.0.2'));
+  assert.equal(await f.cli.run(['audit', f.project, '--resume', resume, '--output', f.output]), 1);
+  assert.equal(f.calls.length, 1); assert.equal(await readFile(resume, 'utf8'), original);
+  const g = await pagedAuditFixture(t);
+  assert.equal(await g.cli.run(['audit', g.project, '--plan-limit', '0', '--output', g.output]), 0);
+  assert.equal((await g.report()).findings.length, 67); assert.equal((await g.report()).remediation.plans.length, 0);
+  assert.equal((await g.report()).clientContinuation.planningRequests, 0);
+});
 
 test('environment credentials are bound to an explicit service origin before any request', async t => {
   const f = await fixture(t, { env: { OFFENSE_API_KEY: TOKEN } });
