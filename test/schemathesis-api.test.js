@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, symlink, rm, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, symlink, rm, stat, readdir, lstat } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { prepareApiTest, runApiTest, apiTestDockerArguments, writeApiImageContext, API_TEST_IMAGE } from '../public/skills/purple/scripts/api-test.mjs';
+import { writeApiImageContext as writePackagedApiImageContext } from '../offense/tools/api-test.mjs';
 
 const schema = { openapi: '3.0.3', info: { title: 'PRIVATE-PII-API-TITLE', version: '1' }, paths: {
   '/protected': { get: { security: [{ bearer: [] }], responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' } } } },
@@ -139,6 +140,53 @@ test('API image context writes only fixed inspected files and preserves customiz
   await assert.rejects(writeApiImageContext(path.join(root, 'linked/elsewhere')), /symlinks/);
 });
 
+for (const [distribution, writeContext] of [['skill', writeApiImageContext], ['local package', writePackagedApiImageContext]]) {
+  test(`${distribution} image context recovers missing files without exposing or replacing existing content`, async t => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'purple-api-context-recovery-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const target = path.join(root, 'context');
+    await writeContext(target);
+    const expected = {
+      Dockerfile: await readFile(new URL('../agent/api-test.Dockerfile', import.meta.url), 'utf8'),
+      'schemathesis-sandbox.py': await readFile(new URL('../agent/schemathesis-sandbox.py', import.meta.url), 'utf8'),
+      '.dockerignore': await readFile(new URL('../agent/api-test.Dockerfile.dockerignore', import.meta.url), 'utf8'),
+    };
+    assert.equal((await stat(target)).mode & 0o777, 0o700);
+    for (const missing of Object.keys(expected)) {
+      await rm(path.join(target, missing));
+      await writeContext(target);
+      assert.deepEqual((await readdir(target)).sort(), Object.keys(expected).sort());
+      for (const [name, content] of Object.entries(expected)) {
+        assert.equal(await readFile(path.join(target, name), 'utf8'), content);
+        assert.equal((await stat(path.join(target, name))).mode & 0o777, 0o600);
+      }
+    }
+  });
+
+  test(`${distribution} image context refuses foreign content and linked files before filling missing files`, async t => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'purple-api-context-refusal-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const target = path.join(root, 'context'), outside = path.join(root, 'outside');
+    await mkdir(target);
+    await writeFile(path.join(target, 'keep.txt'), 'unrelated content');
+    await assert.rejects(writeContext(target), /unrelated files/);
+    assert.deepEqual(await readdir(target), ['keep.txt']);
+    assert.equal(await readFile(path.join(target, 'keep.txt'), 'utf8'), 'unrelated content');
+    await rm(path.join(target, 'keep.txt'));
+    await writeContext(target);
+    // A link to byte-identical trusted content must still be refused.
+    await writeFile(outside, await readFile(path.join(target, 'schemathesis-sandbox.py')));
+    const preserved = await readFile(outside);
+    await rm(path.join(target, 'schemathesis-sandbox.py'));
+    await rm(path.join(target, 'Dockerfile'));
+    await symlink(outside, path.join(target, 'schemathesis-sandbox.py'));
+    await assert.rejects(writeContext(target), /Customized/);
+    assert.equal((await lstat(path.join(target, 'schemathesis-sandbox.py'))).isSymbolicLink(), true);
+    assert.deepEqual(await readFile(outside), preserved);
+    await assert.rejects(stat(path.join(target, 'Dockerfile')), { code: 'ENOENT' });
+  });
+}
+
 test('real no-network Schemathesis image finds missing auth and server errors, then safe controls pass', { skip: process.env.PURPLE_API_TEST_E2E !== '1', timeout: 360000 }, async t => {
   const { root, options } = await fixture(t, true);
   const context = path.join(root, 'image');
@@ -146,6 +194,12 @@ test('real no-network Schemathesis image finds missing auth and server errors, t
   assert.equal((await stat(path.join(context, 'schemathesis-sandbox.py'))).mode & 0o777, 0o600);
   const build = spawnSync('docker', ['build', '-t', API_TEST_IMAGE, context], { encoding: 'utf8', timeout: 180000, maxBuffer: 8 * 1024 * 1024 });
   assert.equal(build.status, 0, build.stderr);
+  const permissions = spawnSync('docker', ['run', '--rm', '--network', 'none', '--read-only', '--cap-drop', 'ALL',
+    '--security-opt', 'no-new-privileges', '--entrypoint', 'python3', API_TEST_IMAGE, '-c',
+    "import os, stat; p = '/opt/purple/schemathesis-sandbox.py'; assert os.getuid() == 65532; assert os.access(p, os.R_OK); assert not os.access(p, os.W_OK); assert stat.S_IMODE(os.stat(p).st_mode) & 0o022 == 0; print('non-root-readable-not-writable')"],
+  { encoding: 'utf8', timeout: 15000 });
+  assert.equal(permissions.status, 0, permissions.stderr);
+  assert.equal(permissions.stdout.trim(), 'non-root-readable-not-writable');
   const before = await runApiTest({ ...options, output: path.join(root, 'before') });
   const baseline = JSON.parse(await readFile(before.report));
   assert.equal(before.status, 'complete');
