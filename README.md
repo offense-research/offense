@@ -877,6 +877,13 @@ then restart. A source pull alone is not a completed platform upgrade.
   supported setup. There is no automatic import of conversations, memories,
   credentials or model-provider settings.
 
+## Offense in its own CI
+
+The [dependency agent example](docs/dependency-agent.md) provides secret-free PR
+audits and opt-in, isolated Hermes repairs with independent verification and
+draft PR delivery. Forks configure their own model key; no Offense account or
+production credentials are required.
+
 ## Develop and contribute
 
 From the repository root:

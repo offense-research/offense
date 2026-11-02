@@ -35,3 +35,6 @@ workers/app-staging.bundle.js
 .bugpatrol/runs/
 # Project-local proprietary client binaries and their local diagnostic state
 .local-tools/
+
+# Rebuilt client archives; source releases do not commit generated packages.
+public/downloads/

@@ -21,8 +21,11 @@ RUN git init /opt/hermes && git -C /opt/hermes remote add origin https://github.
     && useradd --uid 1001 --no-create-home --shell /usr/sbin/nologin purple-repository
 COPY agent/ /opt/purple/agent/
 COPY public/skills/purple/scripts/ /opt/purple/public/skills/purple/scripts/
-COPY scripts/e2e-hermes-runtime.mjs /opt/purple/scripts/e2e-hermes-runtime.mjs
-COPY scripts/e2e-dependency-fix.mjs /opt/purple/scripts/e2e-dependency-fix.mjs
+COPY offense/ /opt/purple/offense/
+COPY scripts/ci/ /opt/purple/scripts/ci/
+COPY .github/offense/ /opt/purple/.github/offense/
+RUN cd /opt/purple/offense && npm ci --ignore-scripts --no-audit --no-fund \
+    && ln -s offense/node_modules /opt/purple/node_modules
 # The trusted observer's default location is shared with the existing Pi image.
 COPY agent/test-observer.mjs agent/drop-repository-privileges.mjs agent/verification-gate.mjs agent/npm-projects.mjs /opt/purple/
 ENV PURPLE_HERMES_PATH=/opt/hermes PURPLE_HERMES_PYTHON=/opt/hermes/.venv/bin/python \

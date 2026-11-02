@@ -126,7 +126,7 @@ export async function runUpgradeRehearsal(input) {
     const actual = await command(managerFor(owner) === 'pnpm' ? ['pnpm', '--config.manage-package-manager-versions=false', '--version'] : ['npm', '--version'], path.join(source, directory), 'environment');
     if (!actual.passed || actual.output.trim() !== expected) throw new Error(`Rehearsal requires ${value.packageManager}; provision that version in the agent's sandbox.`);
   }
-  const checks = manifests.flatMap(({ file, value }) => ['test', 'typecheck', 'build'].filter(name => value.scripts?.[name] && !/no test specified/.test(value.scripts[name]))
+  const checks = input.checks || manifests.flatMap(({ file, value }) => ['test', 'typecheck', 'build'].filter(name => value.scripts?.[name] && !/no test specified/.test(value.scripts[name]))
     .map(name => ({ directory: path.dirname(file), script: name })));
   if (checks.length > 18) throw new Error('Repository exceeds the 18-check rehearsal limit.');
   async function inventory(directory) {
@@ -220,7 +220,7 @@ export async function runUpgradeRehearsal(input) {
     const results = [];
     for (const check of checks) {
       const owner = projects.filter(project => project === '.' || check.directory === project || check.directory.startsWith(`${project}/`)).sort((a,b)=>b.length-a.length)[0];
-      results.push(await command(managerFor(owner) === 'pnpm' ? ['pnpm', '--config.enable-pre-post-scripts=false', 'run', check.script] : ['npm', 'run', '--ignore-scripts', check.script], path.join(directory, check.directory), `${phase}:${check.script}`, 60000));
+      results.push(await command(check.command || (managerFor(owner) === 'pnpm' ? ['pnpm', '--config.enable-pre-post-scripts=false', 'run', check.script] : ['npm', 'run', '--ignore-scripts', check.script]), path.join(directory, check.directory), `${phase}:${check.script || 'explicit'}`, 180000));
       await verifyIntegrity();
       // A changed command definition or test/source file cannot certify the
       // next check. Preserve the failing boundary and stop this phase.

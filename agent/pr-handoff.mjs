@@ -231,7 +231,7 @@ async function changesFor(candidate) {
   }
   return changes;
 }
-async function validateArtifacts(reportFile, manifestPath) {
+export async function validateArtifacts(reportFile, manifestPath) {
   const report=JSON.parse((await document(reportFile)).toString('utf8')); eligible(report);
   await artifactTarget(path.join(path.dirname(path.resolve(reportFile)), 'pr-published.json'));
   const manifest=JSON.parse((await document(manifestPath)).toString('utf8'));

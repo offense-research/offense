@@ -21,3 +21,6 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - run: npm --prefix offense ci --ignore-scripts --no-audit --no-fund
+      - run: npm --prefix offense test
+      - run: npm --prefix offense run check

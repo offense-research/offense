@@ -1,0 +1,12 @@
+import { readFile, appendFile } from 'node:fs/promises';
+import { ciAnalyze } from './dependency-analysis.mjs';
+import { selectPlan } from './select-dependency-plan.mjs';
+const [project, output] = process.argv.slice(2);
+if (!project || !output) throw Error('Provide project and new external report directory.');
+const result = await ciAnalyze(project, { output, planLimit: 30 });
+const scan = JSON.parse(await readFile(result.json, 'utf8'));
+const selected = selectPlan(scan);
+if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `eligible=${!!selected}\n`);
+const summary = selected ? 'A checked patch/minor upgrade group is eligible for repair.' : scan.vulnerabilityCheck.findings.some(f => ['HIGH', 'CRITICAL'].includes(f.severity)) ? 'High/critical findings require manual planning; no eligible upgrade group. See scan.json.' : 'No high/critical advisory matches require automatic repair.';
+if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
+console.log(summary);

@@ -1,0 +1,123 @@
+name: Offense dependency agent
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Open a draft PR after independent verification
+        type: boolean
+        default: false
+  schedule:
+    - cron: '23 9 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: offense-dependency-agent
+  cancel-in-progress: false
+jobs:
+  repair:
+    if: >-
+      vars.OFFENSE_AGENT_ENABLED == 'true' &&
+      vars.OFFENSE_AGENT_REPOSITORY == github.repository &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    environment: offense-dependency-agent
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      ready: ${{ steps.bundle.outputs.ready }}
+    env:
+      OFFENSE_ENGINE_SHA: ${{ vars.OFFENSE_CI_ENGINE_SHA }}
+    steps:
+      - name: Validate operator configuration
+        env:
+          MODEL: ${{ vars.OFFENSE_AGENT_MODEL }}
+        run: |
+          [[ "$OFFENSE_ENGINE_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo 'Set OFFENSE_CI_ENGINE_SHA to a reviewed implementation commit.'; exit 1; }
+          test -n "$MODEL" || { echo 'Set OFFENSE_AGENT_MODEL.'; exit 1; }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ vars.OFFENSE_CI_ENGINE_SHA }}
+          path: engine
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: project
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm --prefix engine/offense ci --ignore-scripts --no-audit --no-fund
+      - name: Audit using local OSV/npm intelligence
+        id: audit
+        run: node engine/scripts/ci/run-agent-audit.mjs project "$RUNNER_TEMP/agent-audit"
+      - name: Build the reviewed public runtime
+        if: steps.audit.outputs.eligible == 'true'
+        run: docker build -f engine/agent/hermes.Dockerfile -t offense-hermes:ci engine
+      - name: Prepare a bounded candidate
+        if: steps.audit.outputs.eligible == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OFFENSE_AGENT_MODEL_KEY }}
+          PURPLE_FIX_MODEL: ${{ vars.OFFENSE_AGENT_MODEL }}
+        run: >-
+          node engine/scripts/offense.mjs dependencies fix project --ci
+          --scan "$RUNNER_TEMP/agent-audit/scan.json" --output "$RUNNER_TEMP/offense-job"
+          --repository "$GITHUB_REPOSITORY" --image offense-hermes:ci
+      - name: Verify in a new container without a model credential
+        if: steps.audit.outputs.eligible == 'true'
+        run: >-
+          node engine/scripts/offense.mjs dependencies verify --ci
+          --report "$RUNNER_TEMP/offense-job/fix.json"
+          --output "$RUNNER_TEMP/offense-job/verification-ci" --image offense-hermes:ci
+      - name: Export independently verified files
+        if: steps.audit.outputs.eligible == 'true'
+        id: bundle
+        run: |
+          mkdir -p "$RUNNER_TEMP/offense-delivery"
+          node engine/scripts/ci/dependency-bundle.mjs "$RUNNER_TEMP/offense-job/verification-ci/fix.json" "$RUNNER_TEMP/offense-delivery/bundle.json"
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: steps.bundle.outputs.ready == 'true'
+        with:
+          name: offense-delivery
+          path: ${{ runner.temp }}/offense-delivery/bundle.json
+          retention-days: 3
+          if-no-files-found: error
+      - name: Retain bounded review reports, never the job workspace
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: offense-agent-reports
+          path: |
+            ${{ runner.temp }}/agent-audit/scan.json
+            ${{ runner.temp }}/offense-job/fix.md
+            ${{ runner.temp }}/offense-job/job-error.json
+            ${{ runner.temp }}/offense-job/verification-ci/fix.md
+          retention-days: 7
+          if-no-files-found: warn
+  publish:
+    needs: repair
+    if: >-
+      needs.repair.outputs.ready == 'true' &&
+      (inputs.publish == true || (github.event_name == 'schedule' && vars.OFFENSE_AGENT_PUBLISH == 'true'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      OFFENSE_ENGINE_SHA: ${{ vars.OFFENSE_CI_ENGINE_SHA }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ vars.OFFENSE_CI_ENGINE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: offense-delivery
+          path: delivery
+      - name: Publish only the verified file bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ci/publish-dependency-pr.mjs delivery/bundle.json

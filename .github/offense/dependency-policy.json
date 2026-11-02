@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "lockfiles": ["package-lock.json", "offense/package-lock.json", "site/package-lock.json", "agent/spectral/package-lock.json"],
+  "dependencyFreeManifests": ["cli/package.json", "sdk/package.json"],
+  "maxAttempts": 2,
+  "maxTurns": 12,
+  "allowedSourcePrefixes": ["src/", "server/", "shared/"],
+  "checks": [
+    { "directory": ".", "command": ["node", "scripts/patch-bugpatrol-zod.mjs"] },
+    { "directory": ".", "command": ["node", "scripts/build-worker-sources.mjs"] },
+    { "directory": ".", "command": ["npm", "run", "--ignore-scripts", "build"] },
+    { "directory": ".", "command": ["npm", "run", "--ignore-scripts", "test"] },
+    { "directory": "offense", "command": ["npm", "run", "--ignore-scripts", "test"] },
+    { "directory": "offense", "command": ["npm", "run", "--ignore-scripts", "check"] }
+  ]
+}

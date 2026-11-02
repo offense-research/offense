@@ -2,6 +2,7 @@
 **
 !agent/
 !agent/*.mjs
+!agent/*.js
 !agent/hermes-task.py
 !public/
 !public/skills/
@@ -11,3 +12,12 @@
 !scripts/
 !scripts/e2e-hermes-runtime.mjs
 !scripts/e2e-dependency-fix.mjs
+
+!offense/
+!offense/**
+offense/node_modules/
+!scripts/ci/
+!scripts/ci/**
+!.github/
+!.github/offense/
+!.github/offense/**

@@ -116,8 +116,8 @@
     },
     {
       "path": "scripts/rehearsal-runner.mjs",
-      "bytes": 22858,
-      "sha256": "dd35b75f7a513312823c3cb3c1684becb0b20b887457eb0449c082a8797c5020"
+      "bytes": 22908,
+      "sha256": "e284080b2786fa7499e91005ef27e11360da507a6c408503434c989860e17871"
     }
   ],
   "previousReleases": [

@@ -34,6 +34,7 @@ export function parseArguments(args) {
     '--max-attempts': 'maxAttempts', '--max-turns': 'maxTurns', '--image': 'image', '--report': 'reportFile', '--branch': 'branch', '--base': 'base' };
   while (args.length) {
     const key = args.shift();
+    if (key === '--ci') { result.ci = true; continue; }
     if (key === '--authorize-publish') { result.authorizePublish = true; continue; }
     if (!values[key] || !args[0] || args[0].startsWith('--')) throw new Error(`Unknown or incomplete option: ${key}`);
     result[values[key]] = args.shift();
@@ -186,7 +187,7 @@ export function dockerArguments({ directory, output, image, uid, gid, name }) {
     '--workdir', '/tmp', '--entrypoint', 'node', image, '--disable-sigusr1', '/opt/purple/agent/dependency-fix-job.mjs'];
 }
 
-async function main() {
+export async function main() {
   const options = parseArguments(process.argv.slice(2));
   if (options.help) { console.log(HELP); return; }
   if (options.action === 'scan') { console.log(JSON.stringify(await analyze(path.resolve(options.directory), { output: options.output }), null, 2)); return; }
@@ -214,11 +215,26 @@ async function main() {
     if (options.scanFile) {
       scanFile = path.join(output, 'initial-scan.json');
       await writeFile(scanFile, await readFile(path.resolve(options.scanFile)), { mode: 0o600 });
-    } else scanFile = (await analyze(pinned.directory, { output: path.join(output, 'scan') })).json;
+    } else scanFile = (await (options.ci ? (await import('./ci/dependency-analysis.mjs')).ciAnalyze : analyze)(pinned.directory, { output: path.join(output, 'scan'), planLimit: 30 })).json;
     apiKey = process.env.OPENROUTER_API_KEY;
     input = { directory: pinned.directory, scanFile, output, repository: options.repository,
       workDirectory: path.join(output, 'work'), maxAttempts: options.maxAttempts, maxTurns: options.maxTurns,
       model: options.model || process.env.PURPLE_FIX_MODEL || 'qwen/qwen3.7-flash', apiKey };
+  }
+  if (options.ci) {
+    input.ci = true;
+    if (options.action !== 'verify') {
+      const { loadPolicy } = await import('./ci/dependency-policy.mjs');
+      const { selectPlan } = await import('./ci/select-dependency-plan.mjs');
+      const policy = await loadPolicy();
+      const scan = JSON.parse(await readFile(input.scanFile, 'utf8'));
+      const selected = selectPlan(scan);
+      if (!selected) throw Error('No checked patch/minor high/critical upgrade group is available. Review the audit report.');
+      input.selectedTargets = [`${selected.name}@${selected.currentVersion}`];
+      input.checks = policy.checks;
+      input.commandTimeoutMs = 180000;
+      input.maxAttempts = policy.maxAttempts; input.maxTurns = policy.maxTurns;
+    }
   }
   input.artifactUid = process.getuid(); input.artifactGid = process.getgid();
   console.error(`Running ${options.action === 'verify' ? 'independent verification' : 'Hermes'} against ${pinned.revision.slice(0,12)} in an isolated container…`);
