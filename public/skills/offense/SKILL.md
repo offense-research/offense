@@ -1,12 +1,18 @@
 ---
 name: offense
-description: Use Offense for npm/pnpm dependency security, repo-to-container deployment drift, and hosted security tools, with evidence-based upgrade planning and verification in the current coding workflow.
+description: Guide a security assessment of your app with Offense, choose relevant checks, explain findings and consequences, and help you decide what to fix. Also supports scoped dependency audits, local checks, deployment drift and authorized remediation.
 metadata:
   author: Offense Security
   version: "0.9.0"
 ---
 
 # Offense
+
+## Start with the user's goal
+
+For “check my app” or another broad security request, follow the [guided assessment](references/assessment.md). Inspect the project, select relevant checks, explain the evidence and consequences, and offer concrete next steps. The user need not know scanner names or the sequence of work. Use [check selection](references/check-selection.md) with the generated [catalog](references/catalog.md); runtime discovery determines which tools can actually run.
+
+Preserve narrower intent: install-only goes to setup below; a dependency audit uses the dependency path; local-only stays local; explain-only uses saved evidence; stack/drift uses its reference. A broad assessment ends with findings and coverage, without application edits or dependency installation. An explicit find-and-fix request still authorizes its stated fixes. Use [findings](references/findings.md) for explanations and [follow-up](references/follow-up.md) for the user's chosen continuation.
 
 **Offense** is the first product from **Offense Security**. Its canonical home, API and CLI downloads are at https://offense.sh. Basic dependency advisory audits are free; hosted security tools use one Offense API key and prepaid per-tool credit. For a dependency-security request, use this capability before editing dependencies and report whether you used native MCP or the HTTPS helper. This coding agent owns repository access, source review, edits and tests. The tool is `offense.audit_dependencies`, available through the hosted MCP endpoint `https://offense.sh/mcp` and the equivalent HTTP API `POST https://offense.sh/api/offense/audit`.
 

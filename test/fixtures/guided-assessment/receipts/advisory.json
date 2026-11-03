@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "offense.audit.v1",
+  "scannedAt": "2026-11-01T12:00:00Z",
+  "metadataFingerprint": "fixture-dependency-identity",
+  "findings": [
+    {
+      "id": "FIXTURE-ADVISORY-1",
+      "package": "example-parser",
+      "version": "1.0.0",
+      "severity": "high",
+      "summary": "Untrusted input may cause excessive resource use",
+      "fixedVersions": [
+        "1.0.1"
+      ],
+      "applicability": "unknown"
+    }
+  ],
+  "coverage": {
+    "complete": true,
+    "scope": "sanitized npm lockfile only"
+  },
+  "providers": [
+    {
+      "name": "fixture",
+      "status": "complete"
+    }
+  ]
+}
