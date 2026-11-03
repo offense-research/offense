@@ -64,6 +64,14 @@ test('Codex-managed skills never fetch, stage, accept or mutate hosted updates',
   assert.equal(await readFile(path.join(f.root, 'SKILL.md'), 'utf8'), skillText('1.0.0'));
   await assert.rejects(access(path.join(f.root, INSTALL_RECORD)), { code: 'ENOENT' });
   await assert.rejects(access(path.join(f.root, '.skill-updates')), { code: 'ENOENT' });
+  for (const marker of [null, false, 0, '', { schemaVersion: 2, manager: 'codex-plugin' }]) {
+    await writeFile(path.join(f.root, '.offense-distribution.json'), JSON.stringify(marker));
+    assert.equal((await f.run()).status, 'check_failed');
+    assert.equal(f.server.requests.length, 0);
+    assert.equal(await readFile(path.join(f.root, 'SKILL.md'), 'utf8'), skillText('1.0.0'));
+    await assert.rejects(access(path.join(f.root, INSTALL_RECORD)), { code: 'ENOENT' });
+    await assert.rejects(access(path.join(f.root, '.skill-updates')), { code: 'ENOENT' });
+  }
 });
 
 test('a newer release replaces only unchanged managed files and requires a new session', async t => {

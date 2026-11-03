@@ -66,8 +66,8 @@
     },
     {
       "path": "scripts/offense.mjs",
-      "bytes": 300867,
-      "sha256": "ced4cccb13be7e2eba9795cfdcdacc5608dc460d9f0a219b76e36f92f6512c1b"
+      "bytes": 301036,
+      "sha256": "ed38b1997df8f498452a455a259ae16fe573c62c6bac712f86dca64f62eecdf4"
     },
     {
       "path": "scripts/cli.mjs",
@@ -76,8 +76,8 @@
     },
     {
       "path": "scripts/update.mjs",
-      "bytes": 25657,
-      "sha256": "bbadd63b495360bf09aaa77f889354935fb60fa3911215e8be22508de38298da"
+      "bytes": 25826,
+      "sha256": "d286cc9cc3c8e015e6af76416fb4b928734ed842aef252e4b031677ff47c307e"
     }
   ],
   "previousReleases": [

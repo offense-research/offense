@@ -31,8 +31,8 @@
     },
     {
       "path": "scripts/update.mjs",
-      "bytes": 25657,
-      "sha256": "bbadd63b495360bf09aaa77f889354935fb60fa3911215e8be22508de38298da"
+      "bytes": 25826,
+      "sha256": "d286cc9cc3c8e015e6af76416fb4b928734ed842aef252e4b031677ff47c307e"
     },
     {
       "path": "scripts/hosted-scan.mjs",
@@ -41,8 +41,8 @@
     },
     {
       "path": "scripts/source-scan.mjs",
-      "bytes": 68552,
-      "sha256": "fcc8d12b069933a096b9d0b82ffadec88c9a6db75f941e6708a722e640cf1582"
+      "bytes": 68721,
+      "sha256": "09835f849c4432e496833da1d1b8d7b1b8134e4e02b1c7c2b0331b596fe89ca8"
     },
     {
       "path": "scripts/api-test.mjs",
