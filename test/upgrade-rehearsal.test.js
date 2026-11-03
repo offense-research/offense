@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, chmod } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { createUpgradeRehearsals, proposeRehearsal, rehearsalOptions, validateRehearsalScenarios } from '../server/upgrade-rehearsal.js';
+import { createUpgradeRehearsals, proposeTrialRehearsal, proposeRehearsal, rehearsalOptions, validateRehearsalScenarios, allowedRehearsalChanges } from '../server/upgrade-rehearsal.js';
 import { runUpgradeRehearsal, rehearsalProgram } from '../agent/upgrade-rehearsal.js';
 import { buildOneShotPrompt } from '../src/remediation-prompts.js';
 
@@ -151,8 +151,7 @@ test('numbered options share one checked target per package without inventing ta
   assert.ok(options.every(({ id, ...item }) => allowed.some(value => JSON.stringify(value) === JSON.stringify(item))));
   assert.ok(options.filter(item => item.name === 'semver').every(item => item.targetVersion === '7.5.2'));
   const incompatible = rehearsalOptions([change, { ...change, currentVersion: '7.6.0', targetVersion: '8.0.0' }]);
-  assert.equal(incompatible.length, 1);
-  assert.deepEqual(incompatible[0], { id: 1, ...change });
+  assert.deepEqual(incompatible, [], 'Do not silently drop one installed branch to choose a target.');
 });
 
 test('empty, truncated and invalid model plans retain billing evidence without retrying or starting a sandbox', async () => {
@@ -270,4 +269,225 @@ test('real npm rehearsal records baseline and candidate tests without credential
     assert.equal(conflict.scenarios[0].status, 'resolution_failed');
     assert.ok(conflict.scenarios[0].resolution.some(item => /ERESOLVE/.test(item.output)));
   } finally { delete process.env.OPENROUTER_API_KEY; await rm(root, { recursive: true, force: true }); }
+});
+
+
+test('rehearsal allowlists exclude downgrades, incomplete graphs and unresolved parent constraints', () => {
+  const unsafe = [
+    { ...plan, targetVersion: '7.4.0' },
+    { ...plan, impact: { ...plan.impact, truncated: true } },
+    { ...plan, impact: { ...plan.impact, parents: [{ name: 'parent', version: '1.0.0', compatible: false }] } },
+    { ...plan, impact: { ...plan.impact, parents: [{ name: 'parent', version: '1.0.0', compatible: null }] } },
+    { ...plan, peerConstraints: { status: 'blocked' } }
+  ];
+  for (const value of unsafe) assert.deepEqual(allowedRehearsalChanges([value]), [], JSON.stringify(value));
+  const coordinated = { ...unsafe[2], parentOptions: [{ parent: 'parent', currentVersion: '1.0.0', version: '1.1.0', upstream: [], peerConstraints: { status: 'compatible' } }] };
+  assert.deepEqual(allowedRehearsalChanges([coordinated]), [change, { name: 'parent', currentVersion: '1.0.0', targetVersion: '1.1.0' }]);
+  const parent = coordinated.parentOptions[0];
+  for (const unsafeParent of [
+    { ...parent, version: '0.9.0' },
+    { ...parent, peerConstraints: { status: 'blocked' } },
+    ...[false, null].map(compatible => ({ ...parent, upstream: [{ name: 'grandparent', compatible }] }))
+  ]) {
+    assert.deepEqual(allowedRehearsalChanges([{ ...coordinated, parentOptions: [unsafeParent] }]), [], JSON.stringify(unsafeParent));
+  }
+  const downgrade = { ...change, targetVersion: '7.4.0' };
+  assert.throws(() => validateRehearsalScenarios({ scenarios: [{ ...scenario, changes: [downgrade] }] }, [downgrade]), /newer|downgrade/i);
+});
+
+test('different installed branches require an explicit coordinated-planning blocker', () => {
+  assert.deepEqual(rehearsalOptions([
+    { name: 'example', currentVersion: '2.0.0', targetVersion: '2.0.1' },
+    { name: 'example', currentVersion: '4.0.0', targetVersion: '4.0.1' }
+  ]), []);
+  assert.deepEqual(rehearsalOptions([
+    { name: 'example', currentVersion: '2.0.0', targetVersion: '2.0.1' },
+    { name: 'example', currentVersion: '4.0.0', targetVersion: '4.0.1' }, change
+  ]), [{ id: 1, ...change }], 'Independent compatible upgrades remain available.');
+});
+
+test('conflicting parent targets retain independent upgrades in a trial', () => {
+  const child = (name, version, target) => ({ name, currentVersion: '1.0.0', targetVersion: '1.0.1',
+    impact: { parents: [{ name: 'shared-parent', version, compatible: false }] },
+    parentOptions: [{ parent: 'shared-parent', currentVersion: version, version: target, upstream: [] }] });
+  const independent = { name: 'independent', currentVersion: '1.0.0', targetVersion: '1.0.1' };
+  const descendant = { name: 'descendant', currentVersion: '1.0.0', targetVersion: '1.0.1',
+    impact: { parents: [{ name: 'child-a', version: '1.0.0', compatible: false }] },
+    parentOptions: [{ parent: 'child-a', currentVersion: '1.0.0', version: '1.0.1', upstream: [] }] };
+  const plans = [descendant, child('child-a', '2.0.0', '2.0.1'), child('child-b', '4.0.0', '4.0.1'), independent];
+  assert.deepEqual(proposeTrialRehearsal(plans).scenarios[0].changes, [independent]);
+  assert.deepEqual(rehearsalOptions(allowedRehearsalChanges(plans), plans), [{ id: 1, ...independent }]);
+});
+
+test('trial option budget drops a child whose required parent falls outside the budget', () => {
+  const independent = Array.from({ length: 29 }, (_, index) => ({ name: `independent-${index}`, currentVersion: '1.0.0', targetVersion: '1.0.1' }));
+  const child = { name: 'child', currentVersion: '1.0.0', targetVersion: '1.0.1',
+    impact: { parents: [{ name: 'parent', version: '1.0.0', compatible: false }] },
+    parentOptions: [{ parent: 'parent', currentVersion: '1.0.0', version: '1.0.1', upstream: [] }] };
+  assert.deepEqual(proposeTrialRehearsal([...independent, child]).scenarios[0].changes, independent);
+});
+
+test('selected child upgrades require their checked parent upgrades in the same scenario', () => {
+  const parentChange = { name: 'parent', currentVersion: '1.0.0', targetVersion: '1.1.0' };
+  const coordinated = { ...plan, impact: { ...plan.impact, parents: [{ name: 'parent', version: '1.0.0', compatible: false }] },
+    parentOptions: [{ parent: 'parent', currentVersion: '1.0.0', version: '1.1.0', upstream: [], peerConstraints: { status: 'compatible' } }] };
+  const allowed = allowedRehearsalChanges([coordinated]);
+  assert.throws(() => validateRehearsalScenarios({ scenarios: [scenario] }, allowed, [coordinated]), /parent|coordinat/i);
+  assert.equal(validateRehearsalScenarios({ scenarios: [{ ...scenario, changes: [change, parentChange] }] }, allowed, [coordinated]).length, 1);
+});
+
+// Root installs have no registry dependencies. The proposed package is a local
+// fixture; these cases must reject policy collisions before any installation.
+async function overridePreflight(overrides, proposed = { name: 'fixture-child', currentVersion: '1.0.0', targetVersion: '1.0.1' }) {
+  const root = await mkdtemp(path.join(tmpdir(), 'purple-override-preflight-'));
+  const source = path.join(root, 'source');
+  try {
+    await mkdir(source);
+    const manifest = { name: 'override-fixture', version: '1.0.0', overrides };
+    await writeFile(path.join(source, 'package.json'), JSON.stringify(manifest));
+    await writeFile(path.join(source, 'package-lock.json'), JSON.stringify({ name: manifest.name, version: manifest.version, lockfileVersion: 3,
+      packages: { '': { name: manifest.name, version: manifest.version } } }));
+    for (const args of [['init'], ['add', '.'], ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.com', 'commit', '-m', 'fixture']]) {
+      execFileSync('git', args, { cwd: source, stdio: 'pipe' });
+    }
+    await assert.rejects(runUpgradeRehearsal({ root, revision: 'fixture', scenarios: [{ rationale: 'Review existing policy.', changes: [proposed] }] }), /Existing override|newer stable/i);
+    assert.equal(await readFile(path.join(source, 'package.json'), 'utf8'), JSON.stringify(manifest));
+  } finally { await rm(root, { recursive: true, force: true }); }
+}
+
+test('runner preserves nested, range and scoped-package override policies', { timeout: 60000 }, async () => {
+  await overridePreflight({ 'fixture-child@^1': '1.0.0' });
+  await overridePreflight({ parent: { 'fixture-child': '1.0.0' } });
+  await overridePreflight({ parent: { '@fixture/child@^1': '1.0.0' } }, { name: '@fixture/child', currentVersion: '1.0.0', targetVersion: '1.0.1' });
+});
+
+test('runner independently refuses downgrade proposals', { timeout: 60000 }, async () => {
+  await overridePreflight({}, { name: 'fixture-child', currentVersion: '2.10.0', targetVersion: '2.8.0' });
+});
+
+async function checkResolverDowngrade(moved) {
+  const root = await mkdtemp(path.join(tmpdir(), 'purple-resolved-downgrade-'));
+  const source = path.join(root, 'source'), bin = path.join(root, 'bin');
+  const originalPath = process.env.PATH;
+  try {
+    await mkdir(source); await mkdir(bin);
+    const manifest = { name: 'resolver-fixture', version: '1.0.0', dependencies: { 'fixture-child': '1.0.0' }, scripts: { test: 'fixture-check' } };
+    await writeFile(path.join(source, 'package.json'), JSON.stringify(manifest));
+    await writeFile(path.join(source, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3, packages: {
+      '': manifest, 'node_modules/fixture-child': { version: '1.0.0' }, 'node_modules/unaffected': { version: '2.12.0' }
+    } }));
+    // Supply a deterministic package-manager boundary response, not registry
+    // compatibility evidence. Production code must inspect its actual lockfile.
+    await writeFile(path.join(bin, 'npm'), `#!${process.execPath}
+const fs = require('node:fs');
+if (process.argv.includes('--package-lock-only')) {
+  const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+  lock.packages['node_modules/fixture-child'].version = '1.0.1';
+  const location = ${JSON.stringify(moved ? 'node_modules/parent/node_modules/unaffected' : 'node_modules/unaffected')};
+  delete lock.packages['node_modules/unaffected'];
+  lock.packages[location] = { version: '2.8.0' };
+  fs.writeFileSync('package-lock.json', JSON.stringify(lock));
+}
+`);
+    await chmod(path.join(bin, 'npm'), 0o755);
+    for (const args of [['init'], ['add', '.'], ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.com', 'commit', '-m', 'fixture']]) {
+      execFileSync('git', args, { cwd: source, stdio: 'pipe' });
+    }
+    process.env.PATH = `${bin}${path.delimiter}${originalPath}`;
+    const result = await runUpgradeRehearsal({ root, revision: 'fixture', scenarios: [{ rationale: 'Upgrade the vulnerable copy.',
+      changes: [{ name: 'fixture-child', currentVersion: '1.0.0', targetVersion: '1.0.1' }] }] });
+    const candidate = result.scenarios[0];
+    assert.equal(candidate.checks.every(check => check.passed), true);
+    assert.equal(candidate.status, 'dependency_changes_blocked');
+    assert.equal(candidate.dependencyBlockers.length, 1);
+    assert.equal(candidate.dependencyBlockers[0].location, 'package-lock.json:node_modules/unaffected');
+    assert.equal(candidate.dependencyBlockers[0].before.version, '2.12.0');
+    assert.equal(candidate.dependencyBlockers[0].after.version, '2.8.0');
+    if (moved) assert.equal(candidate.dependencyBlockers[0].afterLocation, 'package-lock.json:node_modules/parent/node_modules/unaffected');
+  } finally {
+    process.env.PATH = originalPath;
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+test('resolver downgrades of unaffected installed copies cannot receive a passing status', async () => {
+  await checkResolverDowngrade(false);
+});
+
+test('a removed copy and newly introduced lower version at another location require review', async () => {
+  await checkResolverDowngrade(true);
+});
+
+async function checkAmbiguousResolution({ manager = 'npm', fromVersion = '2.12.0', deduplicate = false, changeUnaffected = true } = {}) {
+  const root = await mkdtemp(path.join(tmpdir(), 'purple-resolution-policy-'));
+  const source = path.join(root, 'source'), bin = path.join(root, 'bin');
+  const originalPath = process.env.PATH;
+  try {
+    await mkdir(source); await mkdir(bin);
+    const manifest = { name: 'resolution-policy-fixture', version: '1.0.0', dependencies: { 'fixture-child': '1.0.0', parent: '1.0.0' }, scripts: { test: 'fixture-check' } };
+    if (deduplicate) manifest.dependencies.unaffected = '2.8.0';
+    await writeFile(path.join(source, 'package.json'), JSON.stringify(manifest));
+    const pnpm = manager === 'pnpm';
+    const lockfile = pnpm ? 'pnpm-lock.yaml' : 'package-lock.json';
+    const importer = Object.fromEntries(Object.entries(manifest.dependencies).map(([name, version]) => [name, { specifier: version, version }]));
+    const packages = { 'fixture-child@1.0.0': {}, 'parent@1.0.0': {}, [`unaffected@${fromVersion}`]: {} };
+    if (deduplicate) packages['unaffected@2.8.0'] = {};
+    const snapshots = { ...packages, 'parent@1.0.0': { dependencies: { unaffected: fromVersion } } };
+    const lock = pnpm ? { lockfileVersion: '9.0', importers: { '.': { dependencies: importer } }, packages, snapshots } : {
+      lockfileVersion: 3, packages: { '': manifest, 'node_modules/fixture-child': { version: '1.0.0' },
+        'node_modules/parent': { version: '1.0.0', dependencies: { unaffected: '>=2.8.0' } },
+        'node_modules/parent/node_modules/unaffected': { version: fromVersion },
+        ...(deduplicate ? { 'node_modules/unaffected': { version: '2.8.0' } } : {}) }
+    };
+    await writeFile(path.join(source, lockfile), JSON.stringify(lock));
+    await writeFile(path.join(bin, manager), `#!${process.execPath}
+const fs = require('node:fs');
+if (process.argv.includes('--package-lock-only') || process.argv.includes('--lockfile-only')) {
+  const filename = ${JSON.stringify(lockfile)};
+  const lock = JSON.parse(fs.readFileSync(filename, 'utf8'));
+  if (${pnpm}) {
+    lock.importers['.'].dependencies['fixture-child'] = { specifier: '1.0.1', version: '1.0.1' };
+    for (const field of ['packages', 'snapshots']) {
+      delete lock[field]['fixture-child@1.0.0']; lock[field]['fixture-child@1.0.1'] = {};
+      if (${changeUnaffected}) { delete lock[field][${JSON.stringify(`unaffected@${fromVersion}`)}]; lock[field]['unaffected@2.8.0'] = {}; }
+    }
+    if (${changeUnaffected}) lock.snapshots['parent@1.0.0'].dependencies.unaffected = '2.8.0';
+  } else {
+    lock.packages['node_modules/fixture-child'].version = '1.0.1';
+    if (${changeUnaffected}) {
+      if (${deduplicate}) delete lock.packages['node_modules/parent/node_modules/unaffected'];
+      else lock.packages['node_modules/parent/node_modules/unaffected'].version = '2.8.0';
+    }
+  }
+  fs.writeFileSync(filename, JSON.stringify(lock));
+}
+`);
+    await chmod(path.join(bin, manager), 0o755);
+    for (const args of [['init'], ['add', '.'], ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.com', 'commit', '-m', 'fixture']]) {
+      execFileSync('git', args, { cwd: source, stdio: 'pipe' });
+    }
+    process.env.PATH = `${bin}${path.delimiter}${originalPath}`;
+    const result = await runUpgradeRehearsal({ root, revision: 'fixture',
+      pnpmParserPath: new URL('../public/skills/purple/scripts/pnpm.mjs', import.meta.url).href,
+      scenarios: [{ rationale: 'Check the complete resolver inventory.', changes: [{ name: 'fixture-child', currentVersion: '1.0.0', targetVersion: '1.0.1' }] }] });
+    const candidate = result.scenarios[0];
+    assert.equal(candidate.checks.every(check => check.passed), true);
+    assert.equal(candidate.status, changeUnaffected ? 'dependency_changes_blocked' : 'tests_passed');
+    if (changeUnaffected) {
+      assert.ok(candidate.dependencyBlockers.some(item => item.before.name === 'unaffected' && item.before.version === fromVersion && item.after.version === '2.8.0'));
+    } else assert.deepEqual(candidate.dependencyBlockers, []);
+  } finally { process.env.PATH = originalPath; await rm(root, { recursive: true, force: true }); }
+}
+
+for (const manager of ['npm', 'pnpm']) {
+  test(`${manager} deduplication onto an existing lower copy requires review`, async () => {
+    await checkAmbiguousResolution({ manager, deduplicate: true });
+  });
+  test(`${manager} cannot pass an unorderable changed prerelease copy`, async () => {
+    await checkAmbiguousResolution({ manager, fromVersion: '3.0.0-beta.1' });
+  });
+}
+
+test('pnpm scoped resolution can pass while retaining an unrelated copy', async () => {
+  await checkAmbiguousResolution({ manager: 'pnpm', changeUnaffected: false });
 });

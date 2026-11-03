@@ -9,44 +9,63 @@ import { sameScanEvidence } from '../shared/scan-evidence.js';
 
 // A bounded first run uses registry/OSV-checked targets, without a paid model.
 export function proposeTrialRehearsal(plans) {
-  const options = rehearsalOptions(allowedRehearsalChanges(plans)).slice(0, 30);
-  if (!options.length) throw new Error('No checked published upgrade targets are available. Copy the fix prompt for manual remediation.');
+  const allowed = allowedRehearsalChanges(plans);
+  const options = rehearsalOptions(allowed, plans, 30);
+  if (!options.length) throw new Error('No checked upgrade target is common to the selected installed branches; different targets need manual coordination. Copy the fix prompt for manual remediation.');
   return { model: 'checked-upgrade-targets', usage: { promptTokens: 0, completionTokens: 0, costUsd: 0 },
-    scenarios: [{ rationale: 'Smallest checked targets coordinated by package. Compatibility is tested separately; unresolved findings still need review.',
-      changes: options.map(({ id, ...change }) => change) }] };
+    scenarios: validateRehearsalScenarios({ scenarios: [{ rationale: 'Smallest checked targets coordinated by package. Compatibility is tested separately; unresolved findings still need review.',
+      changes: options.map(({ id, ...change }) => change) }] }, allowed, plans) };
 }
 
 export const REHEARSAL_MODEL = 'qwen/qwen3.7-flash';
 const active = new Set(['queued', 'planning', 'running']);
 const sameEvidence = (job, snapshot) => sameScanEvidence(job, snapshot);
 
+const newerTarget = change => semver.valid(change.currentVersion) && semver.valid(change.targetVersion) &&
+  !semver.prerelease(change.currentVersion) && !semver.prerelease(change.targetVersion) && semver.gt(change.targetVersion, change.currentVersion);
+const checkedParent = item => item.version && newerTarget({ currentVersion: item.currentVersion, targetVersion: item.version }) &&
+  (!item.peerConstraints || item.peerConstraints.status === 'compatible') &&
+  Array.isArray(item.upstream) && item.upstream.every(parent => parent.compatible === true || parent.isRoot && parent.compatible === false);
+
 export function allowedRehearsalChanges(plans) {
-  const changes = plans.flatMap(plan => [
-    ...(plan.targetVersion ? [{ name: plan.name, currentVersion: plan.currentVersion, targetVersion: plan.targetVersion }] : []),
-    ...(plan.parentOptions || []).filter(item => item.version).map(item => ({ name: item.parent, currentVersion: item.currentVersion, targetVersion: item.version }))
-  ]);
+  const changes = plans.filter(plan => !plan.impact?.truncated &&
+    (!plan.peerConstraints || plan.peerConstraints.status === 'compatible') &&
+    (plan.impact?.parents || []).every(parent => parent.compatible === true || parent.isRoot && parent.compatible === false ||
+      parent.compatible === false && (plan.parentOptions || []).some(item => item.parent === parent.name && item.currentVersion === parent.version && checkedParent(item))))
+    .flatMap(plan => [
+      ...(plan.targetVersion ? [{ name: plan.name, currentVersion: plan.currentVersion, targetVersion: plan.targetVersion }] : []),
+      ...(plan.parentOptions || []).filter(checkedParent).map(item => ({ name: item.parent, currentVersion: item.currentVersion, targetVersion: item.version }))
+    ]).filter(newerTarget);
   return [...new Map(changes.map(item => [`${item.name}@${item.currentVersion}->${item.targetVersion}`, item])).values()];
 }
 
-export function validateRehearsalScenarios(value, allowed) {
+export function validateRehearsalScenarios(value, allowed, plans = []) {
   if (!value || !Array.isArray(value.scenarios) || !value.scenarios.length || value.scenarios.length > 2) throw new Error('Model must propose one or two upgrade scenarios.');
   return value.scenarios.map(item => {
     if (typeof item.rationale !== 'string' || item.rationale.length > 2000 || !Array.isArray(item.changes) || !item.changes.length || item.changes.length > 30) throw new Error('Invalid upgrade scenario.');
     const seen = new Map();
     const identities = new Set();
     const changes = item.changes.map(change => {
+      if (!newerTarget(change)) throw new Error('Rehearsal targets must be newer stable releases; downgrades require manual review.');
       const checked = allowed.find(candidate => candidate.name === change.name && candidate.currentVersion === change.currentVersion && candidate.targetVersion === change.targetVersion);
       const identity = `${change.name}@${change.currentVersion}`;
       if (!checked || identities.has(identity) || (seen.has(change.name) && seen.get(change.name) !== change.targetVersion)) throw new Error('Model proposed an unchecked or conflicting dependency target.');
       seen.set(change.name, change.targetVersion); identities.add(identity); return checked;
     });
+    for (const plan of plans.filter(plan => changes.some(change => change.name === plan.name && change.currentVersion === plan.currentVersion && change.targetVersion === plan.targetVersion))) {
+      if (!hasCoordinatedParents(plan, changes)) throw new Error('The selected child upgrade requires its checked parent upgrade in the same coordinated scenario.');
+    }
     return { rationale: item.rationale, changes };
   });
 }
 
-// Keep each package on one checked target before asking the model to coordinate
-// changes. Prefer coverage across installed versions, then the smallest target.
-export function rehearsalOptions(allowed) {
+function hasCoordinatedParents(plan, changes) {
+  return (plan.impact?.parents || []).filter(parent => parent.compatible === false && !parent.isRoot).every(parent =>
+    (plan.parentOptions || []).some(option => option.parent === parent.name && option.currentVersion === parent.version && checkedParent(option) &&
+      changes.some(change => change.name === option.parent && change.currentVersion === option.currentVersion && change.targetVersion === option.version)));
+}
+
+export function rehearsalOptions(allowed, plans = [], limit = Infinity) {
   const targets = new Map();
   for (const change of allowed) {
     if (!targets.has(change.name)) targets.set(change.name, new Map());
@@ -54,15 +73,26 @@ export function rehearsalOptions(allowed) {
     if (!versions.has(change.targetVersion)) versions.set(change.targetVersion, new Set());
     versions.get(change.targetVersion).add(change.currentVersion);
   }
-  const chosen = new Map([...targets].map(([name, versions]) => [name, [...versions].sort((a, b) =>
-    b[1].size - a[1].size || semver.compare(a[0], b[0]))[0][0]]));
-  return allowed.filter(change => chosen.get(change.name) === change.targetVersion).map((change, index) => ({ id: index + 1, ...change }));
+  const chosen = new Map([...targets].map(([name, versions]) => {
+    const installed = new Set([...versions.values()].flatMap(value => [...value]));
+    return [name, [...versions].filter(([, copies]) => copies.size === installed.size)
+      .sort((a, b) => semver.compare(a[0], b[0]))[0]?.[0]];
+  }));
+  let selected = allowed.filter(change => chosen.get(change.name) === change.targetVersion).slice(0, limit);
+  while (true) {
+    const remaining = selected.filter(change => plans.filter(plan => plan.name === change.name && plan.currentVersion === change.currentVersion && plan.targetVersion === change.targetVersion)
+      .every(plan => hasCoordinatedParents(plan, selected)));
+    if (remaining.length === selected.length) break;
+    selected = remaining;
+  }
+  return selected.map((change, index) => ({ id: index + 1, ...change }));
 }
 
 export async function proposeRehearsal(snapshot, plans, key, fetchImpl = fetch) {
   const allowed = allowedRehearsalChanges(plans);
   if (!allowed.length) throw new Error('No checked published upgrade targets are available for rehearsal.');
-  const options = rehearsalOptions(allowed);
+  const options = rehearsalOptions(allowed, plans);
+  if (!options.length) throw new Error('Different targets across installed branches need manual coordination; no common checked upgrade target is available.');
   const context = { repository: snapshot.repository, revision: snapshot.revision, allowedOptions: options,
     plans: plans.map(plan => ({ name: plan.name, currentVersion: plan.currentVersion, targetVersion: plan.targetVersion,
       parents: plan.impact?.parents?.slice(0, 8), parentOptions: plan.parentOptions?.map(item => ({ parent: item.parent,
@@ -115,7 +145,7 @@ export async function proposeRehearsal(snapshot, plans, key, fetchImpl = fetch) 
       });
       return { rationale: scenario.rationale, changes };
     });
-    prediction.scenarios = validateRehearsalScenarios({ scenarios: mapped }, allowed);
+    prediction.scenarios = validateRehearsalScenarios({ scenarios: mapped }, allowed, plans);
     return prediction;
   } catch (cause) {
     // Keep billing evidence without persisting raw responses, reasoning, or keys.
@@ -252,6 +282,13 @@ export function createUpgradeRehearsals(db, { mapper, github, decrypt, sandbox, 
         }
         for (const finding of packages.slice(30)) blockers.push({ package: finding.package, version: finding.version, reason: 'Not simulated: 30-package planning budget reached.' });
         for (const plan of plans.filter(item => item.mitigation)) blockers.push({ package: plan.name, version: plan.currentVersion, reason: 'No published fixed target; proposed mitigation needs separate patch verification.' });
+        const allowed = allowedRehearsalChanges(plans), options = rehearsalOptions(allowed, plans);
+        for (const plan of plans.filter(item => item.targetVersion)) {
+          if (!allowed.some(item => item.name === plan.name && item.currentVersion === plan.currentVersion)) blockers.push({ package: plan.name, version: plan.currentVersion,
+            reason: 'Upgrade is not executable with the current graph, parent/peer constraints or version evidence. Resolve the constraints before rehearsing this target.' });
+          else if (!options.some(item => item.name === plan.name && item.currentVersion === plan.currentVersion)) blockers.push({ package: plan.name, version: plan.currentVersion,
+            reason: 'Installed branches or their required parent upgrades cannot share an executable target set. This rehearsal supports one target per package; coordinate these branches separately without broadening overrides.' });
+        }
         job.blockers = blockers;
         job.impact = plans.map(plan => ({ name: plan.name, currentVersion: plan.currentVersion, targetVersion: plan.targetVersion,
           paths: plan.impact?.paths || [], parents: plan.impact?.parents || [], majorChange: !!plan.majorChange,
@@ -263,11 +300,13 @@ export function createUpgradeRehearsals(db, { mapper, github, decrypt, sandbox, 
         job.progress = { phase: 'Preparing a coordinated upgrade plan' }; write(row, job);
         const prediction = (job.keyless || job.trial) && !job.walletJobId ? proposeTrialRehearsal(plans) : await propose(snapshot, plans, key);
         if (job.walletJobId) job.billing = billing.settle(job.id, prediction.usage);
+        job.prediction = prediction;
+        prediction.scenarios = validateRehearsalScenarios(prediction, allowed, plans);
         for (const scenario of prediction.scenarios) scenario.unrehearsedFindings = snapshot.vulnerabilityCheck.findings
           .filter(finding => !scenario.changes.some(change => change.name === finding.package && change.currentVersion === finding.version))
           .map(finding => ({ id: finding.id, package: finding.package, version: finding.version, reason: 'Not directly covered by this candidate; inspect final OSV results and remediate separately.' }));
         // Retain paid-call usage even when checkout/container startup fails.
-        job.prediction = prediction; job.blockers = blockers;
+        job.blockers = blockers;
         write(row, { ...job, status: 'planning' });
         if (!sameEvidence(job, snapshotFor(row.session_id, row.repository, row.installation_id))) throw new Error('The scan changed during model planning.');
         const githubToken = await github.installationToken(row.installation_id, row.repository);

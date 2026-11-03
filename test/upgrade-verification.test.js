@@ -35,3 +35,11 @@ test('an empty or uncounted final scan cannot establish that proposed installed 
 test('repeated malformed proposed rows remain explicit blockers instead of crashing the report',()=>{
   const job=passingUpgradeEvidence();job.result.scenarios[0].changes=[null,null];assert.equal(assessUpgradeRehearsal(job).compatibilityPassed,false);
 });
+
+test('dependency policy blockers survive a nominally passing candidate status', () => {
+  const job = passingUpgradeEvidence();
+  job.result.scenarios[0].dependencyBlockers = [{ reason: 'An unaffected installed copy was downgraded.' }];
+  const assessment = assessUpgradeRehearsal(job);
+  assert.equal(assessment.compatibilityPassed, false);
+  assert.ok(assessment.blockers.some(blocker => blocker.code === 'dependency_policy'));
+});

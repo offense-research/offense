@@ -12,11 +12,18 @@ State evidence age and uncertainty instead of refreshing silently.
 local inspection first. New uploads, active testing, credential verification or
 paid checks require the same scope and budget contracts as an initial assessment.
 Do not turn uncertainty into a claim of exploitability or non-applicability.
+Reconcile the receipt's input inventory, revision/fingerprint and uploaded-path
+mapping before interpreting a missing file. Use the [finding review guidance](findings.md#check-attribution-before-prescribing-a-fix)
+to distinguish misattributed evidence from a historical input removed later.
 
 **Fix selected findings:** first check that the current revision, affected input
 and dependency/artifact identity still match the evidence. If they changed,
-reassess applicability within authorized scope before editing. Honor a request
-to fix one finding, not the entire inventory. Use an isolated environment when
+reassess applicability within authorized scope before editing. A generic scanner
+signal is not authority to make a code change: inspect the affected behavior and
+record applicable, not applicable in the reviewed scope, or unknown with reasons.
+For SSRF, check destination control and redirects, not just interpolation; for
+specification findings, do not infer runtime policy from documentation alone.
+Honor a request to fix one finding, not the entire inventory. Use an isolated environment when
 executing project code or installing dependencies. Establish baseline tests,
 make compatible changes, run the same checks and rescan the final changed inputs.
 Follow [verification](verification.md) and the entry skill's remediation guidance.
