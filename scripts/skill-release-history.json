@@ -3,6 +3,26 @@
   "packages": {
     "offense": [
       {
+        "version": "0.10.1",
+        "files": {
+          "SKILL.md": "bf0fe677b4213d23e27a2edb2680bacbd3def49b35a0ad77390ec296278efc63",
+          "references/install.md": "1a8e908ca5fe3e6a35caba2ba73f828c8ad7449f74517b8c04d250e0a4fb35bc",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "references/tools.md": "2026c2c3d7e3de725de754c2daa22ec9448df6488ad46dc5066be8b54ebff7b1",
+          "references/local-tools.md": "2873708c29f285ffa77ea5372cd5d70ca83fd26d50d928606e3aa5e628f03b8e",
+          "references/stack.md": "416fc0e4b02e008f28ff8ea2f8ff3e00ff2c9670f2f831ed1cee188c5a3cc44a",
+          "references/catalog.md": "63b9cca7c0bb8cc60d4e6eb7111bcd563e9a20530a9ff7f81f085d6f63e8a3ca",
+          "references/assessment.md": "2c21381f54c5e43233df71b50ad7351f42ccc28649b3d89a869f9998b32d50fa",
+          "references/check-selection.md": "d7647d71d16e4a9ccbd6c322809414284e7f48b5959d5d5aebe6fb01857177ec",
+          "references/findings.md": "55b4eee35b17a770fd5d58a7ffa48ab725b869634094499057c128e9a71574e2",
+          "references/follow-up.md": "1716069ba86241fd813eabba1d40d1131b4172fa7450c275c5646e40ff271301",
+          "agents/openai.yaml": "93faceaf1d769b47ee8ad7e177c267987a488227648e1ceeda58f9334ee2201c",
+          "scripts/offense.mjs": "cfa4a5f6d469eddda4abeb054f5a56a28fe4d8bc29239eb35465db7ac99f2e1d",
+          "scripts/cli.mjs": "c0289ef438f5cbd0746472fe229c777764c74fa4521be16ac4264bfeda48ccce",
+          "scripts/update.mjs": "d286cc9cc3c8e015e6af76416fb4b928734ed842aef252e4b031677ff47c307e"
+        }
+      },
+      {
         "version": "0.10.0",
         "files": {
           "SKILL.md": "54e3ade6026f2a00d86619c9cf7d803b4a9b4ca69ff1c58d6e14bda57fb44b1f",
@@ -157,6 +177,34 @@
       }
     ],
     "purple": [
+      {
+        "version": "1.15.1",
+        "files": {
+          "SKILL.md": "634f8397f30d9f17cc3d63dc7c46782e0f9a9e6a8cc23d815e5f5b1b0fc17f12",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "references/api-testing.md": "d09dfddcb3141ec1d877ff1720ac67ddf89cebf317eca5d8bcd3147b5e795ec8",
+          "references/hardened-containers.md": "6c160c1c73cd61f8118cd8b223b24fb9e0a5e3e52e616049691ed6d9b8dd7002",
+          "references/hosted-assessments.md": "0acfa9b262d3fbe958b7b4f9afef82342964dc938325383382c672d61f12a25b",
+          "scripts/update.mjs": "d286cc9cc3c8e015e6af76416fb4b928734ed842aef252e4b031677ff47c307e",
+          "scripts/hosted-scan.mjs": "3792e492d3cfb72ff56a6ae7ae76fdaf3c8d1a14e2673468665e854c21972853",
+          "scripts/source-scan.mjs": "09835f849c4432e496833da1d1b8d7b1b8134e4e02b1c7c2b0331b596fe89ca8",
+          "scripts/api-test.mjs": "b6e1b22fa8319d0f475d0b41f053a15f60ee9e8fbf765bf779a9dddf1ca0d94f",
+          "scripts/api-test-image.mjs": "f60ae5fa7c1cde9fb9bdcf737d4263381a6c6bf1bd7f16b8975e77b6edc5e8da",
+          "scripts/hardened-image.mjs": "b17a2eeed2cdc96015b2a4073338ea50215dbf443b5c9eff05912edb379e9228",
+          "scripts/hosted-artifact-scan.mjs": "e4c75b8271172ad65dddc5420c6b01bb16b09d7599b4d4aff010f7f6fe618c28",
+          "scripts/hosted-assessment.mjs": "508aa3197d8c3ae3837202b24fe465859010377fa03447705e6e3c4d1ab79446",
+          "scripts/git-history-bundle.mjs": "dcd9413d5e62c81048f5d47c3d854f388b5159554df98ae3f8dddc27bde72048",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "d59c0d541179f5bd44d8453d71ff341828fe6ee33cdd0082ad723bfb4240b345"
+        }
+      },
       {
         "version": "1.15.0",
         "files": {

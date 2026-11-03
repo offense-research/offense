@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "skill": "purple",
-  "version": "1.15.1",
+  "version": "1.15.2",
   "minimumNodeMajor": 20,
   "files": [
     {
       "path": "SKILL.md",
       "bytes": 38071,
-      "sha256": "634f8397f30d9f17cc3d63dc7c46782e0f9a9e6a8cc23d815e5f5b1b0fc17f12"
+      "sha256": "89e3c20e4c85fdaf6cd3d1126cf18b0c95857e9afaf3380c4eba7acde076c807"
     },
     {
       "path": "references/delivery.md",
@@ -116,11 +116,39 @@
     },
     {
       "path": "scripts/rehearsal-runner.mjs",
-      "bytes": 23076,
-      "sha256": "d59c0d541179f5bd44d8453d71ff341828fe6ee33cdd0082ad723bfb4240b345"
+      "bytes": 26097,
+      "sha256": "684633bb25eeaaa0d1315e7bb38629545103ebbc75382c745ae935ddf0ac9292"
     }
   ],
   "previousReleases": [
+    {
+      "version": "1.15.1",
+      "files": {
+        "SKILL.md": "634f8397f30d9f17cc3d63dc7c46782e0f9a9e6a8cc23d815e5f5b1b0fc17f12",
+        "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+        "references/api-testing.md": "d09dfddcb3141ec1d877ff1720ac67ddf89cebf317eca5d8bcd3147b5e795ec8",
+        "references/hardened-containers.md": "6c160c1c73cd61f8118cd8b223b24fb9e0a5e3e52e616049691ed6d9b8dd7002",
+        "references/hosted-assessments.md": "0acfa9b262d3fbe958b7b4f9afef82342964dc938325383382c672d61f12a25b",
+        "scripts/update.mjs": "d286cc9cc3c8e015e6af76416fb4b928734ed842aef252e4b031677ff47c307e",
+        "scripts/hosted-scan.mjs": "3792e492d3cfb72ff56a6ae7ae76fdaf3c8d1a14e2673468665e854c21972853",
+        "scripts/source-scan.mjs": "09835f849c4432e496833da1d1b8d7b1b8134e4e02b1c7c2b0331b596fe89ca8",
+        "scripts/api-test.mjs": "b6e1b22fa8319d0f475d0b41f053a15f60ee9e8fbf765bf779a9dddf1ca0d94f",
+        "scripts/api-test-image.mjs": "f60ae5fa7c1cde9fb9bdcf737d4263381a6c6bf1bd7f16b8975e77b6edc5e8da",
+        "scripts/hardened-image.mjs": "b17a2eeed2cdc96015b2a4073338ea50215dbf443b5c9eff05912edb379e9228",
+        "scripts/hosted-artifact-scan.mjs": "e4c75b8271172ad65dddc5420c6b01bb16b09d7599b4d4aff010f7f6fe618c28",
+        "scripts/hosted-assessment.mjs": "508aa3197d8c3ae3837202b24fe465859010377fa03447705e6e3c4d1ab79446",
+        "scripts/git-history-bundle.mjs": "dcd9413d5e62c81048f5d47c3d854f388b5159554df98ae3f8dddc27bde72048",
+        "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+        "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+        "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+        "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+        "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+        "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+        "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+        "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+        "scripts/rehearsal-runner.mjs": "d59c0d541179f5bd44d8453d71ff341828fe6ee33cdd0082ad723bfb4240b345"
+      }
+    },
     {
       "version": "1.15.0",
       "files": {
