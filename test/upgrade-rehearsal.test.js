@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, readFile, writeFile, rm, chmod } from 'node:fs/promises
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { createUpgradeRehearsals, proposeRehearsal, rehearsalOptions, validateRehearsalScenarios, allowedRehearsalChanges } from '../server/upgrade-rehearsal.js';
+import { createUpgradeRehearsals, proposeTrialRehearsal, proposeRehearsal, rehearsalOptions, validateRehearsalScenarios, allowedRehearsalChanges } from '../server/upgrade-rehearsal.js';
 import { runUpgradeRehearsal, rehearsalProgram } from '../agent/upgrade-rehearsal.js';
 import { buildOneShotPrompt } from '../src/remediation-prompts.js';
 
@@ -283,6 +283,14 @@ test('rehearsal allowlists exclude downgrades, incomplete graphs and unresolved 
   for (const value of unsafe) assert.deepEqual(allowedRehearsalChanges([value]), [], JSON.stringify(value));
   const coordinated = { ...unsafe[2], parentOptions: [{ parent: 'parent', currentVersion: '1.0.0', version: '1.1.0', upstream: [], peerConstraints: { status: 'compatible' } }] };
   assert.deepEqual(allowedRehearsalChanges([coordinated]), [change, { name: 'parent', currentVersion: '1.0.0', targetVersion: '1.1.0' }]);
+  const parent = coordinated.parentOptions[0];
+  for (const unsafeParent of [
+    { ...parent, version: '0.9.0' },
+    { ...parent, peerConstraints: { status: 'blocked' } },
+    ...[false, null].map(compatible => ({ ...parent, upstream: [{ name: 'grandparent', compatible }] }))
+  ]) {
+    assert.deepEqual(allowedRehearsalChanges([{ ...coordinated, parentOptions: [unsafeParent] }]), [], JSON.stringify(unsafeParent));
+  }
   const downgrade = { ...change, targetVersion: '7.4.0' };
   assert.throws(() => validateRehearsalScenarios({ scenarios: [{ ...scenario, changes: [downgrade] }] }, [downgrade]), /newer|downgrade/i);
 });
@@ -296,6 +304,27 @@ test('different installed branches require an explicit coordinated-planning bloc
     { name: 'example', currentVersion: '2.0.0', targetVersion: '2.0.1' },
     { name: 'example', currentVersion: '4.0.0', targetVersion: '4.0.1' }, change
   ]), [{ id: 1, ...change }], 'Independent compatible upgrades remain available.');
+});
+
+test('conflicting parent targets retain independent upgrades in a trial', () => {
+  const child = (name, version, target) => ({ name, currentVersion: '1.0.0', targetVersion: '1.0.1',
+    impact: { parents: [{ name: 'shared-parent', version, compatible: false }] },
+    parentOptions: [{ parent: 'shared-parent', currentVersion: version, version: target, upstream: [] }] });
+  const independent = { name: 'independent', currentVersion: '1.0.0', targetVersion: '1.0.1' };
+  const descendant = { name: 'descendant', currentVersion: '1.0.0', targetVersion: '1.0.1',
+    impact: { parents: [{ name: 'child-a', version: '1.0.0', compatible: false }] },
+    parentOptions: [{ parent: 'child-a', currentVersion: '1.0.0', version: '1.0.1', upstream: [] }] };
+  const plans = [descendant, child('child-a', '2.0.0', '2.0.1'), child('child-b', '4.0.0', '4.0.1'), independent];
+  assert.deepEqual(proposeTrialRehearsal(plans).scenarios[0].changes, [independent]);
+  assert.deepEqual(rehearsalOptions(allowedRehearsalChanges(plans), plans), [{ id: 1, ...independent }]);
+});
+
+test('trial option budget drops a child whose required parent falls outside the budget', () => {
+  const independent = Array.from({ length: 29 }, (_, index) => ({ name: `independent-${index}`, currentVersion: '1.0.0', targetVersion: '1.0.1' }));
+  const child = { name: 'child', currentVersion: '1.0.0', targetVersion: '1.0.1',
+    impact: { parents: [{ name: 'parent', version: '1.0.0', compatible: false }] },
+    parentOptions: [{ parent: 'parent', currentVersion: '1.0.0', version: '1.0.1', upstream: [] }] };
+  assert.deepEqual(proposeTrialRehearsal([...independent, child]).scenarios[0].changes, independent);
 });
 
 test('selected child upgrades require their checked parent upgrades in the same scenario', () => {

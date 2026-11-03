@@ -10,7 +10,7 @@ import { sameScanEvidence } from '../shared/scan-evidence.js';
 // A bounded first run uses registry/OSV-checked targets, without a paid model.
 export function proposeTrialRehearsal(plans) {
   const allowed = allowedRehearsalChanges(plans);
-  const options = rehearsalOptions(allowed).slice(0, 30);
+  const options = rehearsalOptions(allowed, plans, 30);
   if (!options.length) throw new Error('No checked upgrade target is common to the selected installed branches; different targets need manual coordination. Copy the fix prompt for manual remediation.');
   return { model: 'checked-upgrade-targets', usage: { promptTokens: 0, completionTokens: 0, costUsd: 0 },
     scenarios: validateRehearsalScenarios({ scenarios: [{ rationale: 'Smallest checked targets coordinated by package. Compatibility is tested separately; unresolved findings still need review.',
@@ -53,17 +53,19 @@ export function validateRehearsalScenarios(value, allowed, plans = []) {
       seen.set(change.name, change.targetVersion); identities.add(identity); return checked;
     });
     for (const plan of plans.filter(plan => changes.some(change => change.name === plan.name && change.currentVersion === plan.currentVersion && change.targetVersion === plan.targetVersion))) {
-      for (const parent of (plan.impact?.parents || []).filter(parent => parent.compatible === false && !parent.isRoot)) {
-        const coordinated = (plan.parentOptions || []).some(option => option.parent === parent.name && option.currentVersion === parent.version && checkedParent(option) &&
-          changes.some(change => change.name === option.parent && change.currentVersion === option.currentVersion && change.targetVersion === option.version));
-        if (!coordinated) throw new Error('The selected child upgrade requires its checked parent upgrade in the same coordinated scenario.');
-      }
+      if (!hasCoordinatedParents(plan, changes)) throw new Error('The selected child upgrade requires its checked parent upgrade in the same coordinated scenario.');
     }
     return { rationale: item.rationale, changes };
   });
 }
 
-export function rehearsalOptions(allowed) {
+function hasCoordinatedParents(plan, changes) {
+  return (plan.impact?.parents || []).filter(parent => parent.compatible === false && !parent.isRoot).every(parent =>
+    (plan.parentOptions || []).some(option => option.parent === parent.name && option.currentVersion === parent.version && checkedParent(option) &&
+      changes.some(change => change.name === option.parent && change.currentVersion === option.currentVersion && change.targetVersion === option.version)));
+}
+
+export function rehearsalOptions(allowed, plans = [], limit = Infinity) {
   const targets = new Map();
   for (const change of allowed) {
     if (!targets.has(change.name)) targets.set(change.name, new Map());
@@ -76,13 +78,20 @@ export function rehearsalOptions(allowed) {
     return [name, [...versions].filter(([, copies]) => copies.size === installed.size)
       .sort((a, b) => semver.compare(a[0], b[0]))[0]?.[0]];
   }));
-  return allowed.filter(change => chosen.get(change.name) === change.targetVersion).map((change, index) => ({ id: index + 1, ...change }));
+  let selected = allowed.filter(change => chosen.get(change.name) === change.targetVersion).slice(0, limit);
+  while (true) {
+    const remaining = selected.filter(change => plans.filter(plan => plan.name === change.name && plan.currentVersion === change.currentVersion && plan.targetVersion === change.targetVersion)
+      .every(plan => hasCoordinatedParents(plan, selected)));
+    if (remaining.length === selected.length) break;
+    selected = remaining;
+  }
+  return selected.map((change, index) => ({ id: index + 1, ...change }));
 }
 
 export async function proposeRehearsal(snapshot, plans, key, fetchImpl = fetch) {
   const allowed = allowedRehearsalChanges(plans);
   if (!allowed.length) throw new Error('No checked published upgrade targets are available for rehearsal.');
-  const options = rehearsalOptions(allowed);
+  const options = rehearsalOptions(allowed, plans);
   if (!options.length) throw new Error('Different targets across installed branches need manual coordination; no common checked upgrade target is available.');
   const context = { repository: snapshot.repository, revision: snapshot.revision, allowedOptions: options,
     plans: plans.map(plan => ({ name: plan.name, currentVersion: plan.currentVersion, targetVersion: plan.targetVersion,
@@ -273,12 +282,12 @@ export function createUpgradeRehearsals(db, { mapper, github, decrypt, sandbox, 
         }
         for (const finding of packages.slice(30)) blockers.push({ package: finding.package, version: finding.version, reason: 'Not simulated: 30-package planning budget reached.' });
         for (const plan of plans.filter(item => item.mitigation)) blockers.push({ package: plan.name, version: plan.currentVersion, reason: 'No published fixed target; proposed mitigation needs separate patch verification.' });
-        const allowed = allowedRehearsalChanges(plans), options = rehearsalOptions(allowed);
+        const allowed = allowedRehearsalChanges(plans), options = rehearsalOptions(allowed, plans);
         for (const plan of plans.filter(item => item.targetVersion)) {
           if (!allowed.some(item => item.name === plan.name && item.currentVersion === plan.currentVersion)) blockers.push({ package: plan.name, version: plan.currentVersion,
             reason: 'Upgrade is not executable with the current graph, parent/peer constraints or version evidence. Resolve the constraints before rehearsing this target.' });
           else if (!options.some(item => item.name === plan.name && item.currentVersion === plan.currentVersion)) blockers.push({ package: plan.name, version: plan.currentVersion,
-            reason: 'Installed branches require different targets. This rehearsal supports one target per package; coordinate these branches separately without broadening overrides.' });
+            reason: 'Installed branches or their required parent upgrades cannot share an executable target set. This rehearsal supports one target per package; coordinate these branches separately without broadening overrides.' });
         }
         job.blockers = blockers;
         job.impact = plans.map(plan => ({ name: plan.name, currentVersion: plan.currentVersion, targetVersion: plan.targetVersion,
