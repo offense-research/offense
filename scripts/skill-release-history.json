@@ -3,6 +3,26 @@
   "packages": {
     "offense": [
       {
+        "version": "0.10.0",
+        "files": {
+          "SKILL.md": "54e3ade6026f2a00d86619c9cf7d803b4a9b4ca69ff1c58d6e14bda57fb44b1f",
+          "references/install.md": "1a8e908ca5fe3e6a35caba2ba73f828c8ad7449f74517b8c04d250e0a4fb35bc",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "references/tools.md": "2026c2c3d7e3de725de754c2daa22ec9448df6488ad46dc5066be8b54ebff7b1",
+          "references/local-tools.md": "2873708c29f285ffa77ea5372cd5d70ca83fd26d50d928606e3aa5e628f03b8e",
+          "references/stack.md": "416fc0e4b02e008f28ff8ea2f8ff3e00ff2c9670f2f831ed1cee188c5a3cc44a",
+          "references/catalog.md": "63b9cca7c0bb8cc60d4e6eb7111bcd563e9a20530a9ff7f81f085d6f63e8a3ca",
+          "references/assessment.md": "2c21381f54c5e43233df71b50ad7351f42ccc28649b3d89a869f9998b32d50fa",
+          "references/check-selection.md": "d7647d71d16e4a9ccbd6c322809414284e7f48b5959d5d5aebe6fb01857177ec",
+          "references/findings.md": "55b4eee35b17a770fd5d58a7ffa48ab725b869634094499057c128e9a71574e2",
+          "references/follow-up.md": "1716069ba86241fd813eabba1d40d1131b4172fa7450c275c5646e40ff271301",
+          "agents/openai.yaml": "93faceaf1d769b47ee8ad7e177c267987a488227648e1ceeda58f9334ee2201c",
+          "scripts/offense.mjs": "ed38b1997df8f498452a455a259ae16fe573c62c6bac712f86dca64f62eecdf4",
+          "scripts/cli.mjs": "f0cca7513912bfb8d3088cf9808751df276761c3ae8d313129e9c446530b9a10",
+          "scripts/update.mjs": "d286cc9cc3c8e015e6af76416fb4b928734ed842aef252e4b031677ff47c307e"
+        }
+      },
+      {
         "version": "0.9.0",
         "files": {
           "SKILL.md": "cca06e21290b9b4986024c72a0427dc197b296ff42b7e57610eea7c7b536be6b",

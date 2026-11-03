@@ -15,6 +15,9 @@ test('a target without matching advisory checks is not described as checked', ()
     assert.match(targetSelectionEvidence(candidate).reason, /not established/i);
     assert.doesNotMatch(buildUpgradeHandoff({ repository: 'fixture/app', workers: [], snapshot, plan: candidate }).report, /Target 1.1.0 had no known OSV advisories/);
   }
+  const checked = { ...plan, considered: [{ version: '1.1.0', advisories: 0 }] };
+  assert.match(targetSelectionEvidence(checked).reason, /was checked/);
+  assert.match(buildUpgradeHandoff({ repository: 'fixture/app', workers: [], snapshot, plan: checked }).report, /Target 1.1.0 had no known OSV advisories/);
 });
 
 test('truncated issue exports retain limitations and identify omitted remediation detail', () => {
