@@ -1,0 +1,26 @@
+{
+  "id": "fixture-stale",
+  "status": "completed",
+  "revision": "fixture-old-revision",
+  "findings": [
+    {
+      "id": "fixture-eval",
+      "tool": "opengrep",
+      "ruleId": "purple.js.dynamic-eval",
+      "path": "src/app.js",
+      "line": 1,
+      "severity": "high",
+      "summary": "Dynamic evaluation of input at prior revision"
+    }
+  ],
+  "tools": [
+    {
+      "name": "opengrep",
+      "status": "complete",
+      "version": "fixture"
+    }
+  ],
+  "coverage": {
+    "scope": "previous revision only"
+  }
+}

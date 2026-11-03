@@ -35,7 +35,8 @@
         "paid": false,
         "sourceUpload": false,
         "activeTesting": false,
-        "liveCredentials": false
+        "liveCredentials": false,
+        "sanitizedDependencyMetadata": true
       }
     },
     {
@@ -182,7 +183,8 @@
         "paid": false,
         "sourceUpload": false,
         "activeTesting": false,
-        "liveCredentials": false
+        "liveCredentials": false,
+        "sanitizedDependencyMetadata": true
       }
     },
     {
@@ -288,7 +290,9 @@
       "candidateTools": [
         "opengrep"
       ],
-      "receipts": [],
+      "receipts": [
+        "stale-job.json"
+      ],
       "assertions": [
         "Check changed revision before edit",
         "No unrelated fixes or publication"
@@ -307,6 +311,11 @@
         "sourceUpload": false,
         "activeTesting": false,
         "liveCredentials": false
+      },
+      "evidenceContext": {
+        "savedRevision": "fixture-old-revision",
+        "currentRevision": "fixture-current-revision",
+        "currentBehavior": "JSON.parse, no dynamic eval"
       }
     },
     {
