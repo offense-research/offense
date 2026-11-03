@@ -1,0 +1,21 @@
+{
+  "synthetic": true,
+  "revision": "synthetic-current",
+  "projectFiles": {
+    "src/app.js": "export const healthy = true;\n"
+  },
+  "expectedOutcomes": [
+    "Describe the finding as historical evidence from synthetic-old",
+    "Do not label the old finding a false positive merely because the current checkout lacks the file",
+    "Current applicability remains unverified and does not authorize recreating the file"
+  ],
+  "assessedInputs": {
+    "revision": "synthetic-old",
+    "files": [
+      "openapi.yaml"
+    ]
+  },
+  "historicalFiles": {
+    "openapi.yaml": "openapi: 3.0.0\ninfo:\n  title: Synthetic API\n  version: 1.0.0\npaths: {}\n"
+  }
+}

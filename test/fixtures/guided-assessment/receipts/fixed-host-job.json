@@ -1,0 +1,45 @@
+{
+  "id": "fixture-fixed-host",
+  "status": "completed",
+  "revision": "synthetic-current",
+  "findings": [
+    {
+      "id": "fixture-fixed-host",
+      "tool": "opengrep",
+      "ruleId": "purple.js.request-ssrf",
+      "path": "src/requests.js",
+      "line": 2,
+      "severity": "high",
+      "summary": "Synthetic scanner signal; applicability has not been reviewed"
+    },
+    {
+      "id": "fixture-unknown-redirect",
+      "tool": "opengrep",
+      "ruleId": "purple.js.request-ssrf",
+      "path": "src/requests.js",
+      "line": 5,
+      "severity": "high",
+      "summary": "Synthetic scanner signal; applicability has not been reviewed"
+    },
+    {
+      "id": "fixture-controlled-origin",
+      "tool": "opengrep",
+      "ruleId": "purple.js.request-ssrf",
+      "path": "src/requests.js",
+      "line": 8,
+      "severity": "high",
+      "summary": "Synthetic scanner signal; applicability has not been reviewed"
+    }
+  ],
+  "coverage": {
+    "complete": true,
+    "scope": "selected synthetic inputs only"
+  },
+  "tools": [
+    {
+      "name": "opengrep",
+      "version": "fixture",
+      "status": "complete"
+    }
+  ]
+}

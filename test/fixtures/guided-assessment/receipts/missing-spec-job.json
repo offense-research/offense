@@ -1,0 +1,33 @@
+{
+  "id": "fixture-missing-spec",
+  "status": "completed",
+  "revision": "synthetic-unrelated",
+  "findings": [
+    {
+      "id": "fixture-missing-spec-finding",
+      "tool": "spectral-owasp",
+      "ruleId": "owasp:api4:2023-rate-limit",
+      "path": "openapi.yaml",
+      "line": 1,
+      "severity": "high",
+      "summary": "Synthetic scanner signal; applicability has not been reviewed"
+    }
+  ],
+  "coverage": {
+    "complete": true,
+    "scope": "selected synthetic inputs only"
+  },
+  "tools": [
+    {
+      "name": "spectral-owasp",
+      "version": "fixture",
+      "status": "complete"
+    }
+  ],
+  "inputIdentity": {
+    "revision": "synthetic-unrelated",
+    "files": [
+      "openapi.yaml"
+    ]
+  }
+}
