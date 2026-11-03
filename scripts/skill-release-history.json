@@ -3,6 +3,20 @@
   "packages": {
     "offense": [
       {
+        "version": "0.9.0",
+        "files": {
+          "SKILL.md": "cca06e21290b9b4986024c72a0427dc197b296ff42b7e57610eea7c7b536be6b",
+          "references/install.md": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584",
+          "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+          "references/tools.md": "2026c2c3d7e3de725de754c2daa22ec9448df6488ad46dc5066be8b54ebff7b1",
+          "references/local-tools.md": "2873708c29f285ffa77ea5372cd5d70ca83fd26d50d928606e3aa5e628f03b8e",
+          "references/stack.md": "416fc0e4b02e008f28ff8ea2f8ff3e00ff2c9670f2f831ed1cee188c5a3cc44a",
+          "scripts/offense.mjs": "c292736d2270420facd75938ddeb56c3447fb137a7b31ddaaf17c2defe8d3094",
+          "scripts/cli.mjs": "a06b86d3d874b14b9972c7e5927ea3f52c0e9a43fd9e6e310913dc05fe292d89",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+        }
+      },
+      {
         "version": "0.8.2",
         "files": {
           "SKILL.md": "5a01619329d7caa92072238e11ffc752f6ba0b088e4bdfa30c65731deac55d9b",

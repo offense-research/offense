@@ -4,7 +4,9 @@ import { createHash } from 'node:crypto';
 import { validateRelease } from './skill-updater.mjs';
 
 export const SKILL_FILES = {
-  offense: ['SKILL.md', 'references/install.md', 'references/verification.md', 'references/tools.md', 'references/local-tools.md', 'references/stack.md', 'scripts/offense.mjs', 'scripts/cli.mjs', 'scripts/update.mjs'],
+  offense: ['SKILL.md', 'references/install.md', 'references/verification.md', 'references/tools.md', 'references/local-tools.md', 'references/stack.md',
+    'references/catalog.md', 'references/assessment.md', 'references/check-selection.md', 'references/findings.md', 'references/follow-up.md',
+    'agents/openai.yaml', 'scripts/offense.mjs', 'scripts/cli.mjs', 'scripts/update.mjs'],
   purple: ['SKILL.md', 'references/delivery.md', 'references/api-testing.md', 'references/hardened-containers.md', 'references/hosted-assessments.md', 'scripts/update.mjs', 'scripts/hosted-scan.mjs',
     'scripts/source-scan.mjs', 'scripts/api-test.mjs', 'scripts/api-test-image.mjs', 'scripts/hardened-image.mjs',
     'scripts/hosted-artifact-scan.mjs', 'scripts/hosted-assessment.mjs', 'scripts/git-history-bundle.mjs', 'scripts/purple.mjs',

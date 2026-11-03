@@ -1,4 +1,4 @@
 interface:
   display_name: "Offense"
-  short_description: "Dependency intelligence for your coding agent"
-  default_prompt: "Use $offense to audit this repository's dependencies and plan remediation."
+  short_description: "Guided security checks and clear fix guidance"
+  default_prompt: "Use $offense to check this app for security problems, explain the findings and consequences, and help me decide what to fix."

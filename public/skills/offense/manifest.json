@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
   "skill": "offense",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "minimumNodeMajor": 20,
   "files": [
     {
       "path": "SKILL.md",
-      "bytes": 19868,
-      "sha256": "cca06e21290b9b4986024c72a0427dc197b296ff42b7e57610eea7c7b536be6b"
+      "bytes": 20912,
+      "sha256": "54e3ade6026f2a00d86619c9cf7d803b4a9b4ca69ff1c58d6e14bda57fb44b1f"
     },
     {
       "path": "references/install.md",
-      "bytes": 5145,
-      "sha256": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584"
+      "bytes": 5582,
+      "sha256": "1a8e908ca5fe3e6a35caba2ba73f828c8ad7449f74517b8c04d250e0a4fb35bc"
     },
     {
       "path": "references/verification.md",
@@ -35,6 +35,36 @@
       "sha256": "416fc0e4b02e008f28ff8ea2f8ff3e00ff2c9670f2f831ed1cee188c5a3cc44a"
     },
     {
+      "path": "references/catalog.md",
+      "bytes": 5900,
+      "sha256": "63b9cca7c0bb8cc60d4e6eb7111bcd563e9a20530a9ff7f81f085d6f63e8a3ca"
+    },
+    {
+      "path": "references/assessment.md",
+      "bytes": 4225,
+      "sha256": "2c21381f54c5e43233df71b50ad7351f42ccc28649b3d89a869f9998b32d50fa"
+    },
+    {
+      "path": "references/check-selection.md",
+      "bytes": 3512,
+      "sha256": "d7647d71d16e4a9ccbd6c322809414284e7f48b5959d5d5aebe6fb01857177ec"
+    },
+    {
+      "path": "references/findings.md",
+      "bytes": 4275,
+      "sha256": "55b4eee35b17a770fd5d58a7ffa48ab725b869634094499057c128e9a71574e2"
+    },
+    {
+      "path": "references/follow-up.md",
+      "bytes": 1920,
+      "sha256": "1716069ba86241fd813eabba1d40d1131b4172fa7450c275c5646e40ff271301"
+    },
+    {
+      "path": "agents/openai.yaml",
+      "bytes": 251,
+      "sha256": "93faceaf1d769b47ee8ad7e177c267987a488227648e1ceeda58f9334ee2201c"
+    },
+    {
       "path": "scripts/offense.mjs",
       "bytes": 300493,
       "sha256": "c292736d2270420facd75938ddeb56c3447fb137a7b31ddaaf17c2defe8d3094"
@@ -51,6 +81,20 @@
     }
   ],
   "previousReleases": [
+    {
+      "version": "0.9.0",
+      "files": {
+        "SKILL.md": "cca06e21290b9b4986024c72a0427dc197b296ff42b7e57610eea7c7b536be6b",
+        "references/install.md": "5ab1566b32702bd6e57abea82e05fe8add2f1137d6400d653793fe3a3c0c1584",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "references/tools.md": "2026c2c3d7e3de725de754c2daa22ec9448df6488ad46dc5066be8b54ebff7b1",
+        "references/local-tools.md": "2873708c29f285ffa77ea5372cd5d70ca83fd26d50d928606e3aa5e628f03b8e",
+        "references/stack.md": "416fc0e4b02e008f28ff8ea2f8ff3e00ff2c9670f2f831ed1cee188c5a3cc44a",
+        "scripts/offense.mjs": "c292736d2270420facd75938ddeb56c3447fb137a7b31ddaaf17c2defe8d3094",
+        "scripts/cli.mjs": "a06b86d3d874b14b9972c7e5927ea3f52c0e9a43fd9e6e310913dc05fe292d89",
+        "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      }
+    },
     {
       "version": "0.8.2",
       "files": {

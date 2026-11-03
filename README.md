@@ -83,7 +83,14 @@ without a command result. The agent needs terminal/filesystem access and Node;
 copying a skill does not give a chat-only client those capabilities. If it cannot
 read GitHub pages, use the raw skill URL or a reviewed local checkout.
 
-Already configured? Start with one of the [task prompts](#ask-for-the-outcome-you-want)
+Already configured? Ask: **“Use Offense to check my app for security problems,
+explain the findings and consequences, and help me decide what to fix.”** Offense
+infers relevant checks from the project, reports missing coverage, and asks only
+for the inputs or authorization those checks need. Assessment alone does not
+authorize application edits or paid calls. Narrow dependency and local-only
+requests keep their scope.
+
+Start with one of the [task prompts](#ask-for-the-outcome-you-want)
 below. Prefer manual setup? Use the [per-agent instructions](#choose-your-agent).
 
 ## Recipes from the landing page

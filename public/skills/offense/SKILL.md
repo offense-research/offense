@@ -3,7 +3,7 @@ name: offense
 description: Guide a security assessment of your app with Offense, choose relevant checks, explain findings and consequences, and help you decide what to fix. Also supports scoped dependency audits, local checks, deployment drift and authorized remediation.
 metadata:
   author: Offense Security
-  version: "0.9.0"
+  version: "0.10.0"
 ---
 
 # Offense

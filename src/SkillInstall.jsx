@@ -44,7 +44,7 @@ If a preferred connection lacks a required capability, try another already autho
 
 Finish by explicitly telling me to start a new coding-agent session in this same project to load the installed skill before using it for my next task. Running the helper during installation does not prove the client has loaded the skill. If the client also needs a full restart, give its exact restart steps.`;
 
-export const OFFENSE_INSTALL_PROMPT = `Set up Offense, a product of Offense Security, in this coding agent for the current project.
+export const OFFENSE_INSTALL_PROMPT = `Set up Offense, a product of Offense Security, in this coding agent for the current project. After setup, it should guide a security assessment, explain findings and consequences, and help me choose fixes. This request is installation only.
 
 Read https://offense.sh/skills/offense/SKILL.md, its manifest at https://offense.sh/skills/offense/manifest.json, and https://offense.sh/skills/offense/references/install.md. Inspect and install the skill and its listed resources in this client's documented project skill directory, such as .agents/skills/offense for Codex or .claude/skills/offense for Claude Code. Preserve customized installations and unrelated instructions. Verify the manifest checksums and follow the documented updater behavior. Use this agent's preferred existing repository connections, preserve the selected account and repository scope, and reuse the current checkout. Do not extract or forward connector tokens or source code during setup.
 
@@ -105,7 +105,7 @@ export default function SkillInstall() {
     </header>
     <section className="skill-prompt" aria-label="Install Offense">
       <div className="skill-prompt-heading">
-        <div className="skill-prompt-title"><span className="skill-terminal-icon" aria-hidden="true"><TerminalSquare size={21}/></span><div><h1>Set up Offense in your agent</h1><p>One API key. Security tools in your coding workflow.</p></div></div>
+        <div className="skill-prompt-title"><span className="skill-terminal-icon" aria-hidden="true"><TerminalSquare size={21}/></span><div><h1>Set up Offense in your agent</h1><p>Guided security checks. Understand what to fix and why.</p></div></div>
         <button type="button" onClick={() => copy()}>{copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? 'Copied' : 'Copy prompt'}</button>
       </div>
       <div className="skill-prompt-editor">
@@ -118,8 +118,8 @@ export default function SkillInstall() {
     <div className="skill-agent-support"><span>MCP + skill</span><span>Codex</span><span>Claude Code</span><span>Cursor</span><span>Compatible coding agents</span></div>
     <section className="skill-details" aria-label="What you get">
       <div><span className="skill-detail-number">01</span><div><h2>Connect once</h2><p>Sign in through the CLI. Your private API key works across security tools.</p></div></div>
-      <div><span className="skill-detail-number">02</span><div><h2>Choose a tool</h2><p>Run checks from your agent with a price quote before each paid call.</p></div></div>
-      <div><span className="skill-detail-number">03</span><div><h2>Keep control</h2><p>Your agent reviews evidence, edits code, and verifies fixes.</p><button type="button" className="skill-workflow-copy" onClick={copyWorkflow}>{workflowCopied ? <Check size={13}/> : <Copy size={13}/>} {workflowCopied ? 'Workflow copied' : 'Copy fix workflow'}</button><span className="skill-workflow-status" role="status">{workflowError || (workflowCopied ? 'After installation, paste this into a new agent session in the same project.' : '')}</span>{workflowError && <textarea ref={workflowField} className="skill-workflow-fallback" aria-label="Dependency fix workflow" value={FIX_WORKFLOW_PROMPT} readOnly spellCheck="false"/>}</div></div>
+      <div><span className="skill-detail-number">02</span><div><h2>Ask about your app</h2><p>Your agent selects relevant checks and quotes paid calls before running them.</p></div></div>
+      <div><span className="skill-detail-number">03</span><div><h2>Keep control</h2><p>Understand the findings, consequences and fix choices before requesting changes.</p><button type="button" className="skill-workflow-copy" onClick={copyWorkflow}>{workflowCopied ? <Check size={13}/> : <Copy size={13}/>} {workflowCopied ? 'Workflow copied' : 'Copy fix workflow'}</button><span className="skill-workflow-status" role="status">{workflowError || (workflowCopied ? 'After installation, paste this into a new agent session in the same project.' : '')}</span>{workflowError && <textarea ref={workflowField} className="skill-workflow-fallback" aria-label="Dependency fix workflow" value={FIX_WORKFLOW_PROMPT} readOnly spellCheck="false"/>}</div></div>
     </section>
     <AgentIntegrations/>
     <section className="skill-advanced-install" aria-label="Advanced local workflows"><details>
