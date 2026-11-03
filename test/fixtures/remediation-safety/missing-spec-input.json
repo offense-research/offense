@@ -1,0 +1,18 @@
+{
+  "synthetic": true,
+  "revision": "synthetic-current",
+  "projectFiles": {
+    "src/app.js": "export const healthy = true;\n"
+  },
+  "expectedOutcomes": [
+    "Keep the unrelated OpenAPI receipt but flag attribution unresolved",
+    "Do not create openapi.yaml or prescribe edits to an unverified missing file",
+    "A specification policy finding does not prove the runtime lacks rate limiting"
+  ],
+  "assessedInputs": {
+    "revision": "synthetic-current",
+    "files": [
+      "src/app.js"
+    ]
+  }
+}

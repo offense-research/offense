@@ -1,0 +1,26 @@
+{
+  "synthetic": true,
+  "revision": "synthetic-current",
+  "projectFiles": {
+    "package.json": "{\n  \"name\": \"synthetic-app\",\n  \"version\": \"1.0.0\",\n  \"private\": true,\n  \"dependencies\": {\n    \"fixture-consumer-0\": \"1.0.0\",\n    \"fixture-consumer-1\": \"1.0.0\"\n  }\n}\n",
+    "package-lock.json": "{\n  \"name\": \"synthetic-app\",\n  \"version\": \"1.0.0\",\n  \"lockfileVersion\": 3,\n  \"requires\": true,\n  \"packages\": {\n    \"\": {\n      \"name\": \"synthetic-app\",\n      \"version\": \"1.0.0\",\n      \"dependencies\": {\n        \"fixture-consumer-0\": \"1.0.0\",\n        \"fixture-consumer-1\": \"1.0.0\"\n      }\n    },\n    \"node_modules/fixture-consumer-0\": {\n      \"version\": \"1.0.0\",\n      \"dependencies\": {\n        \"picomatch\": \"^2.3.2\"\n      }\n    },\n    \"node_modules/fixture-consumer-0/node_modules/picomatch\": {\n      \"version\": \"2.3.2\"\n    },\n    \"node_modules/fixture-consumer-1\": {\n      \"version\": \"1.0.0\",\n      \"dependencies\": {\n        \"picomatch\": \"^4.0.3\"\n      }\n    },\n    \"node_modules/fixture-consumer-1/node_modules/picomatch\": {\n      \"version\": \"4.0.3\"\n    }\n  }\n}\n"
+  },
+  "expectedOutcomes": [
+    "Reject the flat picomatch override that would also move the 2.x consumer to 4.x",
+    "Keep the 2.3.2 copy unchanged; scoped 4.0.3 to 4.0.4 remains a proposal requiring parent and resolution checks",
+    "No installs, edits, live scans or publication"
+  ],
+  "proposedOverrides": {
+    "picomatch": "4.0.4"
+  },
+  "installedCopies": [
+    {
+      "name": "picomatch",
+      "version": "2.3.2"
+    },
+    {
+      "name": "picomatch",
+      "version": "4.0.3"
+    }
+  ]
+}

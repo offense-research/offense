@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "offense.audit.v1",
+  "status": "partial",
+  "scannedAt": "2026-11-01T12:00:00Z",
+  "metadataFingerprint": "synthetic-metadata-picomatch",
+  "findings": [
+    {
+      "advisoryId": "FIXTURE-PICOMATCH",
+      "package": {
+        "name": "picomatch",
+        "installedVersion": "4.0.3",
+        "lockfiles": [
+          "package-lock.json"
+        ]
+      },
+      "severity": "HIGH",
+      "summary": "Synthetic advisory match; requires applicability review",
+      "advisoryListedFixedVersions": [
+        "4.0.4"
+      ],
+      "relevance": {
+        "status": "needs_review"
+      },
+      "verification": {
+        "sourceReviewed": false,
+        "exploitReproduced": false
+      }
+    }
+  ],
+  "coverage": {
+    "complete": false,
+    "scope": "synthetic lockfile dependency metadata only",
+    "omissions": [
+      "Application execution and source reachability were not assessed"
+    ]
+  },
+  "providers": [
+    {
+      "id": "synthetic-provider",
+      "status": "complete"
+    }
+  ]
+}

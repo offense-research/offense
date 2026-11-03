@@ -1,0 +1,34 @@
+{
+  "synthetic": true,
+  "revision": "synthetic-current",
+  "projectFiles": {
+    "package.json": "{\n  \"name\": \"synthetic-app\",\n  \"version\": \"1.0.0\",\n  \"private\": true,\n  \"dependencies\": {\n    \"fixture-consumer-0\": \"1.0.0\",\n    \"fixture-consumer-1\": \"1.0.0\",\n    \"fixture-consumer-2\": \"1.0.0\",\n    \"fixture-consumer-3\": \"1.0.0\"\n  }\n}\n",
+    "package-lock.json": "{\n  \"name\": \"synthetic-app\",\n  \"version\": \"1.0.0\",\n  \"lockfileVersion\": 3,\n  \"requires\": true,\n  \"packages\": {\n    \"\": {\n      \"name\": \"synthetic-app\",\n      \"version\": \"1.0.0\",\n      \"dependencies\": {\n        \"fixture-consumer-0\": \"1.0.0\",\n        \"fixture-consumer-1\": \"1.0.0\",\n        \"fixture-consumer-2\": \"1.0.0\",\n        \"fixture-consumer-3\": \"1.0.0\"\n      }\n    },\n    \"node_modules/fixture-consumer-0\": {\n      \"version\": \"1.0.0\",\n      \"dependencies\": {\n        \"@opentelemetry/core\": \"^2.2.0\"\n      }\n    },\n    \"node_modules/fixture-consumer-0/node_modules/@opentelemetry/core\": {\n      \"version\": \"2.2.0\"\n    },\n    \"node_modules/fixture-consumer-1\": {\n      \"version\": \"1.0.0\",\n      \"dependencies\": {\n        \"@opentelemetry/core\": \"^2.7.1\"\n      }\n    },\n    \"node_modules/fixture-consumer-1/node_modules/@opentelemetry/core\": {\n      \"version\": \"2.7.1\"\n    },\n    \"node_modules/fixture-consumer-2\": {\n      \"version\": \"1.0.0\",\n      \"dependencies\": {\n        \"@opentelemetry/core\": \"^2.10.0\"\n      }\n    },\n    \"node_modules/fixture-consumer-2/node_modules/@opentelemetry/core\": {\n      \"version\": \"2.10.0\"\n    },\n    \"node_modules/fixture-consumer-3\": {\n      \"version\": \"1.0.0\",\n      \"dependencies\": {\n        \"@opentelemetry/core\": \"^2.12.0\"\n      }\n    },\n    \"node_modules/fixture-consumer-3/node_modules/@opentelemetry/core\": {\n      \"version\": \"2.12.0\"\n    }\n  }\n}\n"
+  },
+  "expectedOutcomes": [
+    "Reject the flat 2.8.0 override because it downgrades the 2.10.0 and 2.12.0 copies",
+    "Do not assume all listed installed versions are affected merely because one advisory matched",
+    "No claim of compatibility or resolved advisory without execution evidence"
+  ],
+  "proposedOverrides": {
+    "@opentelemetry/core": "2.8.0"
+  },
+  "installedCopies": [
+    {
+      "name": "@opentelemetry/core",
+      "version": "2.2.0"
+    },
+    {
+      "name": "@opentelemetry/core",
+      "version": "2.7.1"
+    },
+    {
+      "name": "@opentelemetry/core",
+      "version": "2.10.0"
+    },
+    {
+      "name": "@opentelemetry/core",
+      "version": "2.12.0"
+    }
+  ]
+}

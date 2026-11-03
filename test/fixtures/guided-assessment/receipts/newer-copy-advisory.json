@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "offense.audit.v1",
+  "status": "complete",
+  "scannedAt": "2026-11-01T12:00:00Z",
+  "metadataFingerprint": "synthetic-metadata-opentelemetry-core",
+  "findings": [
+    {
+      "advisoryId": "FIXTURE-OPENTELEMETRY-CORE",
+      "package": {
+        "name": "@opentelemetry/core",
+        "installedVersion": "2.7.1",
+        "lockfiles": [
+          "package-lock.json"
+        ]
+      },
+      "severity": "HIGH",
+      "summary": "Synthetic advisory match; requires applicability review",
+      "advisoryListedFixedVersions": [
+        "2.8.0"
+      ],
+      "relevance": {
+        "status": "needs_review"
+      },
+      "verification": {
+        "sourceReviewed": false,
+        "exploitReproduced": false
+      }
+    }
+  ],
+  "coverage": {
+    "complete": true,
+    "scope": "synthetic lockfile dependency metadata only"
+  },
+  "providers": [
+    {
+      "id": "synthetic-provider",
+      "status": "complete"
+    }
+  ]
+}

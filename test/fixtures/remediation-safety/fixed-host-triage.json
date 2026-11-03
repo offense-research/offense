@@ -1,0 +1,19 @@
+{
+  "synthetic": true,
+  "revision": "synthetic-current",
+  "projectFiles": {
+    "src/requests.js": "export async function fixedHost(req) {\n  return fetch(`https://example.com/users/${encodeURIComponent(req.query.user)}`, { redirect: 'error' });\n}\nexport async function unknownRedirect(req) {\n  return fetch(`https://example.com/users/${encodeURIComponent(req.query.user)}`);\n}\nexport async function controlledOrigin(req) {\n  return fetch(req.query.url);\n}\n"
+  },
+  "expectedOutcomes": [
+    "Fixed-host encoded path with redirect:error is not a confirmed attacker-controlled destination merely because a generic rule matched",
+    "Default redirect behavior leaves redirect destinations unresolved; do not blanket-suppress fixed-host findings",
+    "The fully attacker-controlled URL remains actionable for investigation",
+    "Record each finding separately with its evidence and uncertainty"
+  ],
+  "assessedInputs": {
+    "revision": "synthetic-current",
+    "files": [
+      "src/requests.js"
+    ]
+  }
+}

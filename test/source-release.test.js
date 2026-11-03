@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, lstat, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -15,6 +16,8 @@ test('source export excludes private history, hashes exact bytes and fails close
   const result = await prepareSourceRelease(candidate);
   assert.equal(result.publicationApproved, false);
   const manifest = JSON.parse(await readFile(path.join(candidate, 'SOURCE-RELEASE.json')));
+  const planning = await import(pathToFileURL(path.join(candidate, 'shared/offense-planning.js')).href);
+  assert.match(planning.targetSelectionEvidence({ targetVersion: '1.0.1' }).reason, /not established/);
   assert.equal(manifest.releaseType, 'source-only');
   assert.equal(manifest.publicationApproved, false);
   assert.equal(manifest.artifactPublicationApproved, false);
