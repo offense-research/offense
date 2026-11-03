@@ -93,6 +93,25 @@ export async function runUpgradeRehearsal(input) {
   }
   for (const file of [...packageFiles, ...locks]) await regular(source, file);
   const manifests = await Promise.all(packageFiles.map(async file => ({ file, value: JSON.parse(await fs.readFile(path.join(source, file), 'utf8')) })));
+  function stableVersion(value) {
+    if (typeof value !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value)) return null;
+    const parts = value.split('.').map(Number);
+    return parts.every(Number.isSafeInteger) ? parts : null;
+  }
+  function compareVersions(a, b) {
+    const left = stableVersion(a), right = stableVersion(b);
+    if (!left || !right) return null;
+    for (let index = 0; index < 3; index++) if (left[index] !== right[index]) return left[index] < right[index] ? -1 : 1;
+    return 0;
+  }
+  function hasOverridePolicy(value, name) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    return Object.entries(value).some(([selector, nested]) => selector === name || selector.startsWith(`${name}@`) || hasOverridePolicy(nested, name));
+  }
+  for (const proposal of input.scenarios) for (const change of proposal.changes) {
+    if (compareVersions(change.targetVersion, change.currentVersion) !== 1) throw new Error('Rehearsal targets must be newer stable releases; review unsupported versions or downgrades manually.');
+    if (manifests.some(({ value }) => hasOverridePolicy(value.overrides, change.name))) throw new Error(`Existing override for ${change.name} needs manual review.`);
+  }
   const workspaceFiles = files.filter(file => /(^|\/)pnpm-workspace\.yaml$/.test(file));
   for (const file of workspaceFiles) await regular(source, file);
   const lockDocuments = new Map(await Promise.all(locks.map(async file => {
@@ -138,7 +157,7 @@ export async function runUpgradeRehearsal(input) {
         const graph = pnpmParser.pnpmGraph({ path: file, content: await fs.readFile(path.join(directory, file), 'utf8') });
         if (graph.warnings.length) throw new Error(`pnpm dependency coverage is incomplete: ${graph.warnings[0]}`);
         packages.push(...graph.packages);
-        for (const node of graph.nodes.filter(item => item.path)) locations[node.id] = { name: node.name, version: node.version };
+        for (const node of graph.nodes.filter(item => item.path)) locations[node.id] = { name: node.name, version: node.version, lockfile: file };
         continue;
       }
       const lock = JSON.parse(await fs.readFile(path.join(directory, file), 'utf8'));
@@ -147,7 +166,7 @@ export async function runUpgradeRehearsal(input) {
         if (!location.includes('node_modules/') || !entry.version || entry.link) continue;
         const name = entry.name || location.slice(location.lastIndexOf('node_modules/') + 13);
         packages.push({ name, version: entry.version, resolved: true, kind: 'transitive', files: [file] });
-        locations[`${file}:${location}`] = { name, version: entry.version };
+        locations[`${file}:${location}`] = { name, version: entry.version, lockfile: file };
       }
     }
     if (packages.length > 5000) throw new Error('Repository exceeds the 5,000 installed-package rehearsal limit.');
@@ -286,13 +305,37 @@ export async function runUpgradeRehearsal(input) {
     const changes = [...new Set([...Object.keys(original.locations), ...Object.keys(resolved.locations)])]
       .filter(location => original.locations[location]?.version !== resolved.locations[location]?.version)
       .map(location => ({ location, before: original.locations[location] || null, after: resolved.locations[location] || null }));
+    const needsVersionReview = (before, after) => {
+      const order = compareVersions(after.version, before.version);
+      return order === null || order < 0;
+    };
+    const dependencyBlockers = changes.filter(item => item.before && item.after && item.before.name === item.after.name &&
+      needsVersionReview(item.before, item.after));
+    // Version-bearing pnpm identities and npm relocation appear as removals
+    // and additions. A lower replacement is ambiguous without parent mapping;
+    // keep it blocked rather than treating the lost identity as safe removal.
+    const surviving = new Map();
+    const packageKey = item => JSON.stringify([item.lockfile, item.name]);
+    for (const [location, after] of Object.entries(resolved.locations)) {
+      const key = packageKey(after);
+      if (!surviving.has(key)) surviving.set(key, []);
+      surviving.get(key).push({ location, after });
+    }
+    for (const removed of changes.filter(item => item.before && (!item.after || item.after.name !== item.before.name))) {
+      const replacement = (surviving.get(packageKey(removed.before)) || []).find(item => needsVersionReview(removed.before, item.after));
+      if (replacement) dependencyBlockers.push({ location: removed.location, afterLocation: replacement.location, before: removed.before, after: replacement.after });
+    }
     const successful = baseline.setup.every(item => item.passed) && baseline.checks.length > 0 && baseline.checks.every(item => item.passed) && baseline.integrity &&
       validation.setup.every(item => item.passed) && validation.checks.length === baseline.checks.length && validation.checks.every(item => item.passed) && validation.integrity &&
-      coverage.every(item => item.targetPresent && !item.oldVersionRemaining);
-    const status = successful ? 'tests_passed' : !validation.setup.every(item => item.passed) ? 'install_failed' :
-      !baseline.setup.every(item => item.passed) || !baseline.checks.every(item => item.passed) || !baseline.integrity ? 'baseline_failed' :
-        !validation.integrity || !validation.checks.every(item => item.passed) ? 'checks_failed' : 'resolved';
+      coverage.every(item => item.targetPresent && !item.oldVersionRemaining) && !dependencyBlockers.length;
+    let status = 'resolved';
+    if (dependencyBlockers.length) status = 'dependency_changes_blocked';
+    else if (successful) status = 'tests_passed';
+    else if (!validation.setup.every(item => item.passed)) status = 'install_failed';
+    else if (!baseline.setup.every(item => item.passed) || !baseline.checks.every(item => item.passed) || !baseline.integrity) status = 'baseline_failed';
+    else if (!validation.integrity || !validation.checks.every(item => item.passed)) status = 'checks_failed';
     scenarios.push({ ...proposal, status, applied, resolution, coverage,
+      dependencyBlockers: dependencyBlockers.map(item => ({ ...item, reason: 'Dependency resolution may downgrade an installed copy or uses versions that cannot be ordered; review the complete lockfile diff.' })),
       ...validation, dependencyChanges: changes.slice(0, 200), totalDependencyChanges: changes.length, resolvedPackages: resolved.packages });
   }
   return { status: 'completed', revision: input.revision, startedAt, finishedAt: Date.now(),
