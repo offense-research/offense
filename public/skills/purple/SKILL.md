@@ -3,7 +3,7 @@ name: purple
 description: Find and fix vulnerable npm/pnpm dependencies, inspect source and GitHub Actions security, run hosted security assessments, test APIs in a local sandbox, and acquire hardened container bases. Use for Purple security and remediation workflows.
 metadata:
   author: Purple
-  version: "1.15.0"
+  version: "1.15.1"
 ---
 
 # Purple

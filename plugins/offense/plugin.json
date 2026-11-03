@@ -1,0 +1,22 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "offense",
+  "version": "0.10.0",
+  "description": "Guided security assessments that explain findings, consequences and fix choices.",
+  "author": {
+    "name": "Offense Security"
+  },
+  "homepage": "https://offense.sh",
+  "repository": "https://github.com/offense-research/offense",
+  "license": "Apache-2.0",
+  "keywords": [
+    "security",
+    "assessment",
+    "offense"
+  ],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true
+    }
+  }
+}

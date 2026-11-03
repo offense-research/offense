@@ -138,6 +138,34 @@
     ],
     "purple": [
       {
+        "version": "1.15.0",
+        "files": {
+          "SKILL.md": "657fffd3428b1cbe8c10c3601318088b3774c626efbd87585c0a666f50df923f",
+          "references/delivery.md": "8ceb8b478d9b680395ae4ba73668a25673c5a1e6ec7eb3ea350a2b0aa1ea6b2c",
+          "references/api-testing.md": "d09dfddcb3141ec1d877ff1720ac67ddf89cebf317eca5d8bcd3147b5e795ec8",
+          "references/hardened-containers.md": "6c160c1c73cd61f8118cd8b223b24fb9e0a5e3e52e616049691ed6d9b8dd7002",
+          "references/hosted-assessments.md": "0acfa9b262d3fbe958b7b4f9afef82342964dc938325383382c672d61f12a25b",
+          "scripts/update.mjs": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8",
+          "scripts/hosted-scan.mjs": "3792e492d3cfb72ff56a6ae7ae76fdaf3c8d1a14e2673468665e854c21972853",
+          "scripts/source-scan.mjs": "0bae73d42aeece75f2a0a9f154a78283e5f0b2a2e1c30b8dae90919a8105eeb6",
+          "scripts/api-test.mjs": "b6e1b22fa8319d0f475d0b41f053a15f60ee9e8fbf765bf779a9dddf1ca0d94f",
+          "scripts/api-test-image.mjs": "f60ae5fa7c1cde9fb9bdcf737d4263381a6c6bf1bd7f16b8975e77b6edc5e8da",
+          "scripts/hardened-image.mjs": "b17a2eeed2cdc96015b2a4073338ea50215dbf443b5c9eff05912edb379e9228",
+          "scripts/hosted-artifact-scan.mjs": "e4c75b8271172ad65dddc5420c6b01bb16b09d7599b4d4aff010f7f6fe618c28",
+          "scripts/hosted-assessment.mjs": "508aa3197d8c3ae3837202b24fe465859010377fa03447705e6e3c4d1ab79446",
+          "scripts/git-history-bundle.mjs": "dcd9413d5e62c81048f5d47c3d854f388b5159554df98ae3f8dddc27bde72048",
+          "scripts/purple.mjs": "633597142d050f5d8b0119277cb54dcc64f105c60ab6f2bc6d147bee83a3b26a",
+          "scripts/metadata.mjs": "4f041eb88751a4f4ab1d6ff60b0351038d74e9e60d840a59d01f45c6f2b435a1",
+          "scripts/pnpm.mjs": "67ef0258960fa433276b942ebc6b1fcb49b3ad3dff800b3436d9d32ec7dee46d",
+          "scripts/yaml.mjs": "ab9e1632743eef1328bcb27602be292a69e5469f2e383a4885f80fc7d336b998",
+          "scripts/evidence.mjs": "6ff8ca37c2d1c8f324b504468f023b476c63b8da79fb6f46d1be5280faacdd6a",
+          "scripts/reachability.mjs": "6850156f1c6c540e9be3e8409f287cdd16299b1ae9ac6b841f21711670703cd9",
+          "scripts/syntax.mjs": "b497c59ed003d74fed18c1c434ba75c49e87f83c5e60d11a33527af1267ec073",
+          "scripts/workflow.mjs": "3fc9c2dec72b2f41e9f3186c9c95710c70161a9c10a184656dfafbfddfa279db",
+          "scripts/rehearsal-runner.mjs": "d59c0d541179f5bd44d8453d71ff341828fe6ee33cdd0082ad723bfb4240b345"
+        }
+      },
+      {
         "version": "1.14.0",
         "files": {
           "SKILL.md": "6d63866306a074d8d818f8a0f7d8bc50992fd51bb04136d42e9e422a653ae843",

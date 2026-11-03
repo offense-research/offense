@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { buildSkillManifests } from './skill-manifests.mjs';
+import { buildOffensePlugin } from './build-offense-plugin.mjs';
 import { buildSkillCatalog } from './build-skill-catalog.mjs';
 import './build-offense-cli.mjs';
 const license = await readFile('node_modules/yaml/LICENSE', 'utf8');
@@ -52,3 +53,4 @@ await writeFile('public/skills/purple/references/hosted-assessments.md',
   await readFile('docs/hosted-assessments.md', 'utf8'));
 await buildSkillCatalog();
 await buildSkillManifests();
+await buildOffensePlugin();

@@ -547,6 +547,10 @@ async function checkSkillUpdates({ skill, root, automatic = false, mode = "auto"
   try {
     if (!names.has(skill) || !["auto", "check", "accept-local"].includes(mode)) throw Error("Unknown skill or update mode.");
     resolved = await rootDirectory(root);
+    const distribution = recordJson(await localFile(resolved, ".offense-distribution.json"));
+    if (distribution?.schemaVersion === 1 && distribution.manager === "codex-plugin") {
+      return result("plugin_managed", { message: "Codex manages this plugin. Update it through the Codex plugin manager, then start a new session. Hosted self-updates are disabled." });
+    }
     if (path2.basename(path2.dirname(resolved)) === "skills" && path2.basename(path2.dirname(path2.dirname(resolved))) === "public" && await lstat2(path2.resolve(resolved, "../../..", ".git")).catch((error) => {
       if (error.code === "ENOENT") return null;
       throw error;

@@ -66,18 +66,18 @@
     },
     {
       "path": "scripts/offense.mjs",
-      "bytes": 300493,
-      "sha256": "c292736d2270420facd75938ddeb56c3447fb137a7b31ddaaf17c2defe8d3094"
+      "bytes": 300867,
+      "sha256": "ced4cccb13be7e2eba9795cfdcdacc5608dc460d9f0a219b76e36f92f6512c1b"
     },
     {
       "path": "scripts/cli.mjs",
       "bytes": 1137533,
-      "sha256": "a06b86d3d874b14b9972c7e5927ea3f52c0e9a43fd9e6e310913dc05fe292d89"
+      "sha256": "f0cca7513912bfb8d3088cf9808751df276761c3ae8d313129e9c446530b9a10"
     },
     {
       "path": "scripts/update.mjs",
-      "bytes": 25283,
-      "sha256": "c9929b1ec98fe316b730090d48f62b25500c3f1f2fe53a70b99eceb9203777e8"
+      "bytes": 25657,
+      "sha256": "bbadd63b495360bf09aaa77f889354935fb60fa3911215e8be22508de38298da"
     }
   ],
   "previousReleases": [
