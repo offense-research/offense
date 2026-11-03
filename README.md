@@ -83,10 +83,40 @@ without a command result. The agent needs terminal/filesystem access and Node;
 copying a skill does not give a chat-only client those capabilities. If it cannot
 read GitHub pages, use the raw skill URL or a reviewed local checkout.
 
-Already configured? Start with one of the [task prompts](#ask-for-the-outcome-you-want)
+Already configured? Ask: **“Use Offense to check my app for security problems,
+explain the findings and consequences, and help me decide what to fix.”** Offense
+infers relevant checks from the project, reports missing coverage, and asks only
+for the inputs or authorization those checks need. Assessment alone does not
+authorize application edits or paid calls. Narrow dependency and local-only
+requests keep their scope.
+
+Start with one of the [task prompts](#ask-for-the-outcome-you-want)
 below. Prefer manual setup? Use the [per-agent instructions](#choose-your-agent).
 
 ## Recipes from the landing page
+
+### Codex plugin
+
+The native plugin is built from the same maintained skill and CLI in this repo.
+To try a local checkout with Codex:
+
+```sh
+codex plugin marketplace add /absolute/path/to/offense
+codex plugin add offense@offense
+```
+
+Start a new Codex session, then ask `$offense:offense` to check your app and
+explain the findings. Installing does not log in, scan, buy credit or register
+MCP. The plugin reuses existing connections or its bundled CLI. Codex owns
+updates; credentials stay in the CLI's private configuration. If you already
+installed a manual Offense skill, choose which entry point to keep; customized
+skills and project instructions are never removed automatically.
+
+Once these files are published on the repository's default branch, the intended
+remote registration is `codex plugin marketplace add offense-research/offense`,
+followed by `codex plugin add offense@offense`. The local path has been smoke
+tested; the remote command requires verification against that published ref.
+Public OpenAI directory listing is a separate submission, not part of this build.
 
 Put the examples on [offense.sh](https://offense.sh) to work. Each recipe includes
 an agent prompt, prerequisites, commands, approval boundaries and the evidence

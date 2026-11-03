@@ -1,0 +1,4 @@
+interface:
+  display_name: "Offense"
+  short_description: "Guided security checks and clear fix guidance"
+  default_prompt: "Use $offense to check this app for security problems, explain the findings and consequences, and help me decide what to fix."

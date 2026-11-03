@@ -1,0 +1,26 @@
+{
+  "id": "fixture-job",
+  "status": "partial",
+  "selectedTools": [
+    "gitleaks",
+    "opengrep"
+  ],
+  "findings": [],
+  "tools": [
+    {
+      "name": "gitleaks",
+      "status": "complete",
+      "version": "fixture"
+    },
+    {
+      "name": "opengrep",
+      "status": "failed",
+      "error": "Fixture timeout"
+    }
+  ],
+  "coverage": {
+    "scope": "selected uploaded files only"
+  },
+  "inputFingerprint": "fixture-input",
+  "idempotencyKey": "fixture-key"
+}

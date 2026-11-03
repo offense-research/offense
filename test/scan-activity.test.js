@@ -186,6 +186,7 @@ test('recent calls and top API keys are bounded and the endpoint makes no writes
 });
 
 test('route strictly scopes cookie principals, rejects extra queries and withholds storage errors', async t => {
+  t.mock.timers.enable({ apis: ['Date'], now: NOW });
   const f = fixture(t); f.job(1); f.job(2, { workspace: 'tenant-b', key: f.foreign.id, findings: 999 });
   const app = express();
   app.use((req, _res, next) => { if (req.get('x-fixture-user')) { req.authUser = { id: 'a' }; req.workspaceId = 'tenant-a'; } next(); });

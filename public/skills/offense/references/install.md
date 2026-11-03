@@ -4,10 +4,17 @@ Install only in the requested scope; project scope is the default. Preserve
 unrelated settings, customized Offense files and the selected account/repository.
 Company: **Offense Security**. Product: **Offense**, https://offense.sh.
 
+After setup, a builder can ask “Use Offense to check my app for security problems.”
+The skill selects relevant checks, explains findings and consequences, and offers
+fix choices. Installation itself does not authorize scanning or application edits.
+
 Fetch this skill's `manifest.json` and the listed files from the same release:
 `SKILL.md`, `references/install.md`, `references/verification.md`,
-`references/tools.md`, `references/local-tools.md`, `scripts/offense.mjs`, `scripts/cli.mjs` and
-`scripts/update.mjs`. Inspect executable files before running them. Use the
+`references/tools.md`, `references/local-tools.md`, `references/stack.md`, the
+catalog, assessment, check-selection, findings and follow-up references,
+`agents/openai.yaml`, `scripts/offense.mjs`, `scripts/cli.mjs` and
+`scripts/update.mjs`. Download the entire manifest list, not just the entry skill.
+Inspect executable files before running them. Use the
 client's documented project skill directory: `.agents/skills/offense/` for Codex,
 `.claude/skills/offense/` for Claude Code, or its supported project skill directory
 for Cursor. Do not replace existing instructions or silently install globally.

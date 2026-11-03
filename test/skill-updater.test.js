@@ -51,6 +51,29 @@ test('first run records verified installed hashes; every later run rechecks the 
   assert.deepEqual(f.server.requests.map(request => request.url), Array(2).fill('https://app.purpleteam.sh/skills/offense/manifest.json'));
 });
 
+test('Codex-managed skills never fetch, stage, accept or mutate hosted updates', async t => {
+  const f = await fixture(t);
+  await writeFile(path.join(f.root, '.offense-distribution.json'), JSON.stringify({ schemaVersion: 1, manager: 'codex-plugin' }));
+  for (const mode of ['auto', 'check', 'accept-local']) {
+    const outcome = await f.run({ mode });
+    assert.equal(outcome.status, 'plugin_managed');
+    assert.match(outcome.message, /Codex/);
+  }
+  assert.equal((await updateBeforeRun('offense', new URL('file://' + path.join(f.root, 'scripts/offense.mjs')), { fetchImpl: f.fetchImpl, log() {} })).status, 'plugin_managed');
+  assert.equal(f.server.requests.length, 0);
+  assert.equal(await readFile(path.join(f.root, 'SKILL.md'), 'utf8'), skillText('1.0.0'));
+  await assert.rejects(access(path.join(f.root, INSTALL_RECORD)), { code: 'ENOENT' });
+  await assert.rejects(access(path.join(f.root, '.skill-updates')), { code: 'ENOENT' });
+  for (const marker of [null, false, 0, '', { schemaVersion: 2, manager: 'codex-plugin' }]) {
+    await writeFile(path.join(f.root, '.offense-distribution.json'), JSON.stringify(marker));
+    assert.equal((await f.run()).status, 'check_failed');
+    assert.equal(f.server.requests.length, 0);
+    assert.equal(await readFile(path.join(f.root, 'SKILL.md'), 'utf8'), skillText('1.0.0'));
+    await assert.rejects(access(path.join(f.root, INSTALL_RECORD)), { code: 'ENOENT' });
+    await assert.rejects(access(path.join(f.root, '.skill-updates')), { code: 'ENOENT' });
+  }
+});
+
 test('a newer release replaces only unchanged managed files and requires a new session', async t => {
   const f = await fixture(t); await f.run();
   await writeFile(path.join(f.root, 'AGENTS.md'), 'Keep these custom project instructions');

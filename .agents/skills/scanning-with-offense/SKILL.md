@@ -1,6 +1,6 @@
 ---
 name: scanning-with-offense
-description: Audits dependencies and runs authorized security checks through offense.sh, with scoped inputs, price approval and evidence-based remediation. Use when asked to scan a repository with Offense, review vulnerable dependencies, select a hosted security tool or verify an Offense-assisted fix.
+description: Guide an Offense security assessment, infer useful checks from the project, explain findings and consequences, and help the builder choose fixes. Also use for scoped dependency audits, local checks, hosted security tools and authorized remediation.
 license: Apache-2.0
 compatibility: Requires an available Offense MCP connection or Node.js 20+ and the existing Offense hosted helpers. The independent local engine requires Node.js 24+. Network access is needed for hosted calls; paid tools need an account and approved credit budget.
 metadata:
@@ -16,6 +16,45 @@ the current agent. Audit-only requests do not authorize fixes, purchases or
 publication. Scan only repositories and targets the user is authorized to test.
 
 ## 1. Select the connection and scope
+
+For a broad “check my app” request, first inspect project files without executing
+application code: languages, manifests/lockfiles, workflows, infrastructure,
+API specifications and supplied release artifacts. Infer useful coverage rather
+than asking the builder to select scanners. Preserve narrow dependency, local-only,
+install-only, explain-only and explicitly authorized fix requests.
+
+Use the guided assessment, check-selection, catalog, findings and follow-up
+references from an existing reviewed hosted Offense installation. If none exists,
+read https://offense.sh/skills/offense/references/assessment.md and its linked
+references, or the corresponding `public/skills/offense/references` directory in
+a reviewed Offense checkout. These are not sibling files of this instructions-only
+skill. Setup should address only the selected checks' missing prerequisites.
+
+Select from source, dependencies/SBOM, working-tree/history/live secrets,
+infrastructure/Kubernetes, images/provenance, package archives/upstream trust,
+workflows, specifications/active APIs, deployed web/TLS/captured responses,
+Cloudflare and mobile as supported by project evidence. Runtime availability,
+actual input contracts and quotes govern execution. Do not substitute the free
+npm/pnpm audit for unsupported ecosystems or silently expand to paid checks.
+
+State the proposed scope in plain language. Reuse existing authorization within
+its bounds; ask only for missing input or consent, one meaningful decision at a
+time. Continue independent authorized work when another check is unavailable.
+Record applicable, missing-input, unavailable, unsupported and declined checks.
+An assessment-only request does not authorize application edits or installing
+target dependencies. Retain receipts and recovery identifiers for each job.
+
+Finish with prioritized findings and a full inventory, followed by coverage and
+next-step choices. For each actionable finding explain the problem, app context,
+evidence and uncertainty, conditional consequence if ignored, fix and verification.
+Use known context and confidence alongside severity; invent no financial loss,
+probability, deadline, exploitation or safe-to-launch verdict. Save a private
+Markdown companion outside the checkout linking original audit/job/local receipts;
+retain their different schemas, revision/input identities and actual states.
+Partial, failed, queued, expired, skipped or unsupported checks are not passes.
+Offer explanation, investigation or selected fixes and stop unless the user has
+already authorized that continuation. Explanation-only reuses saved evidence;
+selected fixes first check that the evidence still matches the current revision.
 
 Check the session's callable tools and existing Offense installation first.
 Preserve the configured account, endpoint, project and custom instructions.
