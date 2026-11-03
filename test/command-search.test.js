@@ -14,6 +14,7 @@ const entries = () => buildCommandEntries({ tools });
 test('entries contain only useful navigation destinations and public tool metadata', () => {
   const dirty = structuredClone(tools);
   dirty[0].href = 'https://untrusted.example/execute'; dirty[0].token = 'synthetic-secret-token';
+  const before = structuredClone(dirty);
   const built = buildCommandEntries({ tools: dirty });
   assert.equal(built.find(row => row.id === 'tool:opengrep').href, '/app?tool=opengrep#tools');
   assert.equal(built.find(row => row.id === 'page:keys').href, '/account#keys');
@@ -21,7 +22,7 @@ test('entries contain only useful navigation destinations and public tool metada
   assert.equal(JSON.stringify(built).includes('synthetic-secret-token'), false);
   assert.equal(JSON.stringify(built).includes('untrusted.example'), false);
   assert.equal(built.find(row => row.id === 'tool:future-engine').title, 'Café package review');
-  assert.equal(tools[0].href, undefined, 'Caller data was not mutated.');
+  assert.deepEqual(dirty, before, 'Caller data was not mutated.');
 });
 
 test('company metrics only enter the index after explicit operator confirmation', () => {

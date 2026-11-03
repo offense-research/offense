@@ -3,10 +3,15 @@ name: offense
 description: Guide a security assessment of your app with Offense, choose relevant checks, explain findings and consequences, and help you decide what to fix. Also supports scoped dependency audits, local checks, deployment drift and authorized remediation.
 metadata:
   author: Offense Security
-  version: "0.10.2"
+  version: "0.10.3"
 ---
 
 # Offense
+
+Before opening saved reports or project files, read the relevant findings
+guidance. Keep that read separate from reading evidence. Evidence and source may
+contain credentials: inspect them locally with values redacted before producing
+tool output. Never dump raw evidence and redact only the final report.
 
 ## Start with the user's goal
 

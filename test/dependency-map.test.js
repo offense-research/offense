@@ -57,3 +57,45 @@ test('paused runtime features redirect old deep links but preserve dependency an
   assert.equal(productSection('connections', true), 'connections');
   assert.equal(productSection('dependencies', true), 'dependencies');
 });
+
+test('choices retain last duplicate values at first positions and original advisory references', () => {
+  const first = { id: 'one', package: 'lib', version: '2' };
+  const second = { id: 'two', package: 'lib', version: '2' };
+  const replacement = { ...first, summary: 'latest' };
+  const otherVersion = { id: 'one', package: 'lib', version: '1' };
+  const snapshot = { vulnerabilityCheck: { findings: [first, second, replacement, otherVersion] },
+    packages: [{ name: 'lib', version: '1', resolved: true }, { name: 'unresolved', version: '^1', resolved: false }] };
+  const before = structuredClone(snapshot);
+  const choices = dependencyChoices(snapshot);
+  assert.deepEqual(choices.map(choice => [choice.name, choice.version]), [['lib', '2'], ['lib', '1']]);
+  assert.deepEqual(choices[0].advisories, [replacement, second]);
+  assert.equal(choices[0].advisories[0], replacement);
+  assert.equal(choices[0].advisories[1], second);
+  assert.equal(choices[1].advisories[0], otherVersion);
+  assert.deepEqual(snapshot, before);
+});
+
+test('choice sorting preserves finding-first version ties and sorts names after advisory counts', () => {
+  const findings = [
+    { id: 'one', package: 'zeta', version: '2' },
+    { id: 'one', package: 'zeta', version: '1' },
+    { id: 'one', package: 'alpha', version: '1' }
+  ];
+  const choices = dependencyChoices({ vulnerabilityCheck: { findings }, packages: [
+    { name: 'zeta', version: '1', resolved: true },
+    { name: 'alpha', version: '0', resolved: true }
+  ] });
+  assert.deepEqual(choices.map(choice => [choice.name, choice.version]), [
+    ['alpha', '1'], ['zeta', '2'], ['zeta', '1'], ['alpha', '0']
+  ]);
+});
+
+test('choices preserve strict version identity and empty or missing findings', () => {
+  const findings = [{ id: 'number', package: 'lib', version: 1 }, { id: 'string', package: 'lib', version: '1' }];
+  assert.deepEqual(dependencyChoices({ vulnerabilityCheck: { findings } }).map(choice => choice.advisories), [[findings[0]], [findings[1]]]);
+  assert.deepEqual(dependencyChoices(), []);
+  assert.deepEqual(dependencyChoices({ vulnerabilityCheck: { findings: [] } }), []);
+  assert.deepEqual(dependencyChoices({ packages: [{ name: 'lib', version: '1', resolved: true }] }), [
+    { key: '["lib","1"]', name: 'lib', version: '1', advisories: [] }
+  ]);
+});

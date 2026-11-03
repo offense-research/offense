@@ -1,6 +1,6 @@
 import { remediationGuidance } from '../shared/remediation-guidance.js';
 import { assessUpgradeRehearsal } from '../shared/upgrade-verification.js';
-import { scanEvidenceKey, sameScanEvidence } from '../shared/scan-evidence.js';
+import { scanEvidenceKey } from '../shared/scan-evidence.js';
 import { explainVulnerabilityImpact } from '../shared/vulnerability-impact.js';
 
 // Recompute explanations from the advisory evidence. A caller-supplied impact

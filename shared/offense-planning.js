@@ -1,5 +1,4 @@
 import { remediationGuidance } from './remediation-guidance.js';
-// Pure report operations shared by the hosted API and the downloadable helper.
 // A continuation is planning evidence for the original scan, never a new full scan.
 import { explainVulnerabilityImpact } from './vulnerability-impact.js';
 

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "skill": "offense",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "minimumNodeMajor": 20,
   "files": [
     {
       "path": "SKILL.md",
-      "bytes": 20912,
-      "sha256": "8b92a5cfa09b3273b9b3527f61a8b20879e5e47a063c78593066bbb7b5b27aff"
+      "bytes": 21219,
+      "sha256": "6fab617955702e3f7eea4419ebea4275558c9b0bb7152990329caba767e79c86"
     },
     {
       "path": "references/install.md",
@@ -16,8 +16,8 @@
     },
     {
       "path": "references/verification.md",
-      "bytes": 9317,
-      "sha256": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634"
+      "bytes": 10987,
+      "sha256": "0a175499b977a130f7e53907bd08fd59ff1884f0d2bdaee4c32b9546f978adb1"
     },
     {
       "path": "references/tools.md",
@@ -51,8 +51,8 @@
     },
     {
       "path": "references/findings.md",
-      "bytes": 7738,
-      "sha256": "7fe2ce9725fcfd7e548af9001fdf9d998b63f2fcb613e43c0874dd5da6c27325"
+      "bytes": 7975,
+      "sha256": "7bc5b8abc96006cd7b775d2c894f6e625a4f991cde0a16c5a29cf3a9ee91b904"
     },
     {
       "path": "references/follow-up.md",
@@ -81,6 +81,26 @@
     }
   ],
   "previousReleases": [
+    {
+      "version": "0.10.2",
+      "files": {
+        "SKILL.md": "8b92a5cfa09b3273b9b3527f61a8b20879e5e47a063c78593066bbb7b5b27aff",
+        "references/install.md": "1a8e908ca5fe3e6a35caba2ba73f828c8ad7449f74517b8c04d250e0a4fb35bc",
+        "references/verification.md": "3b1c29416c39b5911d2f5b19b16433c76187c872cf8a9007b7a8f916cbd52634",
+        "references/tools.md": "2026c2c3d7e3de725de754c2daa22ec9448df6488ad46dc5066be8b54ebff7b1",
+        "references/local-tools.md": "2873708c29f285ffa77ea5372cd5d70ca83fd26d50d928606e3aa5e628f03b8e",
+        "references/stack.md": "416fc0e4b02e008f28ff8ea2f8ff3e00ff2c9670f2f831ed1cee188c5a3cc44a",
+        "references/catalog.md": "63b9cca7c0bb8cc60d4e6eb7111bcd563e9a20530a9ff7f81f085d6f63e8a3ca",
+        "references/assessment.md": "2c21381f54c5e43233df71b50ad7351f42ccc28649b3d89a869f9998b32d50fa",
+        "references/check-selection.md": "d7647d71d16e4a9ccbd6c322809414284e7f48b5959d5d5aebe6fb01857177ec",
+        "references/findings.md": "7fe2ce9725fcfd7e548af9001fdf9d998b63f2fcb613e43c0874dd5da6c27325",
+        "references/follow-up.md": "b86b313783234baae8ceaf86e938de34d9823ac969507d27de4f9550e8aefdc4",
+        "agents/openai.yaml": "93faceaf1d769b47ee8ad7e177c267987a488227648e1ceeda58f9334ee2201c",
+        "scripts/offense.mjs": "cfa4a5f6d469eddda4abeb054f5a56a28fe4d8bc29239eb35465db7ac99f2e1d",
+        "scripts/cli.mjs": "c0289ef438f5cbd0746472fe229c777764c74fa4521be16ac4264bfeda48ccce",
+        "scripts/update.mjs": "d286cc9cc3c8e015e6af76416fb4b928734ed842aef252e4b031677ff47c307e"
+      }
+    },
     {
       "version": "0.10.1",
       "files": {

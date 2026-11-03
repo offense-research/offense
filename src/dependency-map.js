@@ -1,10 +1,17 @@
 export function dependencyChoices(snapshot) {
   const findings = snapshot?.vulnerabilityCheck?.findings || [];
+  const advisoriesByPackage = new Map();
+  for (const finding of findings) {
+    if (!advisoriesByPackage.has(finding.package)) advisoriesByPackage.set(finding.package, new Map());
+    const versions = advisoriesByPackage.get(finding.package);
+    if (!versions.has(finding.version)) versions.set(finding.version, new Map());
+    versions.get(finding.version).set(finding.id, finding);
+  }
   const choices = new Map();
   for (const item of [...findings.map(f => ({ name: f.package, version: f.version })), ...(snapshot?.packages || []).filter(p => p.resolved)]) {
     const key = JSON.stringify([item.name, item.version]);
     if (!choices.has(key)) choices.set(key, { key, name: item.name, version: item.version,
-      advisories: [...new Map(findings.filter(f => f.package === item.name && f.version === item.version).map(f => [f.id, f])).values()] });
+      advisories: [...(advisoriesByPackage.get(item.name)?.get(item.version)?.values() || [])] });
   }
   return [...choices.values()].sort((a, b) => b.advisories.length - a.advisories.length || a.name.localeCompare(b.name));
 }

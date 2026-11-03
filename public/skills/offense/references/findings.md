@@ -12,6 +12,9 @@ For each actionable finding include:
 - **Evidence:** source receipt, finding identity, tool/version, revision or artifact
   fingerprint, scan date and exact supporting observation. Separate scanner facts
   from agent interpretation. Prefer redacted excerpts; never repeat secret values.
+  Before reading files that may contain credentials, choose a local inspection
+  that redacts values before producing tool output. Do not echo whole evidence
+  or source files and redact only the final report; tool output is output too.
 - **Conditions and uncertainty:** what must be true for harm, what is known, what
   has not been checked, and whether this is an advisory match, signal, reviewed
   applicability or reproduced issue.
