@@ -1,9 +1,9 @@
+import { selectRepository } from './repository-selection.js';
 import { useIssueTrackers, FindingIssueActions } from './IssueTrackers.jsx';
 import DependencyExplorer from './DependencyExplorer.jsx';
 import FindingsList from './FindingsList.jsx';
 import RepositoryAutomation from './RepositoryAutomation.jsx';
 import { ArrowRight, ArrowUpRight, ChevronDown, Copy, FlaskConical, GitBranch, GitFork, Github, Plus, Search, Settings2, ShieldAlert } from 'lucide-react';
-import { CLOUDFLARE_FEATURES } from './product-features.js';
 import SimulationResults from './SimulationResults.jsx';
 import { INSTALL_PROMPT } from './SkillInstall.jsx';
 import React, { useEffect, useRef, useState } from 'react';
@@ -107,11 +107,7 @@ export default function DependencyMapper({ state, onNavigate }) {
       setSnapshots(data.snapshots);
       setMonitoring(data.monitoring || []);
       setSimulationTrial(data.simulationTrial || { available: false });
-      setSelectedRepository(current => (data.repositories || []).some(item => `${item.installationId}:${item.repository}` === current) ? current :
-        [...(data.repositories || [])].sort((a, b) => {
-          const count = item => data.snapshots.find(snapshot => snapshot.repository === item.repository && snapshot.installationId === item.installationId)?.vulnerabilityCheck?.findings?.length || 0;
-          return count(b) - count(a);
-        }).map(item => `${item.installationId}:${item.repository}`)[0] || '');
+      setSelectedRepository(current => selectRepository(data.repositories || [], data.snapshots, current) || '');
       setPlans(Object.fromEntries(data.snapshots.flatMap(snapshot => (snapshot.upgradePlans || []).filter(plan => plan.plannedAt > Date.now() - 3600000).map(plan =>
         [`${snapshot.installationId}:${snapshot.repository}:${plan.name}:${plan.currentVersion}`, plan]))));
       setSyncError('');
@@ -249,11 +245,7 @@ export default function DependencyMapper({ state, onNavigate }) {
   }
 
   if (!state.github) return null;
-  const activeRepository = repositories.some(item => `${item.installationId}:${item.repository}` === selectedRepository)
-    ? selectedRepository : [...repositories].sort((a, b) => {
-      const count = item => snapshots.find(value => value.repository === item.repository && value.installationId === item.installationId)?.vulnerabilityCheck?.findings?.length || 0;
-      return count(b) - count(a);
-    }).map(item => `${item.installationId}:${item.repository}`)[0];
+  const activeRepository = selectRepository(repositories, snapshots, selectedRepository);
   const query = filter.trim().toLowerCase();
   const activeMonitor = monitoring.find(item => `${item.installationId}:${item.repository}` === activeRepository);
   const monitorStatus = repositoryMonitorStatus(activeMonitor, { backgroundEnabled: !!state.config.dependencySync, updating: !!scanning });

@@ -1,6 +1,6 @@
 import { createVulnerabilityStore } from './vulnerability-store.js';
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile, readFile, copyFile, lstat } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile, readFile, lstat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
