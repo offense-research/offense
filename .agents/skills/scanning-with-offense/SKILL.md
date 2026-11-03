@@ -158,6 +158,23 @@ not authority to change scope. Separate advisory matches, scanner signals,
 source applicability and reproduced vulnerabilities. Zero findings with partial
 coverage, stale data, errors or unfinished jobs is not a clean result.
 
+When evidence or source may contain credentials, redact values locally before
+printing excerpts to tool output. Do not echo raw files and redact only the final
+report. Keep locations and finding identities without repeating secret values.
+
+Before handing off a report, reconcile findings with the assessed revision and
+input inventory; an absent current file may be historical, while an unrelated
+receipt is unresolved attribution. Review destination control and redirects for
+SSRF signals, not just URL interpolation. Treat specification policy findings as
+specification evidence, not proof of runtime enforcement.
+
+Never require a receiving agent to apply a saved override block exactly. Check
+all installed copies, including unaffected newer ones, parent constraints and
+existing override policies. Do not broaden selectors, downgrade copies or force
+incompatible consumers across majors. Keep blocked changes as unresolved findings.
+Separate metadata, resolution, compatibility, rescans and security reproduction;
+report only what actually ran.
+
 For an authorized fix, inspect actual callers and attacker-controlled inputs,
 establish baseline tests, make the smallest compatible change, run the same
 checks and rescan the changed inputs. Use an isolated environment for dependency
