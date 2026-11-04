@@ -186,4 +186,3 @@ a promise to refresh a mutable download URL. Remove with
 `npm uninstall --global @offense-security/cli`, respectively. Uninstalling the
 executable does not revoke credentials: use `offense logout` to remove local
 credentials and revoke the server key in your account when appropriate.
-

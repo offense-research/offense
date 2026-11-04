@@ -199,4 +199,3 @@ merely describing it. Preview makes no advisory request and needs no login.
 Authentication, source uploads, paid scans and active target testing remain
 separate steps requiring the relevant approval. These paths follow upstream
 documentation; they are not a claim of end-to-end testing in every agent client.
-
