@@ -109,9 +109,34 @@ camelCase for functions, and kebab-case for service/helper filenames. Keep share
 logic in `shared/`. Preserve existing Purple aliases and identifiers where they
 provide compatibility.
 
-Change maintained sources, not generated output such as `site/dist`,
-`site/.cloudflare-build`, or `cli/dist`. The tool guide identifies the owning
-sources for catalog and scanner changes.
+### Maintained sources and generated distributions
+
+- `offense/` is an independent local dependency engine with its own manifest,
+  CLI, MCP server, skill, tests, and contributor guide. It is not a generated
+  copy of the root app.
+- The hosted CLI implementation starts at `scripts/offense-cli.mjs`.
+  `scripts/build-offense-cli.mjs` bundles it into `cli/dist/` and
+  `public/skills/offense/scripts/cli.mjs`; `cli/package.json` and `cli/README.md`
+  are maintained package metadata and documentation.
+- `sdk/index.mjs`, `sdk/node.mjs`, their declarations, and `sdk/README.md` are
+  maintained sources. `scripts/build-agent-sdk.mjs` produces `sdk/dist/` and
+  downloadable archives under `public/downloads/`.
+- `public/skills/` mixes maintained instructions and references with generated
+  helpers. Check `scripts/build-skill.mjs` and `scripts/build-offense-cli.mjs`
+  before editing a helper; do not treat the entire directory as build output.
+- `scripts/build-offense-plugin.mjs` packages `public/skills/offense/` into
+  `plugins/offense/`, including a Codex-specific installation overlay. Update
+  the source skill or that overlay, then rebuild the plugin.
+- `.agents/skills/scanning-with-offense/SKILL.md` is the maintained portable
+  project skill linked from the README; it is distinct from the packaged skills.
+- `site/dist/`, `site/.cloudflare-build/`, and the client bundles above are
+  generated. The [tool guide](docs/contributing-tools.md) identifies the owning
+  sources for catalog and scanner changes.
+
+The root README is the checkout entry point. `docs/public-readme.md` is the
+source-export candidate README template, not a competing overview: the export
+places it at the candidate root. Its candidate restrictions and root-relative
+links are intentional. See the [release preparation record](docs/release-preparation.md).
 
 ## Check your change
 

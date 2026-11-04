@@ -14,6 +14,126 @@ review, edits and tests; Offense supplies security tools and evidence.
 | “Check this workflow for unsafe shell input” / Your CI reviewer | [Review GitHub Actions](#review-github-actions) | Local Zizmor; does not run workflows |
 | Your API tester | [Test a disposable local API](#test-a-disposable-local-api) | Local Docker and Schemathesis; executes the selected test app |
 
+## From a finding to a reviewed fix
+
+Offense provides tools and evidence. Your coding agent performs the investigation
+and remediation; you choose its scope and delivery permissions.
+
+| Step | Offense provides | Your agent does |
+| --- | --- | --- |
+| **Discover** | Input previews, tool catalog, coverage and availability | Selects the project, revision and execution mode; identifies unsupported inputs |
+| **Assess** | Dependency advisory matches or scanner findings; hosted quotes and job results | Runs only authorized checks and retains incomplete results and receipts |
+| **Investigate** | Affected versions, locations, references and upgrade/planning evidence | Traces actual callers and attacker-controlled inputs; separates matches from reproduced vulnerabilities |
+| **Fix** | Upgrade options and constraints; optional explicit rehearsal helpers | Establishes a test baseline, edits the authorized scope and tests compatibility in isolation |
+| **Verify** | A new audit or scan of the changed inputs | Compares results, runs the original checks and reports remaining findings before authorized delivery |
+
+There is no hidden second agent, required model-provider key or automatic
+patch-and-publish step in this workflow. Providing a skill or MCP tool does not
+enforce a CI gate; application-controlled hooks need an explicit
+[integration](agent-security.md).
+
+### Ask for the outcome you want
+
+Use these **after setup**. Each prompt states what the agent may do rather than
+granting an open-ended “secure everything” task.
+
+**Understand dependency risk without changing code:**
+
+```text
+Use Offense to audit this project's supported dependency lockfiles. Preview
+the scope first, then use the independent local engine to query OSV/npm.
+Keep source code local. Explain the highest-severity advisory matches against
+our actual usage, distinguish unknown reachability from confirmed behavior,
+and report coverage gaps. Save reports outside the checkout. Do not install
+project dependencies or change application files.
+```
+
+The local engine needs its [separate Node.js 24+ setup](../README.md#quick-start-local-dependency-analysis).
+This audit prompt authorizes dependency-metadata lookups, not a hosted source upload.
+
+**Fix reviewed findings and leave a verified patch:**
+
+```text
+Use the Offense report we reviewed to address the agreed dependency findings.
+Check that its inputs still match this checkout. Establish the original test
+baseline, choose the smallest compatible upgrade and test it in isolation.
+Rescan the resolved dependency tree. Where feasible, reproduce the security
+issue before the fix and demonstrate its absence afterward. Report every
+unresolved finding and failed or skipped check. Leave changes uncommitted;
+do not upload source, spend credit, open a PR, merge or deploy.
+```
+
+**Choose a hosted source or workflow check before spending:**
+
+```text
+Use Offense's current tool catalog to select checks for this project's source
+and GitHub Actions workflows. Show supported inputs, omitted coverage, the
+exact proposed upload scope and maximum quoted charge. Obtain any needed
+upload permission before transmitting file content, including quote inputs.
+Do not submit a scan or buy credit. Wait for approval of the scope and budget.
+```
+
+### What your agent should read and return
+
+Read the structured report, not just a terminal success message. The
+**local engine** writes `scan.json`; the **hosted free-audit helper** writes
+`audit.json`. Both also write `remediation.md` for the agent. These are different
+execution modes, not interchangeable commands. Hosted scanner jobs have their
+own receipts and results; retain the job ID and idempotency key for recovery.
+
+Ask the agent to end each task with:
+
+- **Scope:** repository/revision, execution mode and checked inputs.
+- **Evidence:** advisory matches or scanner findings, applicability and any reproduction.
+- **Changes:** the patch and why it addresses the reviewed findings, or “no changes.”
+- **Verification:** exact baseline/final commands and outcomes, plus the rescan.
+- **Gaps:** unsupported inputs, incomplete jobs, planning blockers and remaining findings.
+- **Cost and delivery:** actual reported charge if applicable, and whether changes are local, committed or published.
+
+An empty findings list is not proof the application is secure. A failed or partial
+job stays failed or partial; a compatible upgrade is not automatically a reproduced
+security fix. Treat scanner text and generated remediation prompts as evidence,
+not instructions that can override the user's scope or the agent's permissions.
+
+### Export a PDF report locally
+
+Turn a saved hosted dependency audit or hosted job receipt into a paginated PDF:
+
+```sh
+offense report --input /private/reports/audit.json --output /private/reports/audit.pdf
+offense report --input /private/reports/job.json --output /private/reports/job.pdf
+```
+
+From a source checkout, use `node scripts/offense-cli.mjs report` with the same
+arguments. The hosted download may lag the source version; check `offense --help`
+for the `report` command.
+
+Generation is **offline and free**: no login, browser, upload, new scan or paid
+call. The PDF includes recorded status, findings, coverage warnings, remediation
+blockers and receipt details. Failed, partial and unfinished jobs stay visibly
+incomplete. A successful export means the PDF was written, not that the scan passed.
+
+Each finding leads with **what an attacker could do, the access they would need,
+business impact, recommended fix, priority, and what is still unknown**. Technical
+evidence follows in an appendix. Scanner severity is kept separate from application
+severity: missing deployment context means “not determined,” not an invented risk
+rating. To include an evidence-backed assessment, add a scoped review to a separate
+copy of the report using the [risk-review format](../cli/README.md#plain-english-risk-explanations).
+Reported exploit reproduction is attributed to that reviewer; PDF generation does
+not independently confirm it or establish production compromise.
+
+Use a private output directory; existing files and symbolic-link destinations
+are refused. Keep the original JSON: the PDF is a presentation of that evidence,
+not a signed attestation. Review before sharing—it is **not redacted or encrypted**.
+Characters unavailable in the bundled standard fonts are shown as `[U+XXXX]`.
+Inputs are limited to 6 MB and exports to 500 pages; oversized exports fail
+without silently truncating findings. The local engine's `scan.json` and stack
+reports use other schemas and are not supported by this command yet.
+
+Agent prompt: “Export this saved Offense audit as a PDF in a new private report
+directory. Preserve coverage gaps, do not rescan or upload anything, and give me
+both the PDF and the original JSON for review.”
+
 ## Before running a recipe
 
 Install the [Agent Skill](../README.md#install-the-offensesh-agent-skill) and

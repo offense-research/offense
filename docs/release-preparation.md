@@ -10,6 +10,15 @@ repository remains private; packages, images and deployments are not approved.
 The export script still creates unapproved private candidates by default;
 it never publishes or grants approval for a future snapshot automatically.
 
+## README ownership
+
+The maintained checkout's root `README.md` is its user entry point.
+`docs/public-readme.md` is the active candidate template selected by
+`config/source-release-files.json` and copied to the export's root `README.md`.
+Its links are relative to that destination, and its private-candidate warning
+applies to newly prepared snapshots. The earlier publication approval does not
+authorize future candidates; preserve these restrictions when updating guidance.
+
 ## Source boundary
 
 `config/source-release-files.json` is an exact-path allowlist, not an instruction
