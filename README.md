@@ -157,123 +157,19 @@ and obtaining authorization before active testing, paid calls or publication.
 
 ## From a finding to a reviewed fix
 
-Offense provides tools and evidence. Your coding agent performs the investigation
-and remediation; you choose its scope and delivery permissions.
-
-| Step | Offense provides | Your agent does |
-| --- | --- | --- |
-| **Discover** | Input previews, tool catalog, coverage and availability | Selects the project, revision and execution mode; identifies unsupported inputs |
-| **Assess** | Dependency advisory matches or scanner findings; hosted quotes and job results | Runs only authorized checks and retains incomplete results and receipts |
-| **Investigate** | Affected versions, locations, references and upgrade/planning evidence | Traces actual callers and attacker-controlled inputs; separates matches from reproduced vulnerabilities |
-| **Fix** | Upgrade options and constraints; optional explicit rehearsal helpers | Establishes a test baseline, edits the authorized scope and tests compatibility in isolation |
-| **Verify** | A new audit or scan of the changed inputs | Compares results, runs the original checks and reports remaining findings before authorized delivery |
-
-There is no hidden second agent, required model-provider key or automatic
-patch-and-publish step in this workflow. Providing a skill or MCP tool does not
-enforce a CI gate; application-controlled hooks need an explicit
-[integration](docs/agent-security.md).
+See [From a finding to a reviewed fix](docs/recipes.md#from-a-finding-to-a-reviewed-fix).
 
 ### Ask for the outcome you want
 
-Use these **after setup**. Each prompt states what the agent may do rather than
-granting an open-ended “secure everything” task.
-
-**Understand dependency risk without changing code:**
-
-```text
-Use Offense to audit this project's supported dependency lockfiles. Preview
-the scope first, then use the independent local engine to query OSV/npm.
-Keep source code local. Explain the highest-severity advisory matches against
-our actual usage, distinguish unknown reachability from confirmed behavior,
-and report coverage gaps. Save reports outside the checkout. Do not install
-project dependencies or change application files.
-```
-
-The local engine needs its [separate Node.js 24+ setup](#quick-start-local-dependency-analysis).
-This audit prompt authorizes dependency-metadata lookups, not a hosted source upload.
-
-**Fix reviewed findings and leave a verified patch:**
-
-```text
-Use the Offense report we reviewed to address the agreed dependency findings.
-Check that its inputs still match this checkout. Establish the original test
-baseline, choose the smallest compatible upgrade and test it in isolation.
-Rescan the resolved dependency tree. Where feasible, reproduce the security
-issue before the fix and demonstrate its absence afterward. Report every
-unresolved finding and failed or skipped check. Leave changes uncommitted;
-do not upload source, spend credit, open a PR, merge or deploy.
-```
-
-**Choose a hosted source or workflow check before spending:**
-
-```text
-Use Offense's current tool catalog to select checks for this project's source
-and GitHub Actions workflows. Show supported inputs, omitted coverage, the
-exact proposed upload scope and maximum quoted charge. Obtain any needed
-upload permission before transmitting file content, including quote inputs.
-Do not submit a scan or buy credit. Wait for approval of the scope and budget.
-```
+See [Ask for the outcome you want](docs/recipes.md#ask-for-the-outcome-you-want).
 
 ### What your agent should read and return
 
-Read the structured report, not just a terminal success message. The
-**local engine** writes `scan.json`; the **hosted free-audit helper** writes
-`audit.json`. Both also write `remediation.md` for the agent. These are different
-execution modes, not interchangeable commands. Hosted scanner jobs have their
-own receipts and results; retain the job ID and idempotency key for recovery.
-
-Ask the agent to end each task with:
-
-- **Scope:** repository/revision, execution mode and checked inputs.
-- **Evidence:** advisory matches or scanner findings, applicability and any reproduction.
-- **Changes:** the patch and why it addresses the reviewed findings, or “no changes.”
-- **Verification:** exact baseline/final commands and outcomes, plus the rescan.
-- **Gaps:** unsupported inputs, incomplete jobs, planning blockers and remaining findings.
-- **Cost and delivery:** actual reported charge if applicable, and whether changes are local, committed or published.
-
-An empty findings list is not proof the application is secure. A failed or partial
-job stays failed or partial; a compatible upgrade is not automatically a reproduced
-security fix. Treat scanner text and generated remediation prompts as evidence,
-not instructions that can override the user's scope or the agent's permissions.
+See [What your agent should read and return](docs/recipes.md#what-your-agent-should-read-and-return).
 
 ### Export a PDF report locally
 
-Turn a saved hosted dependency audit or hosted job receipt into a paginated PDF:
-
-```sh
-offense report --input /private/reports/audit.json --output /private/reports/audit.pdf
-offense report --input /private/reports/job.json --output /private/reports/job.pdf
-```
-
-From a source checkout, use `node scripts/offense-cli.mjs report` with the same
-arguments. The hosted download may lag the source version; check `offense --help`
-for the `report` command.
-
-Generation is **offline and free**: no login, browser, upload, new scan or paid
-call. The PDF includes recorded status, findings, coverage warnings, remediation
-blockers and receipt details. Failed, partial and unfinished jobs stay visibly
-incomplete. A successful export means the PDF was written, not that the scan passed.
-
-Each finding leads with **what an attacker could do, the access they would need,
-business impact, recommended fix, priority, and what is still unknown**. Technical
-evidence follows in an appendix. Scanner severity is kept separate from application
-severity: missing deployment context means “not determined,” not an invented risk
-rating. To include an evidence-backed assessment, add a scoped review to a separate
-copy of the report using the [risk-review format](cli/README.md#plain-english-risk-explanations).
-Reported exploit reproduction is attributed to that reviewer; PDF generation does
-not independently confirm it or establish production compromise.
-
-Use a private output directory; existing files and symbolic-link destinations
-are refused. Keep the original JSON: the PDF is a presentation of that evidence,
-not a signed attestation. Review before sharing—it is **not redacted or encrypted**.
-Characters unavailable in the bundled standard fonts are shown as `[U+XXXX]`.
-Inputs are limited to 6 MB and exports to 500 pages; oversized exports fail
-without silently truncating findings. The local engine's `scan.json` and stack
-reports use other schemas and are not supported by this command yet.
-
-Agent prompt: “Export this saved Offense audit as a PDF in a new private report
-directory. Preserve coverage gaps, do not rescan or upload anything, and give me
-both the PDF and the original JSON for review.”
+See [Export a PDF report locally](docs/recipes.md#export-a-pdf-report-locally).
 
 ## Choose how to run it
 
@@ -290,188 +186,39 @@ when self-hosting.
 
 ## Install the CLI
 
-Choose **one** installation method. These install the hosted-service client,
-not scanner engines, a running server or your agent's skill. For the independent
-local `scan` / `source-scan` commands, use the [local engine](#quick-start-local-dependency-analysis)
-instead. Both CLIs use the name `offense`; avoid installing them over each other.
+See [Install the CLI](docs/cli-installation.md#install-the-cli).
 
 ### Homebrew — macOS and Linux
 
-Use the public repository as a custom tap; the explicit Git URL is required:
-
-```sh
-brew tap offense-research/offense https://github.com/offense-research/offense.git
-brew install offense-research/offense/offense
-offense --version
-offense --help
-```
-
-The [formula](Formula/offense.rb) installs the bundled CLI from the **versioned,
-SHA-256-checked [CLI 0.2.0 release](https://github.com/offense-research/offense/releases/tag/cli-v0.2.0)**
-and brings its own Homebrew Node dependency.
-It does not run npm install scripts or download scanner images. This is a project
-tap, not a formula in Homebrew/core. Review the tap before installing it.
+See [Homebrew — macOS and Linux](docs/cli-installation.md#homebrew--macos-and-linux).
 
 ### Stable GitHub release — Node.js 20+
 
-Download `offense-cli-0.2.0.tgz` and `SHA256SUMS` from the
-[release page](https://github.com/offense-research/offense/releases/tag/cli-v0.2.0).
-In the download directory, verify the checksum before installing:
-
-```sh
-shasum -a 256 -c SHA256SUMS
-# On Linux, sha256sum --check SHA256SUMS is also supported.
-npm install --global ./offense-cli-0.2.0.tgz
-offense --version
-```
-
-Continue only if verification reports `offense-cli-0.2.0.tgz: OK`. This installs
-the GitHub release archive, not a package from the npm registry. Homebrew performs
-the checksum check automatically. The hosted-download commands below use a
-separate, mutable channel and may install an older version.
+See [Stable GitHub release — Node.js 20+](docs/cli-installation.md#stable-github-release--nodejs-20).
 
 ### Ubuntu and Arch Linux
 
-Install Node and npm using the instructions for your distribution, then run the
-shared Offense install below. If you already have **Node.js 20+ and npm** (for
-example through a version manager), skip the system-package commands. Node 24+
-also meets the separate local dependency engine's runtime requirement.
-
-**Ubuntu 22.04 / 24.04 — Node.js 24 via NodeSource (amd64 or arm64):**
-
-Ubuntu's default `nodejs` package can be too old for this CLI. The following
-[NodeSource instructions](https://github.com/nodesource/distributions/wiki/Repository-Manual-Installation)
-add a third-party signed apt repository and install Node system-wide, including
-npm. Review that trust decision first. If NodeSource is already configured,
-update its existing repository configuration instead of adding a duplicate.
-
-```sh
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg
-sudo install -d -m 755 /etc/apt/keyrings
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
-  | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-sudo chmod 644 /etc/apt/keyrings/nodesource.gpg
-printf '%s\n' \
-  'Types: deb' \
-  'URIs: https://deb.nodesource.com/node_24.x/' \
-  'Suites: nodistro' \
-  'Components: main' \
-  "Architectures: $(dpkg --print-architecture)" \
-  'Signed-By: /etc/apt/keyrings/nodesource.gpg' \
-  | sudo tee /etc/apt/sources.list.d/nodesource.sources >/dev/null
-sudo apt-get update
-sudo apt-get install -y nodejs
-node --version
-npm --version
-```
-
-**Arch Linux — official Node.js and npm packages:**
-
-This performs a full system upgrade as well as installing the prerequisites;
-Arch does not support partial upgrades. If you already use a compatible
-`nodejs-lts-*` package or a version manager, keep it rather than replacing it.
-
-```sh
-sudo pacman -Syu --needed nodejs npm
-node --version
-npm --version
-```
-
-**Install Offense on either distribution, without `sudo npm`:**
-
-```sh
-npm install --global --prefix "$HOME/.local" --ignore-scripts \
-  https://offense.sh/downloads/offense-cli.tgz
-export PATH="$HOME/.local/bin:$PATH"
-offense --version
-offense --help
-```
-
-Add `export PATH="$HOME/.local/bin:$PATH"` to your `~/.bashrc` or `~/.zshrc` once
-to keep the command available in new terminals. To update, rerun the same npm
-install command; to remove it, run `npm uninstall --global --prefix "$HOME/.local"
-@offense-security/cli`. This uses the mutable hosted download described below,
-not a native `.deb`, Arch package or AUR package. Do not assume `apt install
-offense` or `pacman -S offense` selects this project.
+See [Ubuntu and Arch Linux](docs/cli-installation.md#ubuntu-and-arch-linux).
 
 ### npx / npm exec — run without a global install
 
-With **Node.js 20+** and npm installed:
-
-```sh
-npx --yes --package=https://offense.sh/downloads/offense-cli.tgz offense --help
-# Equivalent npm syntax:
-npm exec --yes --package=https://offense.sh/downloads/offense-cli.tgz -- offense --help
-```
-
-Replace `--help` with the desired CLI arguments on subsequent runs. `npx` caches
-the downloaded package; “no global install” does not mean no files are downloaded.
-`--yes` accepts npm's installation prompt, not authorization to upload or spend.
+See [npx / npm exec — run without a global install](docs/cli-installation.md#npx--npm-exec--run-without-a-global-install).
 
 ### npm — install the command globally
 
-```sh
-npm install --global https://offense.sh/downloads/offense-cli.tgz
-offense --version
-offense --help
-```
-
-Use a user-owned Node installation rather than adding `sudo`. On Windows, npm
-creates an `offense` command shim; use WSL for workflows requiring Linux tools.
+See [npm — install the command globally](docs/cli-installation.md#npm--install-the-command-globally).
 
 ### pnpm or Bun — one-off execution
 
-With pnpm or Bun already installed, choose either command. Keep Node.js 20+
-available: the CLI's executable uses Node, including when launched by Bun.
-
-```sh
-pnpm --package=@offense-security/cli@https://offense.sh/downloads/offense-cli.tgz dlx offense --help
-bunx --package https://offense.sh/downloads/offense-cli.tgz offense --help
-```
-
-**Hosted download versus stable release:** these npm/npx/pnpm/Bun commands use the existing
-hosted archive, not an npm registry release. At verification on 2026-10-30 the
-archive was **0.1.0**, while Homebrew and the GitHub release install **0.2.0**.
-The hosted URL can change independently of this repository; check `--version`
-and `--help` before relying on a command. Do not assume `npx offense` or
-`npm install -g offense` refers to this project. No npm registry package is
-published by these instructions.
+See [pnpm or Bun — one-off execution](docs/cli-installation.md#pnpm-or-bun--one-off-execution).
 
 ### From a reviewed checkout — no package manager install
 
-With Git and Node.js 20+:
-
-```sh
-git clone https://github.com/offense-research/offense.git
-cd offense
-node public/skills/offense/scripts/cli.mjs --version
-node public/skills/offense/scripts/cli.mjs --help
-```
-
-The bundle already includes its dependencies. No root `npm ci` is necessary for
-this client. Pin your checkout to a reviewed commit for reproducible automation;
-keep the checkout accessible and invoke the bundle by absolute path from agents.
+See [From a reviewed checkout — no package manager install](docs/cli-installation.md#from-a-reviewed-checkout--no-package-manager-install).
 
 ### After installation
 
-`--help` and `--version` need no account and do not submit scans. When you choose
-to connect to the hosted service, run `offense login` (or replace `offense` with
-your one-off runner), approve the browser login, and inspect `offense tools`.
-For a self-hosted service, set `OFFENSE_API_URL` before logging in. Authentication
-does not authorize paid calls: preview inputs, inspect a quote and approve a
-spending ceiling before submission. Install the [Agent Skill](#install-the-offensesh-agent-skill)
-separately to teach your agent this workflow.
-
-To update Homebrew, run `brew update` then `brew upgrade offense-research/offense/offense`.
-The release formula has Homebrew revision 1 so users of the earlier source-pinned
-0.2.0 formula receive the published archive too; `offense --version` stays 0.2.0.
-For a global npm install, rerun its URL-based install command; `npm update` is not
-a promise to refresh a mutable download URL. Remove with
-`brew uninstall offense-research/offense/offense` or
-`npm uninstall --global @offense-security/cli`, respectively. Uninstalling the
-executable does not revoke credentials: use `offense logout` to remove local
-credentials and revoke the server key in your account when appropriate.
+See [After installation](docs/cli-installation.md#after-installation).
 
 ## Quick start: local dependency analysis
 
@@ -527,201 +274,27 @@ code path or future vulnerability.
 
 ### Connect your coding agent
 
-The local engine exposes `offense.audit_dependencies` over stdio MCP:
-
-```sh
-node offense/bin/offense.mjs mcp
-```
-
-Configure your client to launch that command using the **absolute path** to the
-entrypoint; it is an MCP server, not an interactive terminal session. The
-[agent setup guide](offense/docs/install.md) covers project-scoped MCP and skill
-installation for Codex, Claude Code and other clients. Preserve existing client
-configuration and start a new agent session after installing.
-
-For a client using an `mcpServers` JSON configuration, merge this entry into its
-existing configuration rather than replacing other servers:
-
-```json
-{
-  "mcpServers": {
-    "offense-community": {
-      "command": "node",
-      "args": ["/absolute/path/to/offense/offense/bin/offense.mjs", "mcp"]
-    }
-  }
-}
-```
-
-For Codex, the equivalent project `.codex/config.toml` entry is:
-
-```toml
-[mcp_servers.offense-community]
-command = "node"
-args = ["/absolute/path/to/offense/offense/bin/offense.mjs", "mcp"]
-```
-
-The two `offense` path segments above are intentional: the repository contains
-a nested `offense/` package. Replace the example with your actual checkout path.
-Claude Code uses project `.mcp.json`; other clients may use a different location
-or schema. No API key belongs in this local-engine configuration.
-
-After restarting the client, verify it discovers `offense.audit_dependencies`.
-Discovery is not a scan. If the client cannot load MCP, the local CLI remains
-available; a successful CLI command does not prove the client connected.
-
-Once connected, choose an [audit, fix or tool-selection prompt](#ask-for-the-outcome-you-want).
-Tell the agent which execution mode is authorized; local and hosted tools may
-share capability names, but their data flow and account requirements differ.
+See [Connect your coding agent](docs/agent-setup.md#connect-your-coding-agent).
 
 ### Install the offense.sh Agent Skill
 
-The portable [scanning-with-offense skill](.agents/skills/scanning-with-offense/SKILL.md)
-uses the [Agent Skills format](https://agentskills.io/skill-creation/quickstart).
-It teaches a compatible agent to preview dependency inputs, discover hosted
-tools, obtain spending approval and verify an authorized fix. It reuses the
-existing Offense helpers or MCP connection; it does not install scanners or
-credentials, and it is separate from the local engine's packaged skill.
-
-The skill is already in this checkout's `.agents/skills/` directory. Hermes can
-install it into its active profile using the native Skills Hub commands below.
-For **project-local installation**, choose your agent's directory in the table.
-Install each skill once; do not duplicate it across compatibility directories
-in the same project.
+See [Install the offense.sh Agent Skill](docs/agent-setup.md#install-the-offensesh-agent-skill).
 
 #### Hermes Agent — native skill installation
 
-Use a current [Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)
-with Skills Hub support. Inspect the source-qualified skill before installing:
-
-```sh
-hermes skills inspect offense-research/offense/.agents/skills/scanning-with-offense
-```
-
-After reviewing it, install and confirm it appears in the hub-installed list:
-
-```sh
-hermes skills install offense-research/offense/.agents/skills/scanning-with-offense
-hermes skills list --source hub
-```
-
-This installs the same portable skill into your **active Hermes profile**, normally
-under `~/.hermes/skills/`, rather than into the target repository. Hermes scans
-third-party skills and asks for confirmation. Review any warning; do not add
-`--force` just to bypass it. An existing customized installation should be reviewed,
-not overwritten. A trusted project-local skill with the same name takes precedence.
-
-Make the [existing Offense helpers available](#make-the-existing-helpers-available),
-then start Hermes in the project you want to check. In Hermes chat:
-
-```text
-/scanning-with-offense Preview this project's dependency audit. Do not upload anything, install project dependencies or run paid tools.
-```
-
-Verify Hermes loaded `scanning-with-offense` and actually ran the preview; a prose
-description is not a scan. The skill works through the existing CLI helpers or an
-already configured MCP connection. Installing it does **not** install the Offense
-runtime, configure MCP, sign in, buy credit or authorize source uploads.
-
-For an authorized audit, use `/scanning-with-offense Audit this project's supported
-lockfiles and report coverage gaps; do not change files or run paid tools.` For a
-hosted source review, ask it to quote the selected files first and wait for your
-upload and spending approval. See the [recipes](docs/recipes.md) for scoped examples.
-
-Manage the profile installation with `hermes skills check`,
-`hermes skills update scanning-with-offense` after reviewing upstream changes, or
-`hermes skills uninstall scanning-with-offense`. For a repo-only installation,
-use the project-local copy and trust instructions below instead of a profile install.
+See [Hermes Agent — native skill installation](docs/agent-setup.md#hermes-agent--native-skill-installation).
 
 #### Choose your agent
 
-Each directory below is relative to the **target project's root**. The final file
-must be `<directory>/scanning-with-offense/SKILL.md`. Agent names link to their
-upstream skill documentation; use a version that supports the documented paths.
-
-| Agent | Project skill directory | Discover or invoke after starting a new session |
-| --- | --- | --- |
-| [Pi](https://pi.dev/docs/latest/skills) | `.pi/skills/` | `/skill:scanning-with-offense`; accept the normal project-trust prompt |
-| [Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi/blob/main/docs/skills.md) | `.omp/skills/` | `/skill:scanning-with-offense` when skill commands are enabled |
-| [Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills) | `.hermes/skills/` | Review and trust the project as below, then `/scanning-with-offense` |
-| [OpenAI Codex](https://developers.openai.com/codex/skills) | `.agents/skills/` | `/skills` to discover; `$scanning-with-offense` to invoke |
-| [Claude Code](https://code.claude.com/docs/en/skills) | `.claude/skills/` | `/scanning-with-offense` |
-| [Charm Crush](https://github.com/charmbracelet/crush#agent-skills) | `.crush/skills/` | Ask it to load `scanning-with-offense`; this skill does not enable Crush's optional command-palette invocation |
-| [Cursor](https://cursor.com/docs/skills) | `.cursor/skills/` | Select `scanning-with-offense` from the `/` menu in Agent chat |
-| [OpenCode](https://opencode.ai/docs/skills) | `.opencode/skills/` | Ask it to load `scanning-with-offense` through its skill tool |
-| [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills) | `.github/skills/` | Ask it to use `scanning-with-offense` for the preview request below |
-| [VS Code Copilot](https://agentskills.io/skill-creation/quickstart) | `.agents/skills/` | In Agent mode, use `/skills` to confirm discovery |
-| [Gemini CLI](https://geminicli.com/docs/cli/skills/) | `.gemini/skills/` | `/skills list`, then request the preview and review the activation prompt |
-
-Several agents also read `.agents/skills/`, so a shared installation may already
-be sufficient. Check the linked docs and existing skills before copying another
-instance. Do not disable trust checks or tool approvals to make a skill load.
+See [Choose your agent](docs/agent-setup.md#choose-your-agent).
 
 #### Copy the skill without replacing custom instructions
 
-In a POSIX shell (macOS, Linux or WSL), run this from the Offense repository root.
-Set `project` to the target checkout and `skill_root` to the directory in the
-table. This example selects **Pi**; change `.pi/skills` for another agent.
-
-```sh
-project=/absolute/path/to/your-project
-skill_root=.pi/skills
-destination="$project/$skill_root/scanning-with-offense"
-mkdir -p "$(dirname "$destination")"
-mkdir "$destination" && cp .agents/skills/scanning-with-offense/SKILL.md "$destination/SKILL.md"
-```
-
-`mkdir` deliberately fails if the skill directory exists, preventing the copy
-from overwriting customized instructions. Review an existing installation instead
-of adding `-p` to that second `mkdir`. Windows users can copy the same `SKILL.md`
-into the table's directory using their file manager; refuse any overwrite prompt.
-
-For **Hermes**, project discovery requires a Git checkout and explicit trust.
-After reviewing the repo's skills, run:
-
-```sh
-hermes skills trust /absolute/path/to/your-project
-```
-
-This trusts the project's skills, not just Offense. Do not trust an unreviewed
-repository. Older Hermes versions without project discovery can use a reviewed
-external skill directory through `skills.external_dirs`; follow the linked docs
-rather than assuming `.hermes/skills/` is recognized.
+See [Copy the skill without replacing custom instructions](docs/agent-setup.md#copy-the-skill-without-replacing-custom-instructions).
 
 #### Make the existing helpers available
 
-Skills contain instructions, not a CLI or a scanner runtime. Keep the reviewed
-Offense checkout accessible to the agent. The bundled hosted helpers require
-**Node.js 20+** and no root `npm install` for these commands:
-
-```sh
-export OFFENSE_HELPERS=/absolute/path/to/offense/public/skills/offense/scripts
-node "$OFFENSE_HELPERS/cli.mjs" --help
-node "$OFFENSE_HELPERS/offense.mjs" audit /absolute/path/to/your-project --preview
-```
-
-Launch the agent from a shell that inherits this variable, or tell it the actual
-absolute helper path in its session. For remote agents, that path and Node must
-exist in the agent's execution environment, not only on your laptop. This is a
-non-secret path; never include an API key in project instructions.
-
-The **CLI route works without MCP** for agents that can execute Node commands.
-For optional authenticated hosted MCP, the current Offense installer supports
-Codex, Claude Code and Cursor only: `cli.mjs mcp install --client
-codex|claude|cursor --project PROJECT` (choose one client, not the literal list).
-Do not invent `--client pi`, `omp`, `hermes` or `crush` options. Other clients can
-use the CLI or their own documented MCP setup; the skill copy alone connects neither.
-The independent local engine still requires Node.js 24+ and the separate
-[local setup](#quick-start-local-dependency-analysis).
-
-Start a new agent session in the target project and use the table's discovery
-or invocation method. Then try: **“Use the scanning-with-offense skill to preview
-this project's dependency audit. Do not upload anything or run paid tools yet.”**
-Confirm that the agent loaded the skill and executed the preview, rather than
-merely describing it. Preview makes no advisory request and needs no login.
-Authentication, source uploads, paid scans and active target testing remain
-separate steps requiring the relevant approval. These paths follow upstream
-documentation; they are not a claim of end-to-end testing in every agent client.
+See [Make the existing helpers available](docs/agent-setup.md#make-the-existing-helpers-available).
 
 ## Run the self-hosted platform
 
@@ -858,6 +431,8 @@ public issues containing source, credentials or raw scan reports.
 | [`scripts/`](scripts/), [`sdk/`](sdk/), [`cli/`](cli/) | Bootstrap/build tools, SDK and client sources |
 | [`test/`](test/), [`docs/`](docs/) | Synthetic regression tests, setup guides and security contracts |
 
+For maintained sources and generated copies, see [Find the owning files](CONTRIBUTING.md#find-the-owning-files).
+
 Some paths and schemas retain **Purple** names for compatibility. They are not
 a separate product you need to install.
 
@@ -865,6 +440,8 @@ a separate product you need to install.
 
 | Guide | What it covers |
 | --- | --- |
+| [CLI installation](docs/cli-installation.md) | Hosted client installation methods, runtime requirements and release channels |
+| [Agent setup](docs/agent-setup.md) | Local MCP connection, portable skills and helper setup |
 | [Agent recipes](docs/recipes.md) | Landing-page examples with prompts, scoped commands, evidence and automation boundaries |
 | [Local engine](offense/README.md) | Dependency analysis, triage, rehearsal and optional local helpers |
 | [Agent installation](offense/docs/install.md) | Project-scoped MCP configuration, skills and client coexistence |

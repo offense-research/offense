@@ -17,10 +17,10 @@ Use Node.js 24 or newer and npm from the repository root.
 
 - `npm ci`: install dependencies from `package-lock.json`.
 - `npm run dev`: start Vite at `http://localhost:5173` and the watched API on port 3217.
-- `npm run build`: build downloadable skills, the agent SDK, and frontend assets.
+- `npm run build`: build downloadable skills, the agent SDK, frontend assets, and the public site.
 - `npm start`: serve the API and built app on port 3217.
-- `npm test`: run the Node test suite.
-- `npm run build:worker`: prepare Cloudflare deployment artifacts.
+- `npm test`: prepare generated Worker sources, then run the root Node suite and site tests.
+- `node scripts/build-worker-sources.mjs`: prepare Worker sources before focused tests that need them.
 
 ## Coding Style & Naming Conventions
 
@@ -28,7 +28,7 @@ Use ES modules, two-space indentation, single-quoted JavaScript strings, and sem
 
 ## Testing Guidelines
 
-Tests use `node:test` and `node:assert/strict`, with names matching `test/*.test.js`. Run a focused check with `node --test test/dependency-graph.test.js`. Add regression coverage for behavior changes and reuse fixtures/helpers. CI requires `npm test` and `npm run build`; no numeric coverage threshold is configured. Scripts such as `npm run test:e2e` require private sessions and fixture configuration and may target live services; inspect their arguments before running.
+Tests use `node:test` and `node:assert/strict`, with names matching `test/*.test.js`. Run a focused check with `node --test test/dependency-graph.test.js`. Add regression coverage for behavior changes and reuse fixtures/helpers. CI requires `npm test` and `npm run build`; no numeric coverage threshold is configured. Docker scanner and live-service checks are opt-in; inspect each script and its arguments before running it.
 
 ## Commit & Pull Request Guidelines
 
@@ -36,4 +36,4 @@ Recent commits use short imperative subjects, such as “Report deduplicated adv
 
 ## Security & Configuration
 
-Copy `.env.example` to `.env` and generate `ENCRYPTION_KEY` with `openssl rand -hex 32`. Keep credentials, session files, and local databases outside Git. Production secrets use Infisical; follow `docs/infisical.md` for deployment configuration.
+Copy `.env.example` to `.env` and generate `ENCRYPTION_KEY` with `openssl rand -hex 32`. Keep credentials, session files, and local databases outside Git. Follow [local configuration guidance](CONTRIBUTING.md#app-api-and-shared-code) and [self-hosting](docs/self-hosting.md) for the supported source profile. Production credentials and deployment configuration are operator-owned and are not distributed here.
